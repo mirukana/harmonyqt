@@ -30,6 +30,10 @@ setup(
         "setuptools",
         "PyQt5",
     ],
+    dependency_links=[
+        "http://github.com/mirukan/matrix-python-sdk/tarball/master",
+    ],
+
 
     include_package_data = True,
     packages             = find_packages(),

@@ -9,7 +9,7 @@ PYLINT = pylint
 CLOC   = cloc
 
 ARCHIVE_FORMATS = gztar
-INSTALL_FLAGS   = --user --editable
+INSTALL_FLAGS   = --process-dependency-links --user --editable
 PYLINT_FLAGS    = --output-format colorized
 CLOC_FLAGS      = --ignore-whitespace
 
