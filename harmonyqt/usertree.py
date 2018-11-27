@@ -46,7 +46,7 @@ class UserTree(QTreeWidget):
                 room_row      = QTreeWidgetItem(account_row)
                 room_row.room = room
                 room_row.setText(0, room.display_name)
-                room_row.setToolTip(0, room_id)
+                room_row.setToolTip(0, "\n".join(room.aliases + [room_id]))
 
                 for member in room.get_joined_members():
                     member_row        = QTreeWidgetItem(room_row)
