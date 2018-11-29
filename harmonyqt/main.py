@@ -2,21 +2,17 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import sys
-from pathlib import Path
 from typing import List, Optional
 
 from matrix_client.client import MatrixClient
 from matrix_client.room import Room
-from pkg_resources import resource_filename
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget,
                              QMainWindow, QTabWidget)
 
-from . import __about__, accounts, chat, events, homepage, usertree
+from . import STYLESHEET, __about__, accounts, chat, events, homepage, usertree
 from .caches import DISPLAY_NAMES
-
-STYLESHEET = resource_filename(__about__.__name__, "stylesheet.qss")
 
 
 class HarmonyQt(QMainWindow):
@@ -30,7 +26,7 @@ class HarmonyQt(QMainWindow):
         self.resize(min(screen.width(), 800), min(screen.height(), 600))
         # self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(0.8)
-        self.setStyleSheet(Path(STYLESHEET).read_text())
+        self.setStyleSheet(STYLESHEET)
 
         self.setDockNestingEnabled(True)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)

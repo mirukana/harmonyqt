@@ -44,6 +44,8 @@ class _DisplayNamesCache:
             if room.name:
                 return add_return(room.name)
 
+            # FIXME: SLOW
+            return
             room.update_aliases()
             if room.canonical_alias:
                 return add_return(room.canonical_alias)

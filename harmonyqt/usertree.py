@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
 
 from . import __about__
 from .caches import DISPLAY_NAMES
+from .dialogs import AcceptRoomInvite
 
 
 class UserTree(QTreeWidget):
@@ -48,8 +49,27 @@ class UserTree(QTreeWidget):
 
     def on_row_click(self, row: QTreeWidgetItem, _: int) -> None:
         if hasattr(row, "room"):
-            self.window.go_to_chat_dock(client = row.parent().client,
-                                        room   = row.room)
+            client = row.parent().client
+
+            if row.invite_by:
+                dialog = AcceptRoomInvite(
+                    client.user_id, row.text(0), row.invite_by.user_id
+                )
+                dialog.exec()
+                clicked = dialog.clickedButton()
+
+                if clicked is dialog.yes:
+                    client.join_room(row.room.room_id)
+                elif clicked is dialog.no:
+                    try:
+                        row.room.leave()
+                    except KeyError:  # matrix_client bug
+                        pass
+                    return
+                else:
+                    return
+
+            self.window.go_to_chat_dock(row.parent().client, row.room)
 
 
     @staticmethod
@@ -102,9 +122,10 @@ class UserTree(QTreeWidget):
                 f"({invite_by.user_id})\n{tooltip}"
             )
 
-        room_row         = QTreeWidgetItem(account_row)
-        room_row.room    = room
-        room_row.room_id = room.room_id
+        room_row           = QTreeWidgetItem(account_row)
+        room_row.room      = room
+        room_row.room_id   = room.room_id
+        room_row.invite_by = invite_by
         room_row.setTextAlignment(1, Qt.AlignRight)
 
         for col, txt in enumerate(texts):

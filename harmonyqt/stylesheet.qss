@@ -1,7 +1,12 @@
 /* vi: set filetype=css: */
 
-QWidget {
+QWidget, QMessageBox {
     background-color: rgb(10, 10, 10);
     color:            rgb(200, 200, 200);
     font-size:        16px;
+}
+
+QMessageBox, QMessageBox QLabel {
+    background-color: rgb(5, 5, 5);
+    font-size:        14px;
 }
