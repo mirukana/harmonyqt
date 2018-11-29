@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget,
                              QMainWindow, QTabWidget)
 
 from . import STYLESHEET, __about__, accounts, chat, events, homepage, usertree
-from .caches import DISPLAY_NAMES
+from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 
 
 class HarmonyQt(QMainWindow):
@@ -66,8 +66,8 @@ class HarmonyQt(QMainWindow):
                 return
 
         chat_ = chat.Chat(window=self, client=client, room=room)
-        dock  = QDockWidget(f"{DISPLAY_NAMES.user(client)}/"
-                            f"{DISPLAY_NAMES.room(room)}",
+        dock  = QDockWidget(f"{USER_DISPLAY_NAMES.get(client)}/"
+                            f"{ROOM_DISPLAY_NAMES.get(room)}",
                             self)
         dock.setWidget(chat_)
         self.tabifyDockWidget(self.home_dock, dock)

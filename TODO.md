@@ -21,6 +21,4 @@
 
 - Event lock per account
 
-- Invalidate name cache when needed
-
 - Fix crash when trying to chat with System Alert

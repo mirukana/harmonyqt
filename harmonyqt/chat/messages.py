@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
 from .. import accounts
-from ..caches import DISPLAY_NAMES
+from ..caches import USER_DISPLAY_NAMES
 
 
 class MessageList(QTextBrowser):
@@ -71,7 +71,7 @@ class MessageList(QTextBrowser):
         with self._lock:  # Ensures messages are posted in the right order
             sender = User(self.chat.client, msg["sender"])
             extra  = {
-                "name":      DISPLAY_NAMES.user(sender),  # cached
+                "name":      USER_DISPLAY_NAMES.get(sender),  # cached
                 "date_time": QDateTime.\
                              fromMSecsSinceEpoch(msg["origin_server_ts"])
             }

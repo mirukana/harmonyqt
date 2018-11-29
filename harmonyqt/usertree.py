@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
                              QTreeWidgetItemIterator)
 
 from . import __about__
-from .caches import DISPLAY_NAMES
+from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 from .dialogs import AcceptRoomInvite
 
 
@@ -95,7 +95,7 @@ class UserTree(QTreeWidget):
         row         = QTreeWidgetItem(self)
         row.client  = client
         row.user_id = client.user_id
-        row.setText(0, f"• {DISPLAY_NAMES.user(client)}")
+        row.setText(0, f"• {USER_DISPLAY_NAMES.get(client)}")
         row.setToolTip(0, client.user_id)
 
 
@@ -112,13 +112,13 @@ class UserTree(QTreeWidget):
             account_row = self._find_row(self, "client", client)
             time.sleep(0.05)
 
-        texts   = [DISPLAY_NAMES.room(room)]
+        texts   = [ROOM_DISPLAY_NAMES.get(room)]
         tooltip = "\n".join(room.aliases + [room.room_id])
 
         if invite_by:
             texts.append("?")
             tooltip = (
-                f"Pending invitation from {DISPLAY_NAMES.user(invite_by)} "
+                f"Pending invitation from {USER_DISPLAY_NAMES.get(invite_by)} "
                 f"({invite_by.user_id})\n{tooltip}"
             )
 
