@@ -3,81 +3,59 @@
 
 import json
 import os
-from collections import namedtuple
+from collections import UserDict
 from multiprocessing.pool import ThreadPool
-from typing import Dict, List, Optional
-from urllib.parse import urlparse
+from typing import Optional
 
 from matrix_client.client import MatrixClient
-from matrix_client.user import User
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
+from PyQt5.QtWidgets import QMainWindow
 
 from .__about__ import __pkg_name__
-
-AccountTuple = namedtuple("AccountTuple", ("client", "user"))
-
-CredentialsType    = List[Dict[str, str]]
-LoggedAccountsType = Dict[str, AccountTuple]
 
 LOAD_NUM_EVENTS_ON_START = 20
 
 
-def load_json(path: Optional[str] = None) -> CredentialsType:
-    path_suffix = f"{__pkg_name__}{os.sep}accounts.json"
+class _SignalObject(QObject):
+    # Signals can only be emited from QObjects, but AccountManager
+    # can't inherit from it because of metaclass conflict.
+    login = pyqtSignal(MatrixClient)
 
-    path = path or QStandardPaths.locate(
-        QStandardPaths.ConfigLocation, path_suffix
-    )
-    try:
-        with open(path, "r") as file:
-            return json.loads(file.read())
-    except FileNotFoundError:
-        paths = QStandardPaths.standardLocations(QStandardPaths.ConfigLocation)
-        paths = [f"{p}{os.sep}{path_suffix}" for p in paths]
 
-        example = [{"server_url": "https://matrix.org",
-                    "user_id":    "@foo:matrix.org",
-                    "password":   "1234"}]
+class AccountManager(UserDict):
+    def __init__(self,
+                 window:      Optional[QMainWindow] = None,
+                 initialdata: Optional[dict]        = None) -> None:
+        super().__init__(initialdata)
+        self.window   = window
+        self.signal   = None
+        self._pool    = ThreadPool(8)
 
-        example2 = [example[0], example[0].copy()]
-        example2[1]["user_id"]  = "@account2:matrix.org"
-        example2[1]["password"] = "abc456"
+        if self.window:
+            self.signal = _SignalObject()
 
-        example  = json.dumps(example)
-        example2 = json.dumps(example2).replace("}, {", "},\n   {")
 
-        raise FileNotFoundError(
-            f"\nMissing accounts config file. "
-            f"Possible locations:\n  {str(paths).strip('[]')}\n\n"
-            f"Example format: \n  {example}\n\n"
-            f"Example with two accounts: \n  {example2}"
+    def login(self, server_url: str, user_id: str, password: str) -> None:
+        def get_client() -> MatrixClient:
+            client = MatrixClient(server_url,
+                                  sync_filter_limit=LOAD_NUM_EVENTS_ON_START)
+            client.login(user_id, password, sync=False)
+            self.signal.login.emit(client)
+            self.data[user_id] = client
+
+        self._pool.apply_async(get_client)
+
+
+    def login_using_config(self, path: Optional[str] = None) -> None:
+        path_suffix = f"{__pkg_name__}{os.sep}accounts.json"
+
+        path = path or QStandardPaths.locate(
+            QStandardPaths.ConfigLocation, path_suffix
         )
 
+        with open(path, "r") as file:
+            accounts = json.loads(file.read())
 
-def login(accounts:  CredentialsType = None,
-          device_id: str             = "harmonyqt") -> LoggedAccountsType:
-
-    result = {}
-
-    def login_account(server: str, user: str, pw: str) -> None:
-        # Don't sync at login, wait for the EventManager to start listening.
-        client = MatrixClient(server,
-                              sync_filter_limit=LOAD_NUM_EVENTS_ON_START)
-
-        if not user.startswith("@"):
-            netloc = urlparse(server).netloc
-            user   = f"@{user}:{netloc}"
-
-        client.login(username=user, password=pw, device_id=device_id,
-                     sync=False)
-
-        user                 = User(client, user)
-        result[user.user_id] = AccountTuple(client=client, user=user)
-
-    accounts = accounts or load_json()
-    args     = [(acc["server_url"], acc["user_id"], acc["password"])
-                for acc in accounts]
-
-    ThreadPool(6).starmap(login_account, args)
-    return result
+        for acc in accounts:
+            self.login(**acc)

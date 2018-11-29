@@ -5,13 +5,15 @@ import time
 from threading import Event, Lock, Thread
 from typing import Optional
 
+from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor, QTextTableFormat
 from PyQt5.QtWidgets import QTextBrowser
 
-from . import Chat, get_cached_user
+from . import Chat
 from .. import accounts
+from ..caches import DISPLAY_NAMES
 
 
 class MessageList(QTextBrowser):
@@ -51,14 +53,14 @@ class MessageList(QTextBrowser):
 
 
     def process_events(self) -> None:
-        user_id = self.chat.user.user_id
+        user_id = self.chat.client.user_id
         room_id = self.chat.room.room_id
 
         while True:
             try:
                 msg = self.chat.window.events.messages[user_id][room_id].get()
             except KeyError:
-                time.sleep(0.1)
+                time.sleep(0.05)
             else:
                 Thread(target = self.add_message,
                        args   = (msg,),
@@ -67,10 +69,9 @@ class MessageList(QTextBrowser):
 
     def add_message(self, msg: dict, to_top: bool = False) -> None:
         with self._lock:  # Ensures messages are posted in the right order
-            sender = get_cached_user(self.chat.room.client, msg["sender"])
+            sender = User(self.chat.client, msg["sender"])
             extra  = {
-                "sender":    sender,
-                "name":      sender.get_display_name(),  # cached
+                "name":      DISPLAY_NAMES.user(sender),  # cached
                 "date_time": QDateTime.\
                              fromMSecsSinceEpoch(msg["origin_server_ts"])
             }
@@ -119,7 +120,7 @@ class MessageList(QTextBrowser):
     def _load_history_chunk(self) -> None:
         self._adding_history.set()
 
-        result = self.chat.room.client.api.get_room_messages(
+        result = self.chat.client.api.get_room_messages(
             room_id   = self.chat.room.room_id,
             token     = self.history_token or self.chat.room.prev_batch,
             direction = "b",  # backward

@@ -4,7 +4,7 @@
 """<SHORTDESC>"""
 
 __pkg_name__ = "harmonyqt"
-__version__  = "0.1.1"
+__version__  = "0.2.0"
 __status__   = "Development"
 # __status__ = "Production"
 

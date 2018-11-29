@@ -1,5 +1,4 @@
 - Fix floating docks opacity
-- Make the user dock take less default width 
 - Window flags?
 - QMainWindow Storing State
 - Tabs middle click to close, hide title bar?
@@ -19,3 +18,9 @@
   - fix scroll up history
 
 - GUI account management, create missing accounts.json if needed
+
+- Event lock per account
+
+- Invalidate name cache when needed
+
+- Fix crash when trying to chat with System Alert

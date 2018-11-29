@@ -3,4 +3,4 @@
 
 from .__about__ import __doc__
 
-from . import accounts, usertree, chat, main
+from . import caches, accounts, usertree, chat, main

@@ -1,60 +1,133 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-# pylint: disable=no-name-in-module
-# from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem
+import time
+from typing import Optional
 
-from . import __about__, accounts
+from matrix_client.client import MatrixClient
+from matrix_client.room import Room
+from matrix_client.user import User
+# pylint: disable=no-name-in-module
+from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
+                             QTreeWidget, QTreeWidgetItem,
+                             QTreeWidgetItemIterator)
+
+from . import __about__
+from .caches import DISPLAY_NAMES
 
 
 class UserTree(QTreeWidget):
-    def __init__(self,
-                 accs:   accounts.LoggedAccountsType,
-                 window: QMainWindow) -> None:
+    room_added_signal = pyqtSignal(MatrixClient, Room)
+
+
+    def __init__(self, window: QMainWindow) -> None:
         super().__init__(window)
         self.window = window
 
-        self.setColumnCount(1)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+        self.setColumnCount(2)  # avatar/name; indicator
         self.setUniformRowHeights(True)
         self.setAnimated(True)
         self.setAutoExpandDelay(500)
-        self.setHeaderHidden(True)
+        self.setHeaderHidden(True)           # TODO: customizable cols
         self.setExpandsOnDoubleClick(False)  # double click = open page
         # self.setIndentation(0)
+        # self.setSortingEnabled(True)
+
+        self.header().setMinimumSectionSize(0)
+        self.header().setStretchLastSection(False)
+        self.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
         self.itemActivated.connect(self.on_row_click)
 
-        self.accounts = accs
-        self.build_rows()
-        # self.setSortingEnabled(True)
-        self.expandToDepth(0)
-
-
-    def build_rows(self) -> None:
-        for i_acc, (user_id, account) in enumerate(self.accounts.items()):
-            if i_acc > 0:
-                QTreeWidgetItem(self)
-
-            account_row      = QTreeWidgetItem(self)
-            account_row.user = account.user
-            display_name     = account.user.get_display_name()
-            account_row.setText(0, f"• {display_name}")
-            account_row.setToolTip(0, user_id)
-
-            for room_id, room in account.client.rooms.items():
-                room_row      = QTreeWidgetItem(account_row)
-                room_row.room = room
-                room_row.setText(0, room.display_name)
-                room_row.setToolTip(0, "\n".join(room.aliases + [room_id]))
-
-                for member in room.get_joined_members():
-                    member_row        = QTreeWidgetItem(room_row)
-                    member_row.member = member
-                    member_row.setText(0, f"• {member.get_display_name()}")
-                    member_row.setToolTip(0, member.user_id)
+        self.room_added_signal.connect(self.expand_to_rooms)
+        self.window.accounts.signal.login.connect(self.add_account)
 
 
     def on_row_click(self, row: QTreeWidgetItem, _: int) -> None:
         if hasattr(row, "room"):
-            self.window.go_to_chat_dock(row.room, row.parent().user)
+            self.window.go_to_chat_dock(client = row.parent().client,
+                                        room   = row.room)
+
+
+    @staticmethod
+    def _find_row(parent, attr: Optional[str] = None, value = None
+                 ) -> Optional[QTreeWidgetItem]:
+        tree_iter = QTreeWidgetItemIterator(parent)
+
+        while tree_iter.value():
+            row = tree_iter.value()
+            if not attr:
+                return row
+            if getattr(row, attr, None) == value:
+                return row
+            tree_iter += 1
+
+        return None
+
+
+    def add_account(self, client: MatrixClient) -> None:
+        if self._find_row(self):   # If other account rows exists:
+            QTreeWidgetItem(self)  # blank row separator
+
+        row         = QTreeWidgetItem(self)
+        row.client  = client
+        row.user_id = client.user_id
+        row.setText(0, f"• {DISPLAY_NAMES.user(client)}")
+        row.setToolTip(0, client.user_id)
+
+
+    def add_room(self,
+                 client:    MatrixClient,
+                 room:      Room,
+                 invite_by: Optional[User] = None) -> None:
+
+        if client.user_id not in self.window.accounts:
+            raise ValueError(f"Account {client.user_id!r} not logged in.")
+
+        account_row = None
+        while not account_row:
+            account_row = self._find_row(self, "client", client)
+            time.sleep(0.05)
+
+        texts   = [DISPLAY_NAMES.room(room)]
+        tooltip = "\n".join(room.aliases + [room.room_id])
+
+        if invite_by:
+            texts.append("?")
+            tooltip = (
+                f"Pending invitation from {DISPLAY_NAMES.user(invite_by)} "
+                f"({invite_by.user_id})\n{tooltip}"
+            )
+
+        room_row         = QTreeWidgetItem(account_row)
+        room_row.room    = room
+        room_row.room_id = room.room_id
+        room_row.setTextAlignment(1, Qt.AlignRight)
+
+        for col, txt in enumerate(texts):
+            room_row.setText(col, txt)
+
+        for col in range(self.columnCount()):
+            room_row.setToolTip(col, tooltip)
+
+        self.room_added_signal.emit(client, room)
+
+
+    def remove_room(self, client: MatrixClient, room: Room) -> None:
+        account_row = self._find_row(self, "user_id", client.user_id)
+        # comparing the "room" attr with room fails
+        room_row    = self._find_row(account_row, "room_id", room.room_id)
+        account_row.removeChild(room_row)
+
+
+    def expand_to_rooms(self, *_) -> None:
+        self.expandToDepth(0)  # TODO: unless user collapsed manually
+
+
+    # pylint: disable=invalid-name
+    def sizeHint(self) -> QSize:
+        cols = sum([self.columnWidth(c) for c in range(self.columnCount())])
+        return QSize(max(cols, min(self.window.width() // 3, 360)), -1)

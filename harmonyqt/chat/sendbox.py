@@ -76,11 +76,18 @@ class SendBox(QPlainTextEdit):
 
         self.clear()
 
-        if text in ("/d",  "/debug"):
+        # command escape
+        if text.startswith("//") or text.startswith(r"\/"):
+            Thread(target=do_it, args=(text[1:],)).start()
+
+        elif text in ("/d",  "/debug"):
             import pdb
             from PyQt5.QtCore import pyqtRemoveInputHook
             pyqtRemoveInputHook()
             pdb.set_trace()  # pylint: disable=no-member
-            return
 
-        Thread(target=do_it, args=(text,)).start()
+        elif text in ("/q", "/quit"):
+            self.chat.parent().hide()
+
+        else:
+            Thread(target=do_it, args=(text,)).start()

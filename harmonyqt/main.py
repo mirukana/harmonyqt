@@ -5,36 +5,39 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from matrix_client.client import MatrixClient
 from matrix_client.room import Room
-from matrix_client.user import User
 from pkg_resources import resource_filename
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QApplication, QDockWidget, QMainWindow, QTabWidget
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget,
+                             QMainWindow, QTabWidget)
 
 from . import __about__, accounts, chat, events, homepage, usertree
+from .caches import DISPLAY_NAMES
 
-DEFAULT_STYLESHEET = resource_filename(__about__.__name__, "stylesheet.qss")
+STYLESHEET = resource_filename(__about__.__name__, "stylesheet.qss")
 
 
 class HarmonyQt(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.accounts = accounts.AccountManager(self)
+        self.events   = events.EventManager(self)
+
         self.setWindowTitle(__about__.__pkg_name__)
-        self.resize(640, 480)
+        screen = QDesktopWidget().screenGeometry()
+        self.resize(min(screen.width(), 800), min(screen.height(), 600))
         # self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(0.8)
-        self.setStyleSheet(Path(DEFAULT_STYLESHEET).read_text())
+        self.setStyleSheet(Path(STYLESHEET).read_text())
 
         self.setDockNestingEnabled(True)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
         # self.setTabShape(QTabWidget.Triangular)
 
-        self.accounts = accounts.login()
-        self.events   = events.EventManager(self.accounts)
-
         self.tree_dock = QDockWidget("Accounts", self)
-        self.tree_dock.setWidget(usertree.UserTree(self.accounts, self))
+        self.tree_dock.setWidget(usertree.UserTree(self))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.tree_dock)
 
         self.home_dock = QDockWidget("Home", self)
@@ -48,26 +51,40 @@ class HarmonyQt(QMainWindow):
         self.chat_docks = []
 
         self.show()
+        try:
+            self.accounts.login_using_config()
+        except FileNotFoundError:
+            pass
 
 
-    def go_to_chat_dock(self, room: Room, user: User) -> None:
+
+    def go_to_chat_dock(self, client: MatrixClient, room: Room) -> None:
         def go(dock: QDockWidget) -> None:
             dock.show()
             dock.raise_()
             dock.widget().sendbox.setFocus()
 
         for dock in self.chat_docks:
-            if dock.widget().room == room and dock.widget().user == user:
+            if dock.widget().room == room and dock.widget().client == client:
                 go(dock)
                 return
 
-        chat_ = chat.Chat(room=room, user=user, window=self)
-        dock  = QDockWidget(f"{user.get_display_name()}: {room.display_name}",
+        chat_ = chat.Chat(window=self, client=client, room=room)
+        dock  = QDockWidget(f"{DISPLAY_NAMES.user(client)}/"
+                            f"{DISPLAY_NAMES.room(room)}",
                             self)
         dock.setWidget(chat_)
         self.tabifyDockWidget(self.home_dock, dock)
         go(dock)
         self.chat_docks.append(dock)
+
+
+    def remove_chat_dock(self, client: MatrixClient, room: Room) -> None:
+        for i, dock in enumerate(self.chat_docks):
+            if dock.widget().room.room_id   == room.room_id and \
+               dock.widget().client.user_id == client.user_id:
+                dock.hide()
+                del self.chat_docks[i]
 
 
 def run(argv: Optional[List[str]] = None) -> None:
