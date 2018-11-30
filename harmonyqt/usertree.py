@@ -110,20 +110,20 @@ class UserTree(QTreeWidget):
         if client.user_id not in self.window.accounts:
             raise ValueError(f"Account {client.user_id!r} not logged in.")
 
-        account_row = None
-        while not account_row:
-            account_row = self._find_row(self, "client", client)
-            time.sleep(0.05)
-
-        texts   = [ROOM_DISPLAY_NAMES.get(room)]
+        texts   = [ROOM_DISPLAY_NAMES.get(room), ""]
         tooltip = "\n".join(room.aliases + [room.room_id])
 
         if invite_by:
-            texts.append("?")
+            texts[1] = "?"
             tooltip = (
                 f"Pending invitation from {USER_DISPLAY_NAMES.get(invite_by)} "
                 f"({invite_by.user_id})\n{tooltip}"
             )
+
+        account_row = None
+        while not account_row:  # retry in case of slow login
+            account_row = self._find_row(self, "client", client)
+            time.sleep(0.05)
 
         rename   = True
         room_row = self._find_row(account_row, "room_id", room.room_id)

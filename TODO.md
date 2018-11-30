@@ -19,8 +19,10 @@
 
 - GUI account management, create missing accounts.json if needed
 
-- Fix crash when trying to chat with System Alert
+- Fix crash when trying to chat with System Alert or having to accept its room
+  invite for new account
 
 - Use signals whenever possible for events
-
 - Rooms topic
+- Save cache to disk
+- Consistent account/room order across restarts
