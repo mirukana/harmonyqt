@@ -12,11 +12,12 @@ from . import USER_DISPLAY_NAMES
 
 
 class Levels(IntEnum):
-    name            = 1
-    canonical_alias = 2
+    none            = 0
+    id              = 1
+    members         = 2
     alias_0         = 3
-    members         = 4
-    id              = 5
+    canonical_alias = 4
+    name            = 5
 
 
 class RoomDisplayNames:
@@ -25,7 +26,7 @@ class RoomDisplayNames:
         self._lock  = threading.Lock()
 
         # (user_id, room_id): level
-        self._room_name_levels: Dict[(str, str), Levels]  = {}
+        self._room_levels: Dict[(str, str), Levels]  = {}
 
 
     def get(self, room: Room) -> str:
@@ -35,14 +36,14 @@ class RoomDisplayNames:
                       ) -> str:
             with self._lock:
                 for_user = "any" if same_for_everyone else user_id
-                self._room_name_levels[(for_user, room.room_id)] = level
+                self._room_levels[(for_user, room.room_id)] = level
                 self._rooms[(for_user, room.room_id)]            = name
 
             return name
 
         try:
-            return self._rooms.get(user_id, room.room_id,
-                                   self._rooms["any"][room.room_id])
+            return self._rooms.get((user_id, room.room_id),
+                                   self._rooms[("any", room.room_id)])
         except KeyError:
             if room.name:
                 return add_return(room.name, Levels.name)
@@ -72,3 +73,19 @@ class RoomDisplayNames:
             return add_return(f"{members[0]} and {len(members) - 1} others",
                               Levels.members,
                               False)
+
+
+    def notify_change(self, user_id: str, room_id: str, level: Levels) -> None:
+        cache_level = self._room_levels.get(
+            (user_id, room_id),
+            self._room_levels.get(("any", room_id), Levels.none)
+        )
+
+        if level < cache_level or not cache_level:
+            return
+
+        print("RDN_CACHE_DEL", user_id, room_id, level, cache_level, sep="  ")
+        self._rooms.pop(("any", room_id), None)
+        self._rooms.pop((user_id, room_id), None)
+        self._room_levels.pop(("any", room_id), None)
+        self._room_levels.pop((user_id, room_id), None)

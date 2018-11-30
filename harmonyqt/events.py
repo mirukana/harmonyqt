@@ -12,6 +12,9 @@ from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMainWindow
 
+from .caches import ROOM_DISPLAY_NAMES
+from .caches.rooms import Levels
+
 
 class EventManager:
     def __init__(self, window: QMainWindow) -> None:
@@ -71,6 +74,9 @@ class EventManager:
         ev    = event
         etype = event["type"]
 
+        rpc = lambda lvl: \
+              self.on_room_prop_change(client.user_id, ev["room_id"], lvl)
+
         with self._lock:
             if etype != "m.room.message":
                 _log("blue", client.user_id, ev)
@@ -83,8 +89,21 @@ class EventManager:
 
                 msg_events[ev["room_id"]].put(ev)
 
+            elif etype == "m.room.name":
+                rpc(Levels.name)
+            elif etype == "m.room.canonical_alias":
+                rpc(Levels.canonical_alias)
+            elif etype == "m.room.aliases":
+                rpc(Levels.alias_0)
+            elif etype == "m.room.member":
+                rpc(Levels.members)
+
 
     # pylint: disable=no-self-use
+    def on_room_prop_change(self, user_id: str, room_id: str, level: Levels
+                           ) -> None:
+        ROOM_DISPLAY_NAMES.notify_change(user_id, room_id, level)
+
 
     def on_presence_event(self, client: MatrixClient, event: dict) -> None:
         with self._lock:
@@ -117,7 +136,9 @@ class EventManager:
                 del self.added_rooms[i]
 
 
-def _log(color: str, *args) -> None:
+def _log(color: str, *args, force: bool = False) -> None:
+    if not force:
+        return
     import json
     args = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
     nums = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
