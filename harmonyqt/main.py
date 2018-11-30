@@ -21,6 +21,8 @@ class HarmonyQt(QMainWindow):
         self.accounts = accounts.AccountManager(self)
         self.events   = events.EventManager(self)
 
+        self.events.signal.left_room.connect(self.remove_chat_dock)
+
         self.setWindowTitle(__about__.__pkg_name__)
         screen = QDesktopWidget().screenGeometry()
         self.resize(min(screen.width(), 800), min(screen.height(), 600))
@@ -75,9 +77,9 @@ class HarmonyQt(QMainWindow):
         self.chat_docks.append(dock)
 
 
-    def remove_chat_dock(self, client: MatrixClient, room: Room) -> None:
+    def remove_chat_dock(self, client: MatrixClient, room_id: str) -> None:
         for i, dock in enumerate(self.chat_docks):
-            if dock.widget().room.room_id   == room.room_id and \
+            if dock.widget().room.room_id   == room_id and \
                dock.widget().client.user_id == client.user_id:
                 dock.hide()
                 del self.chat_docks[i]

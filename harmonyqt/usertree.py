@@ -45,9 +45,10 @@ class UserTree(QTreeWidget):
         self.room_set_signal.connect(self.expand_to_room)
 
         self.window.accounts.signal.login.connect(self.add_account)
-        self.window.events.signal.room_name_change.connect(
-            self.add_or_rename_room
-        )
+        event_sig = self.window.events.signal
+        event_sig.got_invite.connect(self.add_or_rename_room)
+        event_sig.room_name_change.connect(self.add_or_rename_room)
+        event_sig.left_room.connect(self.remove_room)
 
 
     def on_row_click(self, row: QTreeWidgetItem, _: int) -> None:
@@ -145,11 +146,11 @@ class UserTree(QTreeWidget):
         self.room_set_signal.emit(client, room, rename)
 
 
-    def remove_room(self, client: MatrixClient, room: Room) -> None:
+    def remove_room(self, client: MatrixClient, room_id: str) -> None:
         try:
             account_row = self._find_row(self, "user_id", client.user_id)
             # comparing the "room" attr with room fails
-            room_row    = self._find_row(account_row, "room_id", room.room_id)
+            room_row    = self._find_row(account_row, "room_id", room_id)
             account_row.removeChild(room_row)
         except AttributeError:  # row not found
             pass

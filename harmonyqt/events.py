@@ -19,6 +19,8 @@ from .caches.rooms import Levels
 
 class _SignalObject(QObject):
     room_name_change = pyqtSignal(MatrixClient, Room)
+    got_invite       = pyqtSignal(MatrixClient, Room, User)
+    left_room        = pyqtSignal(MatrixClient, str)
 
 
 class EventManager:
@@ -134,19 +136,14 @@ class EventManager:
 
     def on_invite_event(self, client: MatrixClient, room_id: int, state: dict
                        ) -> None:
-        self.window.tree_dock.widget().add_or_rename_room(
-            client    = client,
-            room      = Room(client, room_id),
-            invite_by = User(client, state["events"][-1]["sender"])
-        )
+        invite_by = User(client, state["events"][-1]["sender"])
+        self.signal.got_invite.emit(client, Room(client, room_id), invite_by)
         self.added_rooms.append((client.user_id, room_id))
 
 
-    def on_leave_event(self, client: MatrixClient, room_id: int, _: dict
+    def on_leave_event(self, client: MatrixClient, room_id: str, _: dict
                       ) -> None:
-        room = Room(client, room_id)
-        self.window.tree_dock.widget().remove_room(client, room)
-        self.window.remove_chat_dock(client, room)
+        self.signal.left_room.emit(client, room_id)
 
         for i, (uid, rid) in enumerate(self.added_rooms):
             if client.user_id == uid and room_id == rid:

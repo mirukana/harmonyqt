@@ -22,7 +22,10 @@
 - Fix crash when trying to chat with System Alert or having to accept its room
   invite for new account
 
-- Use signals whenever possible for events
 - Rooms topic
 - Save cache to disk
 - Consistent account/room order across restarts
+- Auto-expand only needed rows when new room appended, don't expand if user
+  collapsed manually
+
+- Window titles (don't forget dialog boxes), icon, capitalize name
