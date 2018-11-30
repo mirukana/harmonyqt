@@ -19,6 +19,8 @@
 
 - GUI account management, create missing accounts.json if needed
 
-- Event lock per account
-
 - Fix crash when trying to chat with System Alert
+
+- Use signals whenever possible for events
+
+- Rooms topic

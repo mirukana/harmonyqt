@@ -19,7 +19,7 @@ from .dialogs import AcceptRoomInvite
 
 
 class UserTree(QTreeWidget):
-    room_added_signal = pyqtSignal(MatrixClient, Room)
+    room_set_signal = pyqtSignal(MatrixClient, Room, bool)
 
 
     def __init__(self, window: QMainWindow) -> None:
@@ -42,9 +42,12 @@ class UserTree(QTreeWidget):
         self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
         self.itemActivated.connect(self.on_row_click)
+        self.room_set_signal.connect(self.expand_to_room)
 
-        self.room_added_signal.connect(self.expand_to_rooms)
         self.window.accounts.signal.login.connect(self.add_account)
+        self.window.events.signal.room_name_change.connect(
+            self.add_or_rename_room
+        )
 
 
     def on_row_click(self, row: QTreeWidgetItem, _: int) -> None:
@@ -99,10 +102,10 @@ class UserTree(QTreeWidget):
         row.setToolTip(0, client.user_id)
 
 
-    def add_room(self,
-                 client:    MatrixClient,
-                 room:      Room,
-                 invite_by: Optional[User] = None) -> None:
+    def add_or_rename_room(self,
+                           client:    MatrixClient,
+                           room:      Room,
+                           invite_by: Optional[User] = None) -> None:
 
         if client.user_id not in self.window.accounts:
             raise ValueError(f"Account {client.user_id!r} not logged in.")
@@ -122,7 +125,12 @@ class UserTree(QTreeWidget):
                 f"({invite_by.user_id})\n{tooltip}"
             )
 
-        room_row           = QTreeWidgetItem(account_row)
+        rename   = True
+        room_row = self._find_row(account_row, "room_id", room.room_id)
+        if not room_row:
+            room_row = QTreeWidgetItem(account_row)
+            rename   = False
+
         room_row.room      = room
         room_row.room_id   = room.room_id
         room_row.invite_by = invite_by
@@ -134,17 +142,25 @@ class UserTree(QTreeWidget):
         for col in range(self.columnCount()):
             room_row.setToolTip(col, tooltip)
 
-        self.room_added_signal.emit(client, room)
+        self.room_set_signal.emit(client, room, rename)
 
 
     def remove_room(self, client: MatrixClient, room: Room) -> None:
-        account_row = self._find_row(self, "user_id", client.user_id)
-        # comparing the "room" attr with room fails
-        room_row    = self._find_row(account_row, "room_id", room.room_id)
-        account_row.removeChild(room_row)
+        try:
+            account_row = self._find_row(self, "user_id", client.user_id)
+            # comparing the "room" attr with room fails
+            room_row    = self._find_row(account_row, "room_id", room.room_id)
+            account_row.removeChild(room_row)
+        except AttributeError:  # row not found
+            pass
 
 
-    def expand_to_rooms(self, *_) -> None:
+    # pylint: disable=unused-argument
+    def expand_to_room(self, client: MatrixClient, room: Room, is_rename: bool
+                      ) -> None:
+        if is_rename:
+            return
+
         self.expandToDepth(0)  # TODO: unless user collapsed manually
 
 

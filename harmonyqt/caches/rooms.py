@@ -84,7 +84,7 @@ class RoomDisplayNames:
         if level < cache_level or not cache_level:
             return
 
-        print("RDN_CACHE_DEL", user_id, room_id, level, cache_level, sep="  ")
+        print("RDN_CACHE_DEL", user_id, room_id, cache_level, level, sep="   ")
         self._rooms.pop(("any", room_id), None)
         self._rooms.pop((user_id, room_id), None)
         self._room_levels.pop(("any", room_id), None)

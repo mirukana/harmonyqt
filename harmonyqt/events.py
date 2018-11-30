@@ -10,15 +10,21 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 from matrix_client.user import User
 # pylint: disable=no-name-in-module
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
 
 from .caches import ROOM_DISPLAY_NAMES
 from .caches.rooms import Levels
 
 
+class _SignalObject(QObject):
+    room_name_change = pyqtSignal(MatrixClient, Room)
+
+
 class EventManager:
     def __init__(self, window: QMainWindow) -> None:
         self.window = window
+        self.signal = _SignalObject()
         # self.messages[client.user_id[room.room_id[Queue[event]]]
         self.messages: Dict[str, Dict[str, Queue]] = {}
         # (user_id, room_id)
@@ -58,14 +64,35 @@ class EventManager:
         # join events aren't all published/caught using a normal listener
         tree = self.window.tree_dock.widget()
 
+        watch_attrs = {
+            "name":               (Levels.name,            {}),
+            "canonical_alias":    (Levels.canonical_alias, {}),
+            "aliases":            (Levels.alias_0,         {}),
+            "get_joined_members": (Levels.members,         {}),
+        }
+
         while True:
             # tuple() to prevent problems if dict changes size during iteration
             for room in tuple(client.rooms.values()):
-                if (client.user_id, room.room_id) in self.added_rooms:
-                    continue
+                ids = (client.user_id, room.room_id)
 
-                tree.add_room(client=client, room=room)
-                self.added_rooms.append((client.user_id, room.room_id))
+                if ids not in self.added_rooms:
+                    tree.add_or_rename_room(client=client, room=room)
+                    self.added_rooms.append(ids)
+
+                for attr, (level, prev_values) in watch_attrs.items():
+                    if ids not in prev_values:
+                        prev_values[ids] = None
+
+                    value_now = getattr(room, attr)
+                    if callable(value_now):
+                        value_now = value_now()
+
+                    if value_now != prev_values[ids]:
+                        # print(f"VALCHANGE   {attr:18}",
+                              # ids, prev_values[ids], value_now, sep="   ")
+                        self.on_room_prop_change(client, room, level)
+                        watch_attrs[attr][1][ids] = value_now
 
             time.sleep(0.2)
 
@@ -73,9 +100,6 @@ class EventManager:
     def on_event(self, client: MatrixClient, event: dict) -> None:
         ev    = event
         etype = event["type"]
-
-        rpc = lambda lvl: \
-              self.on_room_prop_change(client.user_id, ev["room_id"], lvl)
 
         with self._lock:
             if etype != "m.room.message":
@@ -89,20 +113,13 @@ class EventManager:
 
                 msg_events[ev["room_id"]].put(ev)
 
-            elif etype == "m.room.name":
-                rpc(Levels.name)
-            elif etype == "m.room.canonical_alias":
-                rpc(Levels.canonical_alias)
-            elif etype == "m.room.aliases":
-                rpc(Levels.alias_0)
-            elif etype == "m.room.member":
-                rpc(Levels.members)
-
 
     # pylint: disable=no-self-use
-    def on_room_prop_change(self, user_id: str, room_id: str, level: Levels
+    def on_room_prop_change(self,
+                            client: MatrixClient, room: Room, level: Levels
                            ) -> None:
-        ROOM_DISPLAY_NAMES.notify_change(user_id, room_id, level)
+        ROOM_DISPLAY_NAMES.notify_change(client.user_id, room.room_id, level)
+        self.signal.room_name_change.emit(client, room)
 
 
     def on_presence_event(self, client: MatrixClient, event: dict) -> None:
@@ -117,7 +134,7 @@ class EventManager:
 
     def on_invite_event(self, client: MatrixClient, room_id: int, state: dict
                        ) -> None:
-        self.window.tree_dock.widget().add_room(
+        self.window.tree_dock.widget().add_or_rename_room(
             client    = client,
             room      = Room(client, room_id),
             invite_by = User(client, state["events"][-1]["sender"])
