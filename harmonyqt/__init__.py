@@ -10,4 +10,6 @@ with open(resource_filename(__about__.__name__, "stylesheet.qss"), "r") as ss:
     STYLESHEET = ss.read()
 
 # pylint: disable=wrong-import-position
-from . import accounts, caches, chat, main, usertree
+from . import (caches, dialogs,
+               accounts, events, actions, chat, usertree,
+               homepage, toolbar, main)

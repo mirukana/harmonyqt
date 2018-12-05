@@ -9,11 +9,13 @@
   - bindings: ctrl-w/a/e, alt-shift-i/a
   - markdown
   - spell check?
+  - fix first line break hiding first line
 
 - Chat
   - Instant message display when sending one without waiting for server
   - Smooth animated scroll
   - up/down normal scroll, alt+up/down or something for message-message scroll
+  - fix blank lines
 
   - fix scroll up history
 
@@ -22,6 +24,9 @@
 - Fix crash when trying to chat with System Alert or having to accept its room
   invite for new account
 
+- Handle user display name changes
+- Room-specific display names
+
 - Rooms topic
 - Save cache to disk
 - Consistent account/room order across restarts
@@ -29,3 +34,9 @@
   collapsed manually
 
 - Window titles (don't forget dialog boxes), icon, capitalize name
+
+- Use QActions
+
+- Create, join, leave room actions
+
+- Handle errors, avoid crashes

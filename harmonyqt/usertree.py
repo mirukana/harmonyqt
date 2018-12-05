@@ -26,7 +26,7 @@ class UserTree(QTreeWidget):
         super().__init__(window)
         self.window = window
 
-        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.setColumnCount(2)  # avatar/name; indicator
         self.setUniformRowHeights(True)
         self.setAnimated(True)

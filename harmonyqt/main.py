@@ -8,11 +8,32 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget,
-                             QMainWindow, QTabWidget)
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget, QLabel,
+                             QMainWindow, QTabWidget, QWidget)
 
-from . import STYLESHEET, __about__, accounts, chat, events, homepage, usertree
+from . import (STYLESHEET, __about__, accounts, chat, events, homepage,
+               toolbar, usertree)
 from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
+
+
+class DockTitleBar(QLabel):
+    pass
+
+
+class Dock(QDockWidget):
+    def __init__(self, title: str, parent: QWidget) -> None:
+        super().__init__(title, parent)
+        self.title_bar       = DockTitleBar(title)
+        self.title_bar_shown = True
+        self.setTitleBarWidget(DockTitleBar(title))
+
+
+    def show_title_bar(self, show: Optional[bool] = None) -> None:
+        if show is None:
+            show = not self.title_bar_shown
+
+        self.setTitleBarWidget(self.title_bar if show else QWidget())
+        self.title_bar_shown = show
 
 
 class HarmonyQt(QMainWindow):
@@ -34,19 +55,25 @@ class HarmonyQt(QMainWindow):
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
         # self.setTabShape(QTabWidget.Triangular)
 
-        self.tree_dock = QDockWidget("Accounts", self)
+        self.tree_dock = Dock("Accounts", self)
         self.tree_dock.setWidget(usertree.UserTree(self))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.tree_dock)
 
-        self.home_dock = QDockWidget("Home", self)
+        self.home_dock = Dock("Home", self)
         self.home_dock.setWidget(homepage.HomePage())
         self.home_dock.setFeatures(
             # Make it unclosable so we can always rely on it to append tabs
-            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable
+            Dock.DockWidgetMovable | Dock.DockWidgetFloatable
         )
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         self.chat_docks = []
+
+        self.actions_dock = Dock("Actions", self)
+        self.actions_dock.setWidget(toolbar.ActionsBar(self))
+        self.addDockWidget(
+            Qt.LeftDockWidgetArea, self.actions_dock, Qt.Vertical
+        )
 
         self.show()
         try:
@@ -55,9 +82,16 @@ class HarmonyQt(QMainWindow):
             pass
 
 
+    def show_dock_title_bars(self, show: Optional[bool] = None) -> None:
+        docks = (self.tree_dock, self.actions_dock, self.home_dock,
+                 *self.chat_docks)
+
+        for dock in docks:
+            dock.show_title_bar(show)
+
 
     def go_to_chat_dock(self, client: MatrixClient, room: Room) -> None:
-        def go(dock: QDockWidget) -> None:
+        def go(dock: Dock) -> None:
             dock.show()
             dock.raise_()
             dock.widget().sendbox.setFocus()
@@ -68,9 +102,9 @@ class HarmonyQt(QMainWindow):
                 return
 
         chat_ = chat.Chat(window=self, client=client, room=room)
-        dock  = QDockWidget(f"{USER_DISPLAY_NAMES.get(client)}/"
-                            f"{ROOM_DISPLAY_NAMES.get(room)}",
-                            self)
+        dock  = Dock(f"{USER_DISPLAY_NAMES.get(client)}/"
+                     f"{ROOM_DISPLAY_NAMES.get(room)}",
+                     self)
         dock.setWidget(chat_)
         self.tabifyDockWidget(self.home_dock, dock)
         go(dock)

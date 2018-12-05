@@ -22,6 +22,5 @@ class UserDisplayNames:
             return self._users[obj.user_id]
         except KeyError:
             name = obj.get_display_name()
-            with self._lock:
-                self._users[obj.user_id] = name
+            self._users[obj.user_id] = name
             return name
