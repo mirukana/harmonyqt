@@ -6,15 +6,10 @@ QWidget, QMessageBox {
     font-size:        16px;
 }
 
-DockTitleBar {
+DockTitleBar, QMenu, QMessageBox, QMessageBox QLabel {
     background-color: black;
 }
 
 ActionsBar QToolButton::menu-indicator {
     image: none
-}
-
-QMessageBox, QMessageBox QLabel, QMenu {
-    background-color: black;
-    font-size:        14px;
 }

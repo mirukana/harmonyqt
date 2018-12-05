@@ -1,9 +1,8 @@
 - Fix floating docks opacity
 - Window flags?
 - QMainWindow Storing State
-- Tabs middle click to close, hide title bar?
+- Tabs middle click to close
 - Make home page closable
-- Hide titlebars under tabs
 
 - Sendbox
   - bindings: ctrl-w/a/e, alt-shift-i/a
@@ -28,15 +27,15 @@
 - Room-specific display names
 
 - Rooms topic
-- Save cache to disk
 - Consistent account/room order across restarts
 - Auto-expand only needed rows when new room appended, don't expand if user
   collapsed manually
 
-- Window titles (don't forget dialog boxes), icon, capitalize name
-
-- Use QActions
+- Window icons
+- Focused chat dock in window title
 
 - Create, join, leave room actions
 
 - Handle errors, avoid crashes
+
+- Float/close dock title bar buttons and bindings

@@ -11,8 +11,9 @@ class AcceptRoomInvite(QMessageBox):
     def __init__(self, user_id: str, room_name: str, inviter_id: str) -> None:
         super().__init__()
         self.setStyleSheet(STYLESHEET)
+        self.setWindowTitle("Harmony - Room invitation")
 
-        self.setText(f"You (<b>{user_id}</b>) have been invited to join the "
+        self.setText(f"<b>{user_id}</b> has been invited to join the "
                      f"room <b>{room_name}</b> by <b>{inviter_id}</b>.")
 
         self.yes    = self.addButton("Accept",  QMessageBox.YesRole)

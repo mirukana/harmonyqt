@@ -8,6 +8,7 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget, QLabel,
                              QMainWindow, QTabWidget, QWidget)
 
@@ -39,12 +40,15 @@ class Dock(QDockWidget):
 class HarmonyQt(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.title_bars_shown       = True
+        self.alt_title_bars_toggled = False
+
         self.accounts = accounts.AccountManager(self)
         self.events   = events.EventManager(self)
 
         self.events.signal.left_room.connect(self.remove_chat_dock)
 
-        self.setWindowTitle(__about__.__pkg_name__)
+        self.setWindowTitle("Harmony")
         screen = QDesktopWidget().screenGeometry()
         self.resize(min(screen.width(), 800), min(screen.height(), 600))
         # self.setAttribute(Qt.WA_TranslucentBackground)
@@ -83,11 +87,16 @@ class HarmonyQt(QMainWindow):
 
 
     def show_dock_title_bars(self, show: Optional[bool] = None) -> None:
+        if show is None:
+            show = not self.title_bars_shown
+
         docks = (self.tree_dock, self.actions_dock, self.home_dock,
                  *self.chat_docks)
 
         for dock in docks:
             dock.show_title_bar(show)
+
+        self.title_bars_shown = show
 
 
     def go_to_chat_dock(self, client: MatrixClient, room: Room) -> None:
@@ -117,6 +126,20 @@ class HarmonyQt(QMainWindow):
                dock.widget().client.user_id == client.user_id:
                 dock.hide()
                 del self.chat_docks[i]
+
+
+    # pylint: disable=invalid-name
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if not self.title_bars_shown and not self.alt_title_bars_toggled and \
+           event.key() == Qt.Key_Alt:
+            self.show_dock_title_bars(True)
+            self.alt_title_bars_toggled = True
+
+
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if self.alt_title_bars_toggled and event.key() == Qt.Key_Alt:
+            self.show_dock_title_bars(False)
+            self.alt_title_bars_toggled = False
 
 
 def run(argv: Optional[List[str]] = None) -> None:
