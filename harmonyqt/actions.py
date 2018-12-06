@@ -1,18 +1,15 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import os
+import webbrowser
 from typing import List
 
-from pkg_resources import resource_filename
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QMenu, QWidget
 
-from . import __about__
-
-ICON_PACK = resource_filename(__about__.__name__, "icons/placeholder_white")
+from . import __about__, dialogs, main
 
 KEYS_BOUND = {}
 
@@ -45,7 +42,7 @@ class Action(QAction):
             self.setToolTip(tooltip)
 
         if icon:
-            self.setIcon(QIcon(icon))
+            self.setIcon(main.get_icon(icon))
 
         if shortcut:
             self.setShortcutContext(Qt.ApplicationShortcut)
@@ -57,7 +54,6 @@ class Action(QAction):
                 pass
 
         self.triggered.connect(self.on_trigger)
-
 
     def on_trigger(self, checked: bool) -> None:
         pass
@@ -80,7 +76,7 @@ class NewChat(Action):
             parent   = parent,
             text     = "&New chat",
             tooltip  = "Create/join a chat room",
-            icon     = f"{ICON_PACK}{os.sep}new_chat.png",
+            icon     = "new_chat.png",
             shortcut = "Ctrl+Shift+N",
         )
         actions = [a(parent) for a in (DirectChat, CreateRoom, JoinRoom)]
@@ -93,7 +89,7 @@ class DirectChat(Action):
             parent   = parent,
             text     = "&Direct chat",
             tooltip  = "Start a direct chat with another user",
-            icon     = f"{ICON_PACK}{os.sep}direct_chat.png",
+            icon     = "direct_chat.png",
             shortcut = "Ctrl+Shift+D",
         )
 
@@ -101,10 +97,10 @@ class CreateRoom(Action):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(
             parent   = parent,
-            text     = "Create &room",
+            text     = "&Create room",
             tooltip  = "Create a new chat room",
-            icon     = f"{ICON_PACK}{os.sep}create_room.png",
-            shortcut = "Ctrl+Shift+R",
+            icon     = "create_room.png",
+            shortcut = "Ctrl+Shift+C",
         )
 
 class JoinRoom(Action):
@@ -113,7 +109,7 @@ class JoinRoom(Action):
             parent   = parent,
             text     = "&Join room",
             tooltip  = "Join an existing chat room",
-            icon     = f"{ICON_PACK}{os.sep}join_room.png",
+            icon     = "join_room.png",
             shortcut = "Ctrl+Shift+J",
         )
 
@@ -126,7 +122,7 @@ class SetStatus(Action):
             parent   = parent,
             text     = "&Status",
             tooltip  = "Change status for all accounts",
-            icon     = f"{ICON_PACK}{os.sep}status_set.png",
+            icon     = "status_set.png",
             shortcut = "Ctrl+Shift+S",
         )
         actions = [a(parent) for a in (Online, Away, Invisible, Offline)]
@@ -139,7 +135,7 @@ class StatusAction(Action):
             parent   = parent,
             text     = text or f"&{name}",
             tooltip  = f"Change status for all accounts to {name.lower()}",
-            icon     = f"{ICON_PACK}{os.sep}status_{name.lower()}.png",
+            icon     = "status_{name.lower()}.png",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
         )
 
@@ -164,10 +160,40 @@ class AddAccount(Action):
         super().__init__(
             parent   = parent,
             text     = "Add &account",
-            tooltip  = "Login/register an account",
-            icon     = f"{ICON_PACK}{os.sep}add_account.png",
+            tooltip  = "Add a new account to Harmony",
+            icon     = "add_account.png",
             shortcut = "Ctrl+Shift+A",
         )
+        actions = [a(parent) for a in (Login, Register)]
+        self.setMenu(Menu(parent, actions))
+
+class Login(Action):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(
+            parent   = parent,
+            text     = "&Login",
+            tooltip  = "Login to an existing Matrix account",
+            icon     = "login.png",
+            shortcut = "Ctrl+Shift+L",
+        )
+
+    def on_trigger(self, _) -> None:
+        dialogs.Login(self.parent.window()).open_modeless()
+
+
+class Register(Action):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(
+            parent   = parent,
+            text     = "&Register",
+            tooltip  = "Register a new Matrix account",
+            icon     = "register.png",
+            shortcut = "Ctrl+Shift+R",
+        )
+
+
+    def on_trigger(self, _) -> None:
+        webbrowser.open_new_tab("https://riot.im/app")
 
 
 # Interface
@@ -179,10 +205,9 @@ class ToggleTitleBars(Action):
             text     = "&Toggle title bars",
             tooltip  = "Toggle showing dock title bars\n" \
                        "In hidden mode, hold Alt to temporarily show them",
-            icon     = f"{ICON_PACK}{os.sep}ui_view.png",
+            icon     = "ui_view.png",
             shortcut = "Ctrl+Shift+T",
         )
-
 
     def on_trigger(self, _) -> None:
         self.parent.window().show_dock_title_bars()
@@ -196,6 +221,6 @@ class Preferences(Action):
             parent   = parent,
             text     = "&Preferences",
             tooltip  = "Change preferences",
-            icon     = f"{ICON_PACK}{os.sep}preferences.png",
+            icon     = "preferences.png",
             shortcut = "Ctrl+Shift+P",
         )

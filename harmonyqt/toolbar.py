@@ -1,17 +1,11 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import os
-
-from pkg_resources import resource_filename
 # pylint: disable=no-name-in-module
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QSizePolicy, QToolBar, QToolButton,
                              QWidget)
 
-from . import __about__, actions
-
-ICON_PACK = resource_filename(__about__.__name__, "icons/placeholder_white")
+from . import __about__, actions, main
 
 
 class ActionsBar(QToolBar):
@@ -19,8 +13,7 @@ class ActionsBar(QToolBar):
         super().__init__(window)
         self.window = window
 
-        path = f"{ICON_PACK}{os.sep}toolbar_expand.png"
-        self.children()[1].setIcon(QIcon(path))
+        self.children()[1].setIcon(main.get_icon("toolbar_expand.png"))
 
         acts = [actions.SetStatus, actions.AddAccount, actions.NewChat,
                 actions.ToggleTitleBars, actions.Preferences]

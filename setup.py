@@ -27,6 +27,7 @@ setup(
 
     python_requires  = ">=3.6, <4",
     install_requires = [
+        "atomicfile",
         "setuptools",
         "PyQt5",
     ],

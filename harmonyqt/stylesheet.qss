@@ -6,10 +6,30 @@ QWidget, QMessageBox {
     font-size:        16px;
 }
 
-DockTitleBar, QMenu, QMessageBox, QMessageBox QLabel {
-    background-color: black;
+DockTitleBar, QMenu, QMessageBox, QMessageBox QLabel, QPushButton {
+    background-color: rgb(5, 5, 5);
+}
+
+QPushButton:disabled {
+    color: rgb(100, 100, 100);
+}
+
+QLineEdit {
+    background-color: rgb(20, 20, 20);
 }
 
 ActionsBar QToolButton::menu-indicator {
-    image: none
+    image: none;
+}
+
+Login InfoLine {
+    background:          black;
+    color:               rgb(0, 120, 230);
+    padding:             10px;
+    qproperty-alignment: "AlignCenter | AlignVCenter";
+
+}
+
+Login InfoLine[error=true] {
+    color: rgb(230, 0, 80);
 }

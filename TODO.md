@@ -39,3 +39,8 @@
 - Handle errors, avoid crashes
 
 - Float/close dock title bar buttons and bindings
+- View button shows open/close docks menu
+
+ - Check if invite dialog box has Alt+\_ things
+ 
+ - Status on login/register

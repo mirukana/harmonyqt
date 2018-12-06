@@ -1,6 +1,7 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import os
 import sys
 from typing import List, Optional
 
@@ -8,12 +9,12 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtGui import QIcon, QKeyEvent
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget, QLabel,
                              QMainWindow, QTabWidget, QWidget)
 
-from . import (STYLESHEET, __about__, accounts, chat, events, homepage,
-               toolbar, usertree)
+from . import (ICON_PACK, STYLESHEET, __about__, accounts, chat, events,
+               homepage, toolbar, usertree)
 from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 
 
@@ -152,3 +153,7 @@ def run(argv: Optional[List[str]] = None) -> None:
     timer.start(100)
 
     sys.exit(app.exec_())
+
+
+def get_icon(filename: str) -> QIcon:
+    return QIcon(f"{ICON_PACK}{os.sep}{filename}")

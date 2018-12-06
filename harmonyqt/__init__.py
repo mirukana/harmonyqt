@@ -9,6 +9,8 @@ from . import __about__
 with open(resource_filename(__about__.__name__, "stylesheet.qss"), "r") as ss:
     STYLESHEET = ss.read()
 
+ICON_PACK = resource_filename(__about__.__name__, "icons/placeholder_white")
+
 # pylint: disable=wrong-import-position
 from . import (caches, dialogs,
                accounts, events, actions, chat, usertree,
