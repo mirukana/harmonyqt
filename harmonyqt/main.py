@@ -153,7 +153,3 @@ def run(argv: Optional[List[str]] = None) -> None:
     timer.start(100)
 
     sys.exit(app.exec_())
-
-
-def get_icon(filename: str) -> QIcon:
-    return QIcon(f"{ICON_PACK}{os.sep}{filename}")

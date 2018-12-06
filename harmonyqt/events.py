@@ -150,7 +150,7 @@ class EventManager:
                 del self.added_rooms[i]
 
 
-def _log(color: str, *args, force: bool = True) -> None:
+def _log(color: str, *args, force: bool = False) -> None:
     if not force:
         return
     import json

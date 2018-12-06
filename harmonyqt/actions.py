@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QMenu, QWidget
 
-from . import __about__, dialogs, main
+from . import __about__, dialogs, get_icon
 
 KEYS_BOUND = {}
 
@@ -42,7 +42,7 @@ class Action(QAction):
             self.setToolTip(tooltip)
 
         if icon:
-            self.setIcon(main.get_icon(icon))
+            self.setIcon(get_icon(icon))
 
         if shortcut:
             self.setShortcutContext(Qt.ApplicationShortcut)
@@ -93,6 +93,9 @@ class DirectChat(Action):
             shortcut = "Ctrl+Shift+D",
         )
 
+    def on_trigger(self, _) -> None:
+        dialogs.DirectChat(self.parent.window()).open_modeless()
+
 class CreateRoom(Action):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(
@@ -102,6 +105,9 @@ class CreateRoom(Action):
             icon     = "create_room.png",
             shortcut = "Ctrl+Shift+C",
         )
+
+    def on_trigger(self, _) -> None:
+        dialogs.CreateRoom(self.parent.window()).open_modeless()
 
 class JoinRoom(Action):
     def __init__(self, parent: QWidget) -> None:

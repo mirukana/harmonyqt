@@ -1,73 +1,13 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Optional
-
 from matrix_client.errors import (MatrixError, MatrixHttpLibError,
                                   MatrixRequestError)
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QCheckBox, QDialog, QGridLayout, QLabel,
-                             QLineEdit, QMainWindow, QPushButton, QSizePolicy,
-                             QSpacerItem, QWidget)
+from PyQt5.QtWidgets import QCheckBox, QDialog, QMainWindow, QWidget
 
-from .. import STYLESHEET, main
-
-
-class InfoLine(QLabel):
-    def __init__(self, parent) -> None:
-        super().__init__(parent)
-        self.setProperty("error", False)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.hide()
-
-
-    def _set_to(self, text: Optional[str] = None) -> None:
-        self.setText(text)
-        if text:
-            self.show()
-        else:
-            self.hide()
-        self.style().unpolish(self)
-        self.style().polish(self)
-
-
-    def clear(self) -> None:
-        self.setProperty("error", False)
-        self._set_to(None)
-
-
-    def set_info(self, text: str) -> None:
-        self.setProperty("error", False)
-        self._set_to(text)
-
-
-    def set_err(self, text: str) -> None:
-        self.setProperty("error", True)
-        self._set_to(text)
-
-
-class Field(QWidget):
-    def __init__(self,
-                 parent:       QWidget,
-                 label:        str,
-                 placeholder : str  = "",
-                 default_text: str  = "",
-                 is_password:  bool = False) -> None:
-        super().__init__(parent)
-
-        self.grid = QGridLayout(self)
-
-        self.label = QLabel(label, parent)
-        self.grid.addWidget(self.label, 0, 0)
-
-        self.line_edit = QLineEdit(parent)
-        self.line_edit.setDragEnabled(True)
-        self.line_edit.setPlaceholderText(placeholder)
-        self.line_edit.setText(default_text)
-        if is_password:
-            self.line_edit.setEchoMode(QLineEdit.Password)
-        self.grid.addWidget(self.line_edit, 1, 0)
+from . import base
 
 
 class RememberCheckBox(QCheckBox):
@@ -77,32 +17,11 @@ class RememberCheckBox(QCheckBox):
         self.setChecked(True)
 
 
-class LoginButton(QPushButton):
+class LoginButton(base.AcceptButton):
     def __init__(self, dialog: QDialog) -> None:
-        super().__init__(main.get_icon("accept_small.png"), "&Login", dialog)
-        self.dialog = dialog
-        self.setEnabled(False)
-
-        self.text_in_fields = {}
-
-        # Button will be disabled until all these fields have a value:
-        for field in ("server", "username", "password"):
-            line_edit = getattr(self.dialog, field).line_edit
-
-            self.text_in_fields[field] = bool(line_edit.text())
-
-            line_edit.textChanged.connect(
-                lambda txt, f=field: self.on_field_change(f, txt)
-            )
-
-        self.clicked.connect(self.on_click)
-
-
-    def on_field_change(self, field: str, text: str) -> None:
-        self.text_in_fields[field] = bool(text)
-        self.setEnabled(
-            all((has_text for field, has_text in self.text_in_fields.items()))
-        )
+        super().__init__(dialog,
+                         "&Login",
+                         (dialog.server, dialog.username, dialog.password))
 
 
     def on_click(self, _) -> None:
@@ -119,37 +38,20 @@ class LoginButton(QPushButton):
         )
 
 
-class CancelButton(QPushButton):
-    def __init__(self, dialog: QDialog) -> None:
-        super().__init__(main.get_icon("cancel_small.png"), "&Cancel", dialog)
-        self.dialog = dialog
-        self.clicked.connect(self.on_click)
-
-
-    def on_click(self, _) -> None:
-        self.dialog.done(1)
-
-
-class Login(QDialog):
+class Login(base.GridDialog):
     def __init__(self, main_window: QMainWindow) -> None:
-        super().__init__(main_window)
-        self.main_window = main_window
+        super().__init__(main_window, "Login")
 
-        self.setStyleSheet(STYLESHEET)
-        self.setWindowTitle("Harmony - Login")
-        self.setWindowOpacity(0.8)
-
-        self.info_line = InfoLine(self)
-        self.server     = Field(
+        self.info_line = base.InfoLine(self)
+        self.server    = base.Field(
             self, "Server:", "scheme://domain.tld", "https://matrix.org"
         )
-        self.username = Field(self, "Username:")
-        self.password = Field(self, "Password:", is_password=True)
+        self.username = base.Field(self, "Username:")
+        self.password = base.Field(self, "Password:", is_password=True)
         self.remember = RememberCheckBox(self)
         self.login    = LoginButton(self)
-        self.cancel   = CancelButton(self)
+        self.cancel   = base.CancelButton(self)
 
-        self.grid = QGridLayout(self)
         self.add_spacer(0, 0)
         self.add_spacer(0, 3)
         # widget, from row, from col, row span, col span, align = left
@@ -170,17 +72,6 @@ class Login(QDialog):
 
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 144)
-
-
-    def add_spacer(self, row: int, col: int) -> None:
-        spc = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.grid.addItem(spc, row, col)
-
-
-    def open_modeless(self) -> None:
-        self.show()
-        self.raise_()
-        self.activateWindow()
 
 
     def on_login(self, _) -> None:
