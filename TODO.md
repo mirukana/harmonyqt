@@ -15,10 +15,9 @@
   - Smooth animated scroll
   - up/down normal scroll, alt+up/down or something for message-message scroll
   - fix blank lines
-
   - fix scroll up history
 
-- GUI account management, create missing accounts.json if needed
+- Delete account from right click
 
 - Fix crash when trying to chat with System Alert or having to accept its room
   invite for new account
@@ -34,13 +33,20 @@
 - Window icons
 - Focused chat dock in window title
 
-- Create, join, leave room actions
+- join, leave room actions
 
 - Handle errors, avoid crashes
 
 - Float/close dock title bar buttons and bindings
 - View button shows open/close docks menu
 
- - Check if invite dialog box has Alt+\_ things
+- Check if invite dialog box has Alt+\_ things
  
- - Status on login/register
+- Status on login/register
+
+- Prevent create/join/etc actions if no account logged in,
+  gray out buttons and disable shortcuts
+
+- Lower icons brightness to match the text
+
+- Fix the freeze when logging in

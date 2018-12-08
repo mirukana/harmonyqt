@@ -62,7 +62,7 @@ class Action(QAction):
 class Menu(QMenu):
     def __init__(self, parent: QWidget, actions: List[QAction]) -> None:
         super().__init__(parent)
-        self.setWindowOpacity(0.8)
+        self.setWindowOpacity(0.9)
         self.addActions(actions)
         self.setTearOffEnabled(True)
         self.setToolTipsVisible(True)

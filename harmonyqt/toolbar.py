@@ -2,6 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 # pylint: disable=no-name-in-module
+from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import (QMainWindow, QSizePolicy, QToolBar, QToolButton,
                              QWidget)
 
@@ -12,6 +13,8 @@ class ActionsBar(QToolBar):
     def __init__(self, window: QMainWindow) -> None:
         super().__init__(window)
         self.window = window
+
+        self.setIconSize(QSize(24, 24))
 
         self.children()[1].setIcon(get_icon("toolbar_expand.png"))
 

@@ -7,20 +7,22 @@ from typing import Optional
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFontMetrics, QKeyEvent
-from PyQt5.QtWidgets import QPlainTextEdit, QSizePolicy
+from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
 
 from . import Chat
 
 
 class SendBox(QPlainTextEdit):
-    def __init__(self, chat: Chat) -> None:
+    def __init__(self, area: "SendArea") -> None:
         super().__init__()
-        self.chat = chat
+        self.area = area
 
-        self.setPlaceholderText("Send a message...")
+        self.setPlaceholderText("Send a message…")
         self.setCenterOnScroll(False)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.document().setDocumentMargin(0)
 
         self.textChanged.connect(self.updateGeometry)
 
@@ -59,19 +61,11 @@ class SendBox(QPlainTextEdit):
 
     def send(self) -> None:
         def do_it(text: str) -> None:
-            self.chat.room.send_html(text)
+            self.area.chat.room.send_html(text)
 
         text = self.toPlainText()
         text = text.replace("\n", "<br>")
         if not text:
-            return
-
-        if text.startswith("/b"):
-            try:
-                limit = int(text.split()[1])
-            except IndexError:
-                limit = 10
-            self.chat.room.backfill_previous_messages(limit=limit)
             return
 
         self.clear()
@@ -87,7 +81,20 @@ class SendBox(QPlainTextEdit):
             pdb.set_trace()  # pylint: disable=no-member
 
         elif text in ("/q", "/quit"):
-            self.chat.parent().hide()
+            self.area.chat.parent().hide()
 
         else:
             Thread(target=do_it, args=(text,)).start()
+
+
+class SendArea(QWidget):
+    def __init__(self, chat: Chat) -> None:
+        super().__init__(chat)
+        self.chat = chat
+
+        self.grid = QGridLayout(self)
+        self.original_margin = self.grid.contentsMargins()
+        self.grid.setContentsMargins(0, 0, 0, 0)
+
+        self.box = SendBox(self)
+        self.grid.addWidget(self.box, 0, 0)

@@ -5,37 +5,9 @@ from matrix_client.errors import (MatrixError, MatrixHttpLibError,
                                   MatrixRequestError)
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QCheckBox, QDialog, QMainWindow, QWidget
+from PyQt5.QtWidgets import QMainWindow
 
 from . import base
-
-
-class RememberCheckBox(QCheckBox):
-    def __init__(self, parent: QWidget) -> None:
-        super().__init__("&Remember this account", parent)
-        self.setToolTip("Automatically login this account on startup")
-        self.setChecked(True)
-
-
-class LoginButton(base.AcceptButton):
-    def __init__(self, dialog: QDialog) -> None:
-        super().__init__(dialog,
-                         "&Login",
-                         (dialog.server, dialog.username, dialog.password))
-
-
-    def on_click(self, _) -> None:
-        self.dialog.info_line.set_info("Logging in...")
-
-        server   = self.dialog.server.line_edit.text()
-        user     = self.dialog.username.line_edit.text()
-        pw       = self.dialog.password.line_edit.text()
-        remember = self.dialog.remember.isChecked()
-
-        self.dialog.main_window.accounts.login(
-            server, user, pw, remember,
-            self.dialog.on_login, self.dialog.on_error
-        )
 
 
 class Login(base.GridDialog):
@@ -48,9 +20,19 @@ class Login(base.GridDialog):
         )
         self.username = base.Field(self, "Username:")
         self.password = base.Field(self, "Password:", is_password=True)
-        self.remember = RememberCheckBox(self)
-        self.login    = LoginButton(self)
-        self.cancel   = base.CancelButton(self)
+        self.remember = base.CheckBox(
+            self,
+            "&Remember this account",
+            "Automatically login this account on startup",
+            check = True,
+        )
+        self.login = base.AcceptButton(
+            self, "&Login", self.validate,
+            (self.server, self.username, self.password),
+        )
+        self.cancel = base.CancelButton(self)
+
+        blank = lambda: base.BlankLine(self)
 
         self.add_spacer(0, 0)
         self.add_spacer(0, 3)
@@ -59,19 +41,29 @@ class Login(base.GridDialog):
         self.grid.addWidget(self.server,     2, 1, 1, 2)
         self.grid.addWidget(self.username,   3, 1, 1, 2)
         self.grid.addWidget(self.password,   4, 1, 1, 2)
-        self.grid.addWidget(QWidget(),       5, 1, 1, 2)
+        self.grid.addWidget(blank(),         5, 1, 1, 2)
         self.grid.addWidget(self.remember,   6, 1, 1, 2, Qt.AlignCenter)
-        self.grid.addWidget(QWidget(),       7, 1, 1, 2)
+        self.grid.addWidget(blank(),         7, 1, 1, 2)
         self.grid.addWidget(self.login ,     8, 1, 1, 1)
         self.grid.addWidget(self.cancel,     8, 2, 1, 1)
         self.add_spacer(9, 1)
         self.add_spacer(9, 3)
 
-        for blank_row in (5, 7):
-            self.grid.setRowMinimumHeight(blank_row, 16)
-
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 144)
+
+
+    def validate(self, _) -> None:
+        self.info_line.set_info("Logging in...")
+
+        server   = self.server.line_edit.text()
+        user     = self.username.line_edit.text()
+        pw       = self.password.line_edit.text()
+        remember = self.remember.isChecked()
+
+        self.main_window.accounts.login(
+            server, user, pw, remember, self.on_login, self.on_error
+        )
 
 
     def on_login(self, _) -> None:

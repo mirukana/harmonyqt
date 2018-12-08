@@ -16,10 +16,14 @@ class Chat(QWidget):
         self.client = client
         self.room   = room
 
-        from . import messages, sendbox
-        self.messages = messages.MessageList(self)
-        self.sendbox  = sendbox.SendBox(self)
+        self.vbox = QVBoxLayout(self)
 
-        self.vbox     = QVBoxLayout(self)
+        # layout_old_margin = self.vbox.contentsMargins()
+        self.vbox.setContentsMargins(0, 0, 0, 0)
+
+        from . import messages, send_area
+        self.messages  = messages.MessageList(self)
+        self.send_area = send_area.SendArea(self)
+
         self.vbox.addWidget(self.messages)
-        self.vbox.addWidget(self.sendbox)
+        self.vbox.addWidget(self.send_area)

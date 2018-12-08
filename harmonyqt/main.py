@@ -1,7 +1,6 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import os
 import sys
 from typing import List, Optional
 
@@ -9,25 +8,31 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QIcon, QKeyEvent
+from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QDockWidget, QLabel,
                              QMainWindow, QTabWidget, QWidget)
 
-from . import (ICON_PACK, STYLESHEET, __about__, accounts, chat, events,
-               homepage, toolbar, usertree)
+from . import (STYLESHEET, __about__, accounts, chat, events, homepage,
+               toolbar, usertree)
 from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 
 
 class DockTitleBar(QLabel):
-    pass
+    # pylint: disable=invalid-name
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        super().mousePressEvent(event)
+
+        if event.button() == Qt.MiddleButton:
+            self.parent().hide()
 
 
 class Dock(QDockWidget):
-    def __init__(self, title: str, parent: QWidget) -> None:
+    def __init__(self, title: str, parent: QWidget, title_bar: bool = False
+                ) -> None:
         super().__init__(title, parent)
-        self.title_bar       = DockTitleBar(title)
-        self.title_bar_shown = True
-        self.setTitleBarWidget(DockTitleBar(title))
+        self.title_bar       = DockTitleBar(title, self)
+        self.title_bar_shown = None
+        self.show_title_bar(title_bar)
 
 
     def show_title_bar(self, show: Optional[bool] = None) -> None:
@@ -41,7 +46,7 @@ class Dock(QDockWidget):
 class HarmonyQt(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.title_bars_shown       = True
+        self.title_bars_shown       = False
         self.alt_title_bars_toggled = False
 
         self.accounts = accounts.AccountManager(self)
@@ -53,7 +58,7 @@ class HarmonyQt(QMainWindow):
         screen = QDesktopWidget().screenGeometry()
         self.resize(min(screen.width(), 800), min(screen.height(), 600))
         # self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setWindowOpacity(0.8)
+        self.setWindowOpacity(0.9)
         self.setStyleSheet(STYLESHEET)
 
         self.setDockNestingEnabled(True)
@@ -66,10 +71,6 @@ class HarmonyQt(QMainWindow):
 
         self.home_dock = Dock("Home", self)
         self.home_dock.setWidget(homepage.HomePage())
-        self.home_dock.setFeatures(
-            # Make it unclosable so we can always rely on it to append tabs
-            Dock.DockWidgetMovable | Dock.DockWidgetFloatable
-        )
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         self.chat_docks = []
@@ -104,7 +105,7 @@ class HarmonyQt(QMainWindow):
         def go(dock: Dock) -> None:
             dock.show()
             dock.raise_()
-            dock.widget().sendbox.setFocus()
+            dock.widget().send_area.box.setFocus()
 
         for dock in self.chat_docks:
             if dock.widget().room == room and dock.widget().client == client:
@@ -112,9 +113,10 @@ class HarmonyQt(QMainWindow):
                 return
 
         chat_ = chat.Chat(window=self, client=client, room=room)
-        dock  = Dock(f"{USER_DISPLAY_NAMES.get(client)}/"
-                     f"{ROOM_DISPLAY_NAMES.get(room)}",
-                     self)
+        title = (f"{USER_DISPLAY_NAMES.get(client)}: "
+                 f"{ROOM_DISPLAY_NAMES.get(room)}")
+
+        dock = Dock(title, self, self.title_bars_shown)
         dock.setWidget(chat_)
         self.tabifyDockWidget(self.home_dock, dock)
         go(dock)

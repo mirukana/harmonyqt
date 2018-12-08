@@ -1,35 +1,130 @@
 /* vi: set filetype=css: */
 
-QWidget, QMessageBox {
-    background-color: rgb(10, 10, 10);
+
+/* General style */
+
+QWidget, QMessageBox, QMainWindow::separator {
+    background-color: black;
     color:            rgb(200, 200, 200);
     font-size:        16px;
 }
 
-DockTitleBar, QMenu, QMessageBox, QMessageBox QLabel, QPushButton {
-    background-color: rgb(5, 5, 5);
+
+/* To organize */
+
+QMainWindow::separator:hover {
+    background: rgb(40, 40, 40);
+}
+
+QToolBar, QToolBar QWidget {
+    padding: 3px;
+    margin:  0px;
+}
+
+Chat SendBox {
+    background: rgb(5, 5, 5);
+    padding:    11px;
+    margin:     0px;
+}
+
+QMainWindow {  /* Affects line between MessageList and SendArea in Chat */
+    background: rgb(10, 10, 10);
+}
+
+HomePage, HomePage QLabel, Chat MessageList {
+    background: rgb(10, 10, 10);
+}
+
+HomePage QLabel {
+    color: rgb(160, 160, 160);
+}
+
+QLineEdit, QComboBox {
+    background: rgb(20, 20, 20);
 }
 
 QPushButton:disabled {
     color: rgb(100, 100, 100);
 }
 
-QLineEdit {
-    background-color: rgb(20, 20, 20);
+QCheckBox::indicator:unchecked {  /* TODO: improve */
+    border: 1px solid rgb(80, 80, 80);
 }
 
 ActionsBar QToolButton::menu-indicator {
     image: none;
 }
 
-Login InfoLine {
+
+/* Accounts */
+
+/* branch, item = left, right parts of a row*/
+QTreeView::branch:hover, QTreeView::item:hover {
+    background: rgb(40, 40, 40)
+}
+
+QTreeView::branch:selected, QTreeView::item:selected {
+    background: rgb(20, 20, 20)
+}
+
+
+/* Dialogs */
+
+QDialog, QDialog QLabel, QDialog QCheckBox, QDialog BlankLine {
+    background: rgb(10, 10, 10);
+}
+
+QDialog BlankLine {
+    min-height: 16px;
+}
+
+QDialog InfoLine {
     background:          black;
     color:               rgb(0, 120, 230);
-    padding:             10px;
+    padding:             11px;
     qproperty-alignment: "AlignCenter | AlignVCenter";
 
 }
 
-Login InfoLine[error=true] {
+QDialog InfoLine[error=true] {
     color: rgb(230, 0, 80);
+}
+
+
+/* Tabs */
+
+QTabBar {
+    background:         rgb(20, 20, 20);
+    qproperty-drawBase: 0; /* Remove bottom white line */
+}
+
+QTabBar::tab {
+    background: rgb(20, 20, 20);
+    border:     0;
+    padding:    8px;
+}
+
+QTabBar::tab:selected {
+    background: rgb(10, 10, 10);
+}
+
+
+/* Scrollbar */
+
+QScrollBar {
+    background: rgb(10, 10, 10);
+}
+
+QScrollBar:vertical   { width:  8px; }
+QScrollBar:horizontal { height: 8px; }
+
+QScrollBar::handle {
+    background:    black;
+    border:        1px solid rgb(80, 80, 80);
+    border-radius: 4px;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    width:  0;
+    height: 0;
 }

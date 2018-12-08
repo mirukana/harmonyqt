@@ -1,12 +1,12 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import (QDialog, QGridLayout, QLabel, QLineEdit,
-                             QMainWindow, QPushButton, QSizePolicy,
-                             QSpacerItem, QWidget)
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout,
+                             QLabel, QLineEdit, QMainWindow, QPushButton,
+                             QSizePolicy, QSpacerItem, QWidget)
 
 from .. import STYLESHEET, get_icon
 
@@ -52,6 +52,7 @@ class Field(QWidget):
                  label:        str,
                  placeholder : str  = "",
                  default_text: str  = "",
+                 tooltip:      str  = "",
                  is_password:  bool = False) -> None:
         super().__init__(parent)
 
@@ -68,17 +69,59 @@ class Field(QWidget):
             self.line_edit.setEchoMode(QLineEdit.Password)
         self.grid.addWidget(self.line_edit, 1, 0)
 
+        if tooltip:
+            for obj in (self.label, self.line_edit):
+                obj.setToolTip(tooltip)
+
+
+class CheckBox(QCheckBox):
+    def __init__(self,
+                 parent: QWidget, text: str, tooltip: str, check: bool = False
+                ) -> None:
+        super().__init__(text, parent)
+        self.setToolTip(tooltip)
+        self.setChecked(check)
+
+
+class ComboBox(QWidget):
+    def __init__(self,
+                 parent:  QWidget,
+                 label:   str,
+                 items:   List[str],
+                 tooltip: str = "") -> None:
+        super().__init__(parent)
+
+        self.grid = QGridLayout(self)
+
+        self.label = QLabel(label, parent)
+        self.grid.addWidget(self.label, 0, 0)
+
+        self.combo_box = QComboBox(parent)
+        self.combo_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.combo_box.setInsertPolicy(QComboBox.NoInsert)
+        self.combo_box.setMinimumWidth(192)
+        self.combo_box.addItems(items)
+        self.grid.addWidget(self.combo_box, 0, 1)
+
+        if tooltip:
+            for obj in (self.label, self.combo_box):
+                obj.setToolTip(tooltip)
+
 
 class AcceptButton(QPushButton):
     def __init__(self,
                  dialog:          QDialog,
                  text:            str             = "&Accept",
+                 on_click:        Optional[Callable[[bool], None]] = None,
                  required_fields: Sequence[Field] = ()) -> None:
         super().__init__(get_icon("accept_small.png"), text, dialog)
-        self.dialog = dialog
-        self.setEnabled(not required_fields)
-
+        self.dialog         = dialog
         self.text_in_fields = {}
+
+        self.on_click = on_click if on_click else \
+                        lambda _: self.dialog.done(0)
+
+        self.setEnabled(not required_fields)
 
         # Button will be disabled until all these fields have a value:
         for field in required_fields:
@@ -96,10 +139,6 @@ class AcceptButton(QPushButton):
         self.setEnabled(
             all((has_text for has_text in self.text_in_fields.values()))
         )
-
-
-    def on_click(self, _) -> None:
-        self.dialog.done(0)
 
 
 class CancelButton(QPushButton):
@@ -120,7 +159,7 @@ class GridDialog(QDialog):
 
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle(f"Harmony - {title}")
-        self.setWindowOpacity(0.8)
+        self.setWindowOpacity(0.9)
 
         self.grid = QGridLayout(self)
 
@@ -134,3 +173,7 @@ class GridDialog(QDialog):
         self.show()
         self.raise_()
         self.activateWindow()
+
+
+class BlankLine(QWidget):
+    pass

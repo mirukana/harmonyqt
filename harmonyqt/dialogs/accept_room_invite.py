@@ -10,7 +10,7 @@ class AcceptRoomInvite(QMessageBox):
         super().__init__()
         from .. import STYLESHEET
         self.setStyleSheet(STYLESHEET)
-        self.setWindowTitle("Harmony - Room invitation")
+        self.setWindowTitle("Harmony - Accept room invitation")
 
         self.setText(f"<b>{user_id}</b> has been invited to join the "
                      f"room <b>{room_name}</b> by <b>{inviter_id}</b>.")

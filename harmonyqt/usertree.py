@@ -9,6 +9,7 @@ from matrix_client.room import Room
 from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
                              QTreeWidget, QTreeWidgetItem,
                              QTreeWidgetItemIterator)
@@ -74,6 +75,27 @@ class UserTree(QTreeWidget):
                     return
 
             self.window.go_to_chat_dock(row.parent().client, row.room)
+            self.really_clear_selection()
+
+
+    # pylint: disable=invalid-name
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        super().keyPressEvent(event)
+
+        if event.key() == Qt.Key_Escape:
+            self.really_clear_selection()
+
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        super().mousePressEvent(event)
+
+        if not self.itemAt(event.pos()):
+            self.really_clear_selection()
+
+
+    def really_clear_selection(self) -> None:
+        self.clearSelection()
+        self.setCurrentItem(None)
 
 
     @staticmethod
