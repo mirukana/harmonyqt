@@ -1,52 +1,43 @@
-- Fix floating docks opacity
-- Window flags?
-- QMainWindow Storing State
-- Tabs middle click to close
-- Make home page closable
-
-- Sendbox
-  - bindings: ctrl-w/a/e, alt-shift-i/a
-  - markdown
-  - spell check?
-  - fix first line break hiding first line
+- Send Area
+  - Bindings: ctrl-w/a/e, alt-shift-i/a
+  - Markdown
+  - Spell check?
+  - Fix first line break hiding first line
+  - Send, upload and other buttons
 
 - Chat
+  - Room name changes: rename tabs
   - Instant message display when sending one without waiting for server
   - Smooth animated scroll
   - up/down normal scroll, alt+up/down or something for message-message scroll
   - fix blank lines
   - fix scroll up history
+  - Fix crash when trying to chat with System Alert or having to accept its room
+    invite for new account
+  - Rooms topic
 
-- Delete account from right click
+- Accounts
+  - Fix the freeze when logging in
+  - Delete account from right click
+  - Handle user display name changes
+  - Room-specific display names
+  - Consistent account/room order across restarts
+  - Auto-expand only needed rows when new room appended, don't expand if user
+    collapsed manually
 
-- Fix crash when trying to chat with System Alert or having to accept its room
-  invite for new account
+- Global
+  - Float/close dock title bar buttons and bindings
+  - Alt+things for invite msg box buttons
+  - Lower icons brightness to match the text
+  - Window icons
+  - Focused chat dock in window title
+  - Handle errors, avoid crashes
+  - Fix floating docks opacity
+  - QMainWindow Storing State
+  - Tabs middle click to close
 
-- Handle user display name changes
-- Room-specific display names
-
-- Rooms topic
-- Consistent account/room order across restarts
-- Auto-expand only needed rows when new room appended, don't expand if user
-  collapsed manually
-
-- Window icons
-- Focused chat dock in window title
-
-- join, leave room actions
-
-- Handle errors, avoid crashes
-
-- Float/close dock title bar buttons and bindings
-- View button shows open/close docks menu
-
-- Check if invite dialog box has Alt+\_ things
- 
-- Status on login/register
-
-- Prevent create/join/etc actions if no account logged in,
-  gray out buttons and disable shortcuts
-
-- Lower icons brightness to match the text
-
-- Fix the freeze when logging in
+- Actions
+  - Join and leave room
+  - View button shows open/close docks menu
+  - Prevent create/join/etc actions if no account logged in,
+    gray out buttons and disable shortcuts
