@@ -95,7 +95,7 @@ class CreateRoom(base.GridDialog):
         name     = self.name.line_edit.text()
         invitees = self.invitees.line_edit.text().split()
         public   = self.public.isChecked()
-        federate = self.invitees.line_edit.text().split()
+        federate = self.federate.isChecked()
 
         if not creator:
             self.info_line.set_err("No creator account selected")
@@ -115,6 +115,7 @@ class CreateRoom(base.GridDialog):
             )
             # pylint: disable=protected-access
             room = client._mkroom(answer["room_id"])
+            client.join_room(room.room_id)
             self.room_created_signal.emit(client, room)
 
         self._pool.apply_async(create)

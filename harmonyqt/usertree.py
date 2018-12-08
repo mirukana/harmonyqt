@@ -1,18 +1,16 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import time
-from typing import Optional
+from typing import Dict, List, Optional
 
 from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 from matrix_client.user import User
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
-                             QTreeWidget, QTreeWidgetItem,
-                             QTreeWidgetItemIterator)
+                             QTreeWidget, QTreeWidgetItem)
 
 from . import __about__
 from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
@@ -20,20 +18,18 @@ from .dialogs import AcceptRoomInvite
 
 
 class UserTree(QTreeWidget):
-    room_set_signal = pyqtSignal(MatrixClient, Room, bool)
-
-
     def __init__(self, window: QMainWindow) -> None:
         super().__init__(window)
-        self.window = window
+        self.window   = window
+        self.accounts:   Dict[str, "AccountRow"] = {}
+        self.blank_rows: List["BlankRow"]        = []
 
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-        self.setColumnCount(2)  # avatar/name; indicator
+        self.setColumnCount(2)  # avatar/name; unread msg num/invite indicator
         self.setUniformRowHeights(True)
         self.setAnimated(True)
         self.setAutoExpandDelay(500)
         self.setHeaderHidden(True)           # TODO: customizable cols
-        self.setExpandsOnDoubleClick(False)  # double click = open page
         # self.setIndentation(0)
         # self.setSortingEnabled(True)
 
@@ -42,40 +38,56 @@ class UserTree(QTreeWidget):
         self.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
-        self.itemActivated.connect(self.on_row_click)
-        self.room_set_signal.connect(self.expand_to_room)
+        self.itemActivated.connect(self.on_row_activation)
 
         self.window.accounts.signal.login.connect(self.add_account)
         event_sig = self.window.events.signal
-        event_sig.got_invite.connect(self.add_or_rename_room)
-        event_sig.room_name_change.connect(self.add_or_rename_room)
-        event_sig.left_room.connect(self.remove_room)
+        event_sig.new_room.connect(self.on_add_room)
+        event_sig.new_invite.connect(self.on_add_room)
+        event_sig.room_rename.connect(self.on_rename_room)
+        event_sig.left_room.connect(self.on_left_room)
 
 
-    def on_row_click(self, row: QTreeWidgetItem, _: int) -> None:
-        if hasattr(row, "room"):
-            client = row.parent().client
+    def add_account(self, client: MatrixClient) -> None:
+        self.accounts[client.user_id] = AccountRow(self, client)
 
-            if row.invite_by:
-                dialog = AcceptRoomInvite(
-                    client.user_id, row.text(0), row.invite_by.user_id
-                )
-                dialog.exec()
-                clicked = dialog.clickedButton()
+        root = self.invisibleRootItem()
+        root.sortChildren(0, Qt.AscendingOrder)
 
-                if clicked is dialog.yes:
-                    client.join_room(row.room.room_id)
-                elif clicked is dialog.no:
-                    try:
-                        row.room.leave()
-                    except KeyError:  # matrix_client bug
-                        pass
-                    return
-                else:
-                    return
+        for row in self.blank_rows:
+            root.removeChild(row)
 
-            self.window.go_to_chat_dock(row.parent().client, row.room)
+        for row in self.accounts.values():
+            index = root.indexOfChild(row)
+            if index > 0:
+                blank = BlankRow()  # Don't define a parent here!
+                root.insertChild(index, blank)
+                self.blank_rows.append(blank)
+
+
+
+    def on_row_activation(self, row: QTreeWidgetItem, _: int) -> None:
+        if hasattr(row, "on_activation"):
+            row.on_activation()
             self.really_clear_selection()
+
+
+    def on_add_room(self, client: MatrixClient, room: Room,
+                    invite_by: Optional[User] = None) -> None:
+        self.accounts[client.user_id].add_room(room, invite_by)
+
+
+    def on_rename_room(self, client: MatrixClient, room: Room) -> None:
+        self.accounts[client.user_id].rooms[room.room_id].update_ui()
+
+
+    def on_left_room(self, client: MatrixClient, room_id: str) -> None:
+        self.accounts[client.user_id].del_room(room_id)
+
+
+    def really_clear_selection(self) -> None:
+        self.clearSelection()
+        self.setCurrentItem(None)
 
 
     # pylint: disable=invalid-name
@@ -93,101 +105,113 @@ class UserTree(QTreeWidget):
             self.really_clear_selection()
 
 
-    def really_clear_selection(self) -> None:
-        self.clearSelection()
-        self.setCurrentItem(None)
-
-
-    @staticmethod
-    def _find_row(parent, attr: Optional[str] = None, value = None
-                 ) -> Optional[QTreeWidgetItem]:
-        tree_iter = QTreeWidgetItemIterator(parent)
-
-        while tree_iter.value():
-            row = tree_iter.value()
-            if not attr:
-                return row
-            if getattr(row, attr, None) == value:
-                return row
-            tree_iter += 1
-
-        return None
-
-
-    def add_account(self, client: MatrixClient) -> None:
-        if self._find_row(self):   # If other account rows exists:
-            QTreeWidgetItem(self)  # blank row separator
-
-        row         = QTreeWidgetItem(self)
-        row.client  = client
-        row.user_id = client.user_id
-        row.setText(0, f"• {USER_DISPLAY_NAMES.get(client)}")
-        row.setToolTip(0, client.user_id)
-
-
-    def add_or_rename_room(self,
-                           client:    MatrixClient,
-                           room:      Room,
-                           invite_by: Optional[User] = None) -> None:
-
-        if client.user_id not in self.window.accounts:
-            raise ValueError(f"Account {client.user_id!r} not logged in.")
-
-        texts   = [ROOM_DISPLAY_NAMES.get(room), ""]
-        tooltip = "\n".join(room.aliases + [room.room_id])
-
-        if invite_by:
-            texts[1] = "?"
-            tooltip = (
-                f"Pending invitation from {USER_DISPLAY_NAMES.get(invite_by)} "
-                f"({invite_by.user_id})\n{tooltip}"
-            )
-
-        account_row = None
-        while not account_row:  # retry in case of slow login
-            account_row = self._find_row(self, "client", client)
-            time.sleep(0.05)
-
-        rename   = True
-        room_row = self._find_row(account_row, "room_id", room.room_id)
-        if not room_row:
-            room_row = QTreeWidgetItem(account_row)
-            rename   = False
-
-        room_row.room      = room
-        room_row.room_id   = room.room_id
-        room_row.invite_by = invite_by
-        room_row.setTextAlignment(1, Qt.AlignRight)
-
-        for col, txt in enumerate(texts):
-            room_row.setText(col, txt)
-
-        for col in range(self.columnCount()):
-            room_row.setToolTip(col, tooltip)
-
-        self.room_set_signal.emit(client, room, rename)
-
-
-    def remove_room(self, client: MatrixClient, room_id: str) -> None:
-        try:
-            account_row = self._find_row(self, "user_id", client.user_id)
-            # comparing the "room" attr with room fails
-            room_row    = self._find_row(account_row, "room_id", room_id)
-            account_row.removeChild(room_row)
-        except AttributeError:  # row not found
-            pass
-
-
-    # pylint: disable=unused-argument
-    def expand_to_room(self, client: MatrixClient, room: Room, is_rename: bool
-                      ) -> None:
-        if is_rename:
-            return
-
-        self.expandToDepth(0)  # TODO: unless user collapsed manually
-
-
-    # pylint: disable=invalid-name
     def sizeHint(self) -> QSize:
         cols = sum([self.columnWidth(c) for c in range(self.columnCount())])
         return QSize(max(cols, min(self.window.width() // 3, 360)), -1)
+
+
+class BlankRow(QTreeWidgetItem):
+    pass
+
+
+class AccountRow(QTreeWidgetItem):
+    def __init__(self, parent: UserTree, client: MatrixClient) -> None:
+        super().__init__(parent)
+        self.user_tree: UserTree           = parent
+        self.client:    MatrixClient       = client
+        self.rooms:     Dict[str, RoomRow] = {}
+
+        self.auto_expanded_once: bool = False
+        self.update_ui()
+
+
+    def update_ui(self) -> None:
+        self.setText(0, USER_DISPLAY_NAMES.get(self.client))
+        self.setToolTip(0, self.client.user_id)
+
+
+    def add_room(self, room: Room, invite_by: Optional[User] = None) -> None:
+        self.rooms[room.room_id] = RoomRow(self, room, invite_by)
+        self.sortChildren(0, Qt.AscendingOrder)
+
+        if not self.auto_expanded_once:
+            self.setExpanded(True)  # TODO: unless user collapsed manually
+            self.auto_expanded_once = True
+
+
+    def del_room(self, room_id: str) -> None:
+        self.removeChild(self.rooms[room_id])
+        del self.rooms[room_id]
+
+
+class RoomRow(QTreeWidgetItem):
+    def __init__(self,
+                 parent:    AccountRow,
+                 room:      Room,
+                 invite_by: Optional[User] = None) -> None:
+        super().__init__(parent)
+        self.account_row: AccountRow     = parent
+        self.room:        Room           = room
+        self.invite_by:   Optional[User] = invite_by
+
+        self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
+        self.update_ui()
+
+
+    def update_ui(self) -> None:
+        texts    = [ROOM_DISPLAY_NAMES.get(self.room), ""]
+        tooltips = self.room.aliases + [self.room.room_id]
+
+        if self.invite_by:
+            texts[1] = "?"
+            tooltips.insert(
+                0, f"Pending invitation from {self.invite_by.user_id}"
+            )
+
+        for col, txt in enumerate(texts):
+            self.setText(col, txt)
+
+        tooltips = "\n".join(tooltips)
+        for col in range(self.columnCount()):
+            self.setToolTip(col, tooltips)
+
+
+    def on_activation(self) -> None:
+        client = self.account_row.client
+
+        if self.invite_by:
+            dialog = AcceptRoomInvite(
+                client.user_id, self.text(0), self.invite_by.user_id
+            )
+            dialog.exec()
+            clicked = dialog.clickedButton()
+
+            if clicked is dialog.yes:
+                self.accept_invite()
+            elif clicked is dialog.no:
+                self.decline_invite()
+            else:
+                return
+
+        self.account_row.user_tree.window.go_to_chat_dock(client, self.room)
+
+
+    def ensure_is_invited(self) -> None:
+        if not self.invite_by:
+            raise RuntimeError(f"No invitation for {self.room.room_id}.")
+
+
+    def accept_invite(self) -> None:
+        self.ensure_is_invited()
+        self.account_row.client.join_room(self.room.room_id)
+        self.invite_by = None
+        self.update_ui()
+
+
+    def decline_invite(self) -> None:
+        self.ensure_is_invited()
+        try:
+            self.room.leave()
+        except KeyError:  # matrix_client bug
+            pass
+        self.account_row.del_room(self.room.room_id)

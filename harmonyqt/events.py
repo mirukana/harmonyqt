@@ -18,8 +18,9 @@ from .caches.rooms import Levels
 
 
 class _SignalObject(QObject):
-    room_name_change = pyqtSignal(MatrixClient, Room)
-    got_invite       = pyqtSignal(MatrixClient, Room, User)
+    room_rename      = pyqtSignal(MatrixClient, Room)
+    new_room         = pyqtSignal(MatrixClient, Room)
+    new_invite       = pyqtSignal(MatrixClient, Room, User)
     left_room        = pyqtSignal(MatrixClient, str)
 
 
@@ -64,8 +65,6 @@ class EventManager:
 
     def watch_rooms(self, client: MatrixClient) -> None:
         # join events aren't all published/caught using a normal listener
-        tree = self.window.tree_dock.widget()
-
         watch_attrs = {
             "name":               (Levels.name,            {}),
             "canonical_alias":    (Levels.canonical_alias, {}),
@@ -79,7 +78,7 @@ class EventManager:
                 ids = (client.user_id, room.room_id)
 
                 if ids not in self.added_rooms:
-                    tree.add_or_rename_room(client=client, room=room)
+                    self.signal.new_room.emit(client, room)
                     self.added_rooms.append(ids)
 
                 for attr, (level, prev_values) in watch_attrs.items():
@@ -93,7 +92,10 @@ class EventManager:
                     if value_now != prev_values[ids]:
                         # print(f"VALCHANGE   {attr:18}",
                               # ids, prev_values[ids], value_now, sep="   ")
-                        self.on_room_prop_change(client, room, level)
+                        ROOM_DISPLAY_NAMES.notify_change(
+                            client.user_id, room.room_id, level
+                        )
+                        self.signal.room_rename.emit(client, room)
                         watch_attrs[attr][1][ids] = value_now
 
             time.sleep(0.2)
@@ -116,14 +118,6 @@ class EventManager:
                 msg_events[ev["room_id"]].put(ev)
 
 
-    # pylint: disable=no-self-use
-    def on_room_prop_change(self,
-                            client: MatrixClient, room: Room, level: Levels
-                           ) -> None:
-        ROOM_DISPLAY_NAMES.notify_change(client.user_id, room.room_id, level)
-        self.signal.room_name_change.emit(client, room)
-
-
     def on_presence_event(self, client: MatrixClient, event: dict) -> None:
         with self._lock:
             _log("yellow", client.user_id, event)
@@ -137,7 +131,7 @@ class EventManager:
     def on_invite_event(self, client: MatrixClient, room_id: int, state: dict
                        ) -> None:
         invite_by = User(client, state["events"][-1]["sender"])
-        self.signal.got_invite.emit(client, Room(client, room_id), invite_by)
+        self.signal.new_invite.emit(client, Room(client, room_id), invite_by)
         self.added_rooms.append((client.user_id, room_id))
 
 

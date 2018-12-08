@@ -67,7 +67,6 @@ QTreeView::branch:selected, QTreeView::item:selected {
     background: rgb(20, 20, 20)
 }
 
-
 /* Dialogs */
 
 QDialog, QDialog QLabel, QDialog QCheckBox, QDialog BlankLine {

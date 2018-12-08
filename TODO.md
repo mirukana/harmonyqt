@@ -17,13 +17,12 @@
   - Rooms topic
 
 - Accounts
-  - Fix the freeze when logging in
+  - Fix the freeze when logging in,
+    thread everywhere where cache info retrieval is needed
   - Delete account from right click
   - Handle user display name changes
   - Room-specific display names
-  - Consistent account/room order across restarts
-  - Auto-expand only needed rows when new room appended, don't expand if user
-    collapsed manually
+  - Don't expand rows if user collapsed manually
 
 - Global
   - Float/close dock title bar buttons and bindings
@@ -41,3 +40,8 @@
   - View button shows open/close docks menu
   - Prevent create/join/etc actions if no account logged in,
     gray out buttons and disable shortcuts
+
+Idea to solve freezes:  
+Execute whatever we want in threads and emit a signal with a list of args
+and kwargs that will be processed by the main thread when we need to modify
+the GUI.

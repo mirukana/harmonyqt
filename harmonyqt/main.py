@@ -53,6 +53,7 @@ class HarmonyQt(QMainWindow):
         self.events   = events.EventManager(self)
 
         self.events.signal.left_room.connect(self.remove_chat_dock)
+        self.events.signal.room_rename.connect(self.rename_chat_dock)
 
         self.setWindowTitle("Harmony")
         screen = QDesktopWidget().screenGeometry()
@@ -129,6 +130,19 @@ class HarmonyQt(QMainWindow):
                dock.widget().client.user_id == client.user_id:
                 dock.hide()
                 del self.chat_docks[i]
+
+
+    def rename_chat_dock(self, client: MatrixClient, room_id: str) -> None:
+        for dock in self.chat_docks:
+            dock_room = dock.widget().room
+
+            if dock_room.room_id != room_id or \
+               dock.widget().client.user_id != client.user_id:
+                continue
+
+            title = (f"{USER_DISPLAY_NAMES.get(client)}: "
+                     f"{ROOM_DISPLAY_NAMES.get(dock_room)}")
+            dock.setWindowTitle(title)
 
 
     # pylint: disable=invalid-name
