@@ -1,10 +1,12 @@
 # file Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import json
 import time
 from multiprocessing.pool import ThreadPool
 
 from matrix_client.client import MatrixClient
+from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -34,10 +36,10 @@ class CreateRoom(base.GridDialog):
         self.name      = base.Field(self, "Room name:")
         self.invitees  = base.Field(
             self,
-            "Users to invite:",
+            "User ID to invite:",
             "@user1:server.tld @user2:matrix.org …",
             "",
-            "Space-delimited list of users to invite to this room"
+            "Space-delimited list of user IDs to invite in this room"
         )
         self.public = base.CheckBox(
             self,
@@ -118,7 +120,16 @@ class CreateRoom(base.GridDialog):
             client.join_room(room.room_id)
             self.room_created_signal.emit(client, room)
 
-        self._pool.apply_async(create)
+        self._pool.apply_async(create, error_callback=self.on_error)
+
+
+    def on_error(self, err: Exception) -> None:
+        # Without this handler, exceptions will be silently ignored
+        if isinstance(err, MatrixRequestError):
+            data = json.loads(err.content)
+            self.info_line.set_err(data["error"].replace("user_id", "user ID"))
+        else:
+            raise err
 
 
     def on_room_created(self, client: MatrixClient, room: Room) -> None:
