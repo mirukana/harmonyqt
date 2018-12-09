@@ -36,6 +36,7 @@ class EventManager:
         self._lock = Lock()
 
         self.window.accounts.signal.login.connect(self.add_account)
+        self.window.accounts.signal.logout.connect(self.on_account_logout)
 
 
     def add_account(self, client: MatrixClient) -> None:
@@ -63,6 +64,10 @@ class EventManager:
         # TODO: room.add_state_listener
 
 
+    def on_account_logout(self, user_id: str) -> None:
+        self.added_rooms = [i for i in self.added_rooms if i[0] != user_id]
+
+
     def watch_rooms(self, client: MatrixClient) -> None:
         # join events aren't all published/caught using a normal listener
         watch_attrs = {
@@ -76,6 +81,10 @@ class EventManager:
             # tuple() to prevent problems if dict changes size during iteration
             for room in tuple(client.rooms.values()):
                 ids = (client.user_id, room.room_id)
+
+                if client.user_id not in self.window.accounts:
+                    # this is being loogging off
+                    continue
 
                 if ids not in self.added_rooms:
                     self.signal.new_room.emit(client, room)

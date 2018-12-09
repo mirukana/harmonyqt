@@ -45,6 +45,7 @@ class UserTree(QTreeWidget):
         self.itemActivated.connect(self.on_row_activation)
 
         self.window.accounts.signal.login.connect(self.add_account)
+        self.window.accounts.signal.logout.connect(self.del_account)
         event_sig = self.window.events.signal
         event_sig.new_room.connect(self.on_add_room)
         event_sig.new_invite.connect(self.on_add_room)
@@ -67,6 +68,25 @@ class UserTree(QTreeWidget):
                 blank = BlankRow()  # Don't define a parent here!
                 root.insertChild(index, blank)
                 self.blank_rows.append(blank)
+
+
+    def del_account(self, user_id: str) -> None:
+        if user_id not in self.accounts:
+            return
+
+        to_del: AccountRow = self.accounts[user_id]
+        root               = self.invisibleRootItem()
+
+        for row in self.blank_rows:
+            if root.indexOfChild(row) == root.indexOfChild(to_del) - 1:
+                root.removeChild(row)
+
+        root.removeChild(to_del)
+        del self.accounts[user_id]
+
+        first = root.child(0)
+        if isinstance(first, BlankRow):
+            root.removeChild(first)
 
 
     def on_row_activation(self, row: QTreeWidgetItem, _: int) -> None:
@@ -94,7 +114,9 @@ class UserTree(QTreeWidget):
 
 
     def on_rename_room(self, client: MatrixClient, room: Room) -> None:
-        self.accounts[client.user_id].rooms[room.room_id].update_ui()
+        rooms = self.accounts[client.user_id].rooms
+        if room.room_id in rooms:
+            rooms[room.room_id].update_ui()
 
 
     def on_left_room(self, client: MatrixClient, room_id: str) -> None:
@@ -147,7 +169,7 @@ class AccountRow(QTreeWidgetItem):
 
 
     def get_context_menu_actions(self) -> List[QAction]:
-        return [actions.DelAccount(self.user_tree, self.client)]
+        return [actions.DelAccount(self.user_tree, self.client.user_id)]
 
 
     def add_room(self, room: Room, invite_by: Optional[User] = None) -> None:

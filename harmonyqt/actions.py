@@ -4,7 +4,6 @@
 import webbrowser
 from typing import Callable, Optional, Sequence
 
-from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
@@ -210,7 +209,7 @@ class AddAccount(Action):
         self.setMenu(menu.Menu(parent, actions))
 
 class DelAccount(Action):
-    def __init__(self, parent: QWidget, client: MatrixClient) -> None:
+    def __init__(self, parent: QWidget, user_id: str) -> None:
         super().__init__(
             parent   = parent,
             icon     = "account_del.png",
@@ -220,10 +219,10 @@ class DelAccount(Action):
                         "be added again later"),
             multiselect_text = "&Remove selected accounts",
         )
-        self.client = client
+        self.user_id = user_id
 
     def on_trigger(self, _) -> None:
-        print("del account test", self.client.user_id)
+        self.parent.window.accounts.remove(self.user_id)
 
 class Login(Action):
     def __init__(self, parent: QWidget) -> None:

@@ -22,7 +22,8 @@ LOAD_NUM_EVENTS_ON_START = 20
 class _SignalObject(QObject):
     # Signals can only be emited from QObjects, but AccountManager
     # can't inherit from it because of metaclass conflict.
-    login = pyqtSignal(MatrixClient)
+    login  = pyqtSignal(MatrixClient)
+    logout = pyqtSignal(str)
 
 
 class AccountManager(UserDict):
@@ -45,17 +46,22 @@ class AccountManager(UserDict):
               remember:       bool = False,
               callback:       Optional[Callable[[MatrixClient], None]] = None,
               error_callback: Optional[Callable[[Exception], None]]    = None
-             ) -> None:
+             ) -> str:
 
         if not callback:
             callback = lambda _: None
+
+        user_id = user_id.strip()
+
+        if user_id.startswith("@") and ":" not in user_id:
+            user_id = user_id[1:]
 
         if not user_id.startswith("@"):
             user_id = f"@{user_id}:{urlparse(server_url).netloc}"
 
         if user_id in self.data:
             callback(self.data[user_id])
-            return
+            return user_id
 
         def get_client() -> MatrixClient:
             client = MatrixClient(
@@ -63,23 +69,32 @@ class AccountManager(UserDict):
             )
             client.login(user_id, password, sync=False)
 
-            self.signal.login.emit(client)
             self.data[user_id] = client
+            self.signal.login.emit(client)
 
             if remember:
                 self.config_add(server_url, user_id, password)
 
-            callback(self.data[user_id])
             return client
 
         def on_error(err: Exception) -> None:
             # Without this handler, exceptions will be silently ignored
             raise err
 
-        dummy = lambda: None
-
         self._pool.apply_async(get_client,
+                               callback       = callback,
                                error_callback = error_callback or on_error)
+        return user_id
+
+
+    def remove(self, user_id: str) -> None:
+        if user_id not in self.data:
+            return
+
+        self.signal.logout.emit(user_id)
+        self._pool.apply_async(self.data[user_id].logout)
+        del self.data[user_id]
+        self.config_del(user_id)
 
 
     @staticmethod
@@ -126,7 +141,7 @@ class AccountManager(UserDict):
                     "password":   password}
 
         for acc in accounts:
-            if acc["server_url"] == server_url and acc["user_id"] == user_id:
+            if acc["user_id"] == user_id:
                 return
 
         accounts.append(params)
@@ -135,14 +150,10 @@ class AccountManager(UserDict):
             new.write(json.dumps(accounts, indent=4, ensure_ascii=False))
 
 
-    def config_del(self, server_url: str, user_id: str, path: str = ""
-                  ) -> None:
-        path = self.get_config_path(path)
+    def config_del(self, user_id: str, path: str = "") -> None:
+        path     = self.get_config_path(path)
+        accounts = self.config_read(path)
+        accounts = [a for a in accounts if a["user_id"] != user_id]
 
         with AtomicFile(path, "w") as new:
-            accounts = self.config_read(path)
-            accounts = [
-                a for a in accounts
-                if a["server_url"] != server_url and a["user_id"] != user_id
-            ]
             new.write(json.dumps(accounts, indent=4, ensure_ascii=False))

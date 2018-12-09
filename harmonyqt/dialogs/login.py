@@ -1,6 +1,7 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+from matrix_client.client import MatrixClient
 from matrix_client.errors import (MatrixError, MatrixHttpLibError,
                                   MatrixRequestError)
 # pylint: disable=no-name-in-module
@@ -53,6 +54,10 @@ class Login(base.GridDialog):
             self.grid.setColumnMinimumWidth(half_col, 144)
 
 
+        self.expected_login_user_id: str = ""
+        self.main_window.accounts.signal.login.connect(self.on_login)
+
+
     def validate(self, _) -> None:
         self.info_line.set_info("Logging in...")
 
@@ -61,13 +66,15 @@ class Login(base.GridDialog):
         pw       = self.password.line_edit.text()
         remember = self.remember.isChecked()
 
-        self.main_window.accounts.login(
+        self.expected_login_user_id = self.main_window.accounts.login(
             server, user, pw, remember, self.on_login, self.on_error
         )
 
 
-    def on_login(self, _) -> None:
-        self.done(0)
+    def on_login(self, client: MatrixClient) -> None:
+        expected = self.expected_login_user_id
+        if expected and client.user_id == expected:
+            self.done(0)
 
 
     def on_error(self, err: Exception) -> None:
