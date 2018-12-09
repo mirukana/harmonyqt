@@ -9,12 +9,12 @@ from typing import Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 from atomicfile import AtomicFile
-from matrix_client.client import MatrixClient
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
 
 from .__about__ import __pkg_name__
+from .matrix import HMatrixClient
 
 LOAD_NUM_EVENTS_ON_START = 20
 
@@ -22,7 +22,7 @@ LOAD_NUM_EVENTS_ON_START = 20
 class _SignalObject(QObject):
     # Signals can only be emited from QObjects, but AccountManager
     # can't inherit from it because of metaclass conflict.
-    login  = pyqtSignal(MatrixClient)
+    login  = pyqtSignal(HMatrixClient)
     logout = pyqtSignal(str)
 
 
@@ -44,12 +44,8 @@ class AccountManager(UserDict):
               user_id:        str,
               password:       str,
               remember:       bool = False,
-              callback:       Optional[Callable[[MatrixClient], None]] = None,
-              error_callback: Optional[Callable[[Exception], None]]    = None
+              error_callback: Optional[Callable[[Exception], None]] = None
              ) -> str:
-
-        if not callback:
-            callback = lambda _: None
 
         user_id = user_id.strip()
 
@@ -60,11 +56,10 @@ class AccountManager(UserDict):
             user_id = f"@{user_id}:{urlparse(server_url).netloc}"
 
         if user_id in self.data:
-            callback(self.data[user_id])
             return user_id
 
-        def get_client() -> MatrixClient:
-            client = MatrixClient(
+        def get_client() -> HMatrixClient:
+            client = HMatrixClient(
                 server_url, sync_filter_limit=LOAD_NUM_EVENTS_ON_START
             )
             client.login(user_id, password, sync=False)
@@ -82,7 +77,6 @@ class AccountManager(UserDict):
             raise err
 
         self._pool.apply_async(get_client,
-                               callback       = callback,
                                error_callback = error_callback or on_error)
         return user_id
 

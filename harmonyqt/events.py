@@ -1,28 +1,28 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import time
 from queue import Queue
-from threading import Lock, Thread
-from typing import Dict, List, Tuple
+from threading import Lock
+from typing import Dict
 
-from matrix_client.client import MatrixClient
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
 
-from .caches import ROOM_DISPLAY_NAMES
-from .caches.rooms import Levels
+from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
-    # User ID, Room ID, Invited by user ID
+    # User ID, room ID
     new_account  = pyqtSignal(str)
     account_gone = pyqtSignal(str)
     new_room     = pyqtSignal(str, str)
-    new_invite   = pyqtSignal(str, str, str)
     room_rename  = pyqtSignal(str, str)
     left_room    = pyqtSignal(str, str)
+    # User ID, room ID, invited by user ID, calculated room display name
+    new_invite = pyqtSignal(str, str, str, str)
+    # User ID, room ID, new display name, new avatar URL
+    account_change = pyqtSignal(str, str, str, str)
 
 
 class EventManager:
@@ -31,8 +31,6 @@ class EventManager:
         self.signal = _SignalObject()
         # self.messages[client.user_id[room.room_id[Queue[event]]]
         self.messages: Dict[str, Dict[str, Queue]] = {}
-        # (user_id, room_id)
-        self.added_rooms: List[Tuple[str, str]] = []
 
         self._lock = Lock()
 
@@ -40,25 +38,25 @@ class EventManager:
         self.window.accounts.signal.logout.connect(self.on_account_logout)
 
 
-    def add_account(self, client: MatrixClient) -> None:
+    def add_account(self, client: HMatrixClient) -> None:
         "Setup event listeners for client. Called from AccountManager.login()."
-        self.messages[client.user_id] = {}
+        user_id = client.user_id
 
-        Thread(target=self.watch_rooms, args=(client,), daemon=True).start()
+        self.messages[user_id] = {}
 
-        client.add_listener(lambda ev, c=client: self.on_event(c, ev))
+        client.add_listener(lambda ev, u=user_id: self.on_event(u, ev))
 
         client.add_presence_listener(
-            lambda ev, c=client: self.on_presence_event(c, ev))
+            lambda ev, u=user_id: self.on_presence_event(u, ev))
 
         client.add_ephemeral_listener(
-            lambda ev, c=client: self.on_ephemeral_event(c, ev))
+            lambda ev, u=user_id: self.on_ephemeral_event(u, ev))
 
         client.add_invite_listener(
-            lambda rid, state, c=client: self.on_invite_event(c, rid, state))
+            lambda rid, state, u=user_id: self.on_invite_event(u, rid, state))
 
         client.add_leave_listener(
-            lambda rid, _, c=client: self.on_leave_event(c, rid))
+            lambda rid, _, u=user_id: self.on_leave_event(u, rid))
 
         client.start_listener_thread()
 
@@ -67,101 +65,104 @@ class EventManager:
 
 
     def on_account_logout(self, user_id: str) -> None:
-        self.added_rooms = [i for i in self.added_rooms if i[0] != user_id]
         self.signal.account_gone.emit(user_id)
 
 
-    def watch_rooms(self, client: MatrixClient) -> None:
-        # join events aren't all published/caught using a normal listener
-        watch_attrs = {
-            "name":               (Levels.name,            {}),
-            "canonical_alias":    (Levels.canonical_alias, {}),
-            "aliases":            (Levels.alias_0,         {}),
-            "get_joined_members": (Levels.members,         {}),
-        }
-
-        while True:
-            # tuple() to prevent problems if dict changes size during iteration
-            for room in tuple(client.rooms.values()):
-                ids = (client.user_id, room.room_id)
-
-                if client.user_id not in self.window.accounts:
-                    # this client is being logged off
-                    continue
-
-                if ids not in self.added_rooms:
-                    self.signal.new_room.emit(client.user_id, room.room_id)
-                    self.added_rooms.append(ids)
-
-                continue
-
-                for attr, (level, prev_values) in watch_attrs.items():
-                    if ids not in prev_values:
-                        prev_values[ids] = None
-
-                    value_now = getattr(room, attr)
-                    if callable(value_now):
-                        value_now = value_now()
-
-                    if value_now != prev_values[ids]:
-                        # print(f"VALCHANGE   {attr:18}",
-                              # ids, prev_values[ids], value_now, sep="   ")
-                        ROOM_DISPLAY_NAMES.notify_change(
-                            client.user_id, room.room_id, level
-                        )
-                        self.signal.room_rename.emit(client, room.room_id)
-                        watch_attrs[attr][1][ids] = value_now
-
-            time.sleep(0.2)
-
-
-    def on_event(self, client: MatrixClient, event: dict) -> None:
+    def on_event(self, user_id: str, event: dict) -> None:
         ev    = event
-        etype = event["type"]
+        etype = event.get("type")
 
-        with self._lock:
-            if etype != "m.room.message":
-                _log("blue", client.user_id, ev, force=True)
+        if etype == "m.room.member" and ev.get("membership") == "join":
+            self.signal.new_room.emit(user_id, ev["room_id"])
 
-            if etype == "m.room.message":
-                msg_events = self.messages[client.user_id]
+            if ev.get("state_key") in self.window.accounts:
+                prev = ev.get("unsigned", {}).get("prev_content")
+                new  = ev.get("content")
 
-                if ev["room_id"] not in msg_events:
-                    msg_events[ev["room_id"]] = Queue()
+                if prev and new and prev != new:
+                    # This won't update automatically in these cases otherwise
+                    user = self.window.accounts[ev["state_key"]].h_user
 
+                    dispname         = new["displayname"] or ev["state_key"]
+                    user.displayname = dispname
+
+                    self.signal.account_change.emit(
+                        ev["state_key"], ev["room_id"],
+                        dispname, new["avatar_url"] or ""
+                    )
+
+        elif etype == "m.room.message":
+            msg_events = self.messages[user_id]
+
+            if ev["room_id"] not in msg_events:
+                msg_events[ev["room_id"]] = Queue()
+
+            with self._lock:
                 msg_events[ev["room_id"]].put(ev)
 
+        else:
+            self._log("blue", user_id, ev, force=True)
 
-    def on_presence_event(self, client: MatrixClient, event: dict) -> None:
-        with self._lock:
-            _log("yellow", client.user_id, event)
-
-
-    def on_ephemeral_event(self, client: MatrixClient, event: dict) -> None:
-        with self._lock:
-            _log("purple", client.user_id, event)
+        if etype in ("m.room.name", "m.room.canonical_alias",
+                     "m.room.member"):
+            self.signal.room_rename.emit(user_id, ev["room_id"])
 
 
-    def on_invite_event(self, client: MatrixClient, room_id: int, state: dict
+    def on_presence_event(self, user_id: str, event: dict) -> None:
+        self._log("yellow", user_id, event)
+
+
+    def on_ephemeral_event(self, user_id: str, event: dict) -> None:
+        self._log("purple", user_id, event)
+
+
+    def on_invite_event(self, user_id: str, room_id: int, state: dict
                        ) -> None:
         invite_by = state["events"][-1]["sender"]
-        self.signal.new_invite.emit(client.user_id, room_id, invite_by)
-        self.added_rooms.append((client.user_id, room_id))
+
+        name = alias = ""
+        members = []
+
+        for ev in state["events"]:
+            if ev["type"] == "m.room.name":
+                name = ev["content"]["name"]
+
+            if ev["type"] == "m.room.canonical_alias":
+                alias = ev["content"]["alias"]
+
+            if ev["type"] == "m.room.member" and ev["state_key"] != user_id:
+                members.append(ev["content"]["displayname"] or
+                               ev["state_key"])
+
+        dispname = name or alias
+
+        if not dispname:
+            if not members:
+                dispname = "Empty room"
+            elif len(members) == 1:
+                dispname = members[0]
+            elif len(members) == 2:
+                dispname = " and ".join(members)
+            else:
+                members.sort()
+                dispname = f"{members[0]} and {len(members) - 1} others"
+
+        self.signal.new_invite.emit(user_id, room_id, invite_by, dispname)
 
 
-    def on_leave_event(self, client: MatrixClient, room_id: str) -> None:
-        self.signal.left_room.emit(client, room_id)
-
-        for i, (uid, rid) in enumerate(self.added_rooms):
-            if client.user_id == uid and room_id == rid:
-                del self.added_rooms[i]
+    def on_leave_event(self, user_id: str, room_id: str) -> None:
+        self.signal.left_room.emit(user_id, room_id)
 
 
-def _log(color: str, *args, force: bool = False) -> None:
-    if not force:
-        return
-    import json
-    args = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
-    nums = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
-            "purple": 5, "magenta": 5, "cyan": 6, "white": 7, "gray": 7}
-    print(f"\033[3{nums[color]}m", *args, "\033[0m", sep="\n", end="\n\n")
+    def _log(self, color: str, *args, force: bool = False) -> None:
+        if not force:
+            return
+
+        import json
+        args = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
+        nums = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
+                "purple": 5, "magenta": 5, "cyan": 6, "white": 7, "gray": 7}
+
+        with self._lock:
+            print(f"\033[3{nums[color]}m", *args, "\033[0m",
+                  sep="\n", end="\n\n")

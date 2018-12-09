@@ -6,23 +6,25 @@
   - Send, upload and other buttons
 
 - Chat
-  - Room name changes: rename tabs
   - Instant message display when sending one without waiting for server
   - Smooth animated scroll
   - up/down normal scroll, alt+up/down or something for message-message scroll
   - fix blank lines
   - fix scroll up history
-  - Fix crash when trying to chat with System Alert or having to accept its room
-    invite for new account
   - Rooms topic
 
 - Accounts
   - Fix the freeze when logging in,
     thread everywhere where cache info retrieval is needed
-  - Handle user display name changes
-  - Room-specific display names
   - Don't expand rows if user collapsed manually
   - Drag and drop to reorder
+  - Show error box when accepting invite for a gone room 
+  - Accept/decline invite in context menu
+  - Ensure invites accepted/declined in another client affect us
+  - Confirmation dialog when leaving a private room
+  - Del key
+  - Change display name (+F2)
+  - Close tabs when removing account
 
 - Global
   - Properly log off accounts when closing the client
@@ -47,6 +49,3 @@ Idea to solve freezes:
 Execute whatever we want in threads and emit a signal with a list of args
 and kwargs that will be processed by the main thread when we need to modify
 the GUI.
-
-TMP
-FIXME.png

@@ -1,9 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import json
 from typing import Dict, List
 
-from matrix_client.client import MatrixClient
+from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, QSize, Qt
@@ -12,8 +13,8 @@ from PyQt5.QtWidgets import (QAction, QHeaderView, QMainWindow, QSizePolicy,
                              QTreeWidget, QTreeWidgetItem)
 
 from . import __about__, actions
-from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 from .dialogs import AcceptRoomInvite
+from .matrix import HMatrixClient
 from .menu import Menu
 
 
@@ -50,9 +51,13 @@ class UserTree(QTreeWidget):
         event_sig.new_invite.connect(self.on_add_room)
         event_sig.room_rename.connect(self.on_rename_room)
         event_sig.left_room.connect(self.on_left_room)
+        event_sig.account_change.connect(self.on_account_change)
 
 
     def add_account(self, user_id: str) -> None:
+        if user_id in self.accounts:
+            return
+
         self.accounts[user_id] = AccountRow(self, user_id)
 
         root = self.invisibleRootItem()
@@ -107,9 +112,10 @@ class UserTree(QTreeWidget):
         menu.exec_(self.mapToGlobal(position))
 
 
-    def on_add_room(self, user_id: str, room_id: str, invite_by: str = ""
+    def on_add_room(self, user_id: str, room_id: str,
+                    invite_by: str = "", display_name: str = ""
                    ) -> None:
-        self.accounts[user_id].add_room(room_id, invite_by)
+        self.accounts[user_id].add_room(room_id, invite_by, display_name)
 
 
     def on_rename_room(self, user_id: str, room_id: str) -> None:
@@ -120,6 +126,11 @@ class UserTree(QTreeWidget):
 
     def on_left_room(self, user_id: str, room_id: str) -> None:
         self.accounts[user_id].del_room(room_id)
+
+
+    def on_account_change(self, user_id: str, _: str,
+                          new_display_name: str, new_avatar_url: str) -> None:
+        self.accounts[user_id].update_ui(new_display_name, new_avatar_url)
 
 
     def really_clear_selection(self) -> None:
@@ -155,15 +166,16 @@ class AccountRow(QTreeWidgetItem):
     def __init__(self, parent: UserTree, user_id: str) -> None:
         super().__init__(parent)
         self.user_tree: UserTree           = parent
-        self.client:    MatrixClient       = parent.window.accounts[user_id]
+        self.client:    HMatrixClient      = parent.window.accounts[user_id]
         self.rooms:     Dict[str, RoomRow] = {}
 
         self.auto_expanded_once: bool = False
         self.update_ui()
 
 
-    def update_ui(self) -> None:
-        self.setText(0, USER_DISPLAY_NAMES.get(self.client))
+    def update_ui(self, new_display_name: str = "", _: str = "") -> None:
+        self.setText(0,
+                     new_display_name or self.client.h_user.get_display_name())
         self.setToolTip(0, self.client.user_id)
 
 
@@ -171,12 +183,12 @@ class AccountRow(QTreeWidgetItem):
         return [actions.DelAccount(self.user_tree, self.client.user_id)]
 
 
-    def add_room(self, room_id: str, invite_by: str = "") -> None:
+    def add_room(self, room_id: str,
+                 invite_by: str = "", display_name: str = "") -> None:
         if room_id in self.rooms:
-            print(f"WARN Duplicate: {room_id}")
             return
 
-        self.rooms[room_id] = RoomRow(self, room_id, invite_by)
+        self.rooms[room_id] = RoomRow(self, room_id, invite_by, display_name)
         self.sortChildren(0, Qt.AscendingOrder)
 
         if not self.auto_expanded_once:
@@ -191,19 +203,25 @@ class AccountRow(QTreeWidgetItem):
 
 
 class RoomRow(QTreeWidgetItem):
-    def __init__(self, parent: AccountRow, room_id: str, invite_by: str = ""
+    def __init__(self, parent: AccountRow, room_id: str,
+                 invite_by: str = "", display_name: str = ""
                 ) -> None:
         super().__init__(parent)
         self.account_row: AccountRow = parent
-        self.room:        Room       = parent.client.rooms[room_id]
         self.invite_by:   str        = invite_by
 
+        self.room: Room = Room(parent.client, room_id) \
+                          if invite_by else parent.client.rooms[room_id]
+
         self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
-        self.update_ui()
+        self.update_ui(display_name)
 
 
-    def update_ui(self) -> None:
-        texts    = [ROOM_DISPLAY_NAMES.get(self.room), ""]
+    def update_ui(self, invite_display_name: str = "") -> None:
+        # The later crashes for rooms we're invited to but not joined
+        dispname = invite_display_name or self.room.display_name
+
+        texts    = [dispname, ""]
         tooltips = self.room.aliases + [self.room.room_id]
 
         if self.invite_by:
@@ -219,12 +237,10 @@ class RoomRow(QTreeWidgetItem):
 
 
     def on_activation(self) -> None:
-        client = self.account_row.client
+        user_id = self.account_row.client.user_id
 
         if self.invite_by:
-            dialog = AcceptRoomInvite(
-                client.user_id, self.text(0), self.invite_by
-            )
+            dialog = AcceptRoomInvite(user_id, self.text(0), self.invite_by)
             dialog.exec()
             clicked = dialog.clickedButton()
 
@@ -232,10 +248,12 @@ class RoomRow(QTreeWidgetItem):
                 self.accept_invite()
             elif clicked is dialog.no:
                 self.decline_invite()
+                return
             else:
                 return
 
-        self.account_row.user_tree.window.go_to_chat_dock(client, self.room)
+        self.account_row.user_tree.window.go_to_chat_dock(user_id,
+                                                          self.room.room_id)
 
 
     def get_context_menu_actions(self) -> List[QAction]:
@@ -250,7 +268,13 @@ class RoomRow(QTreeWidgetItem):
 
     def accept_invite(self) -> None:
         self.ensure_is_invited()
-        self.account_row.client.join_room(self.room.room_id)
+        try:
+            self.account_row.client.join_room(self.room.room_id)
+        except MatrixRequestError as err:
+            data = json.loads(err.content)
+            if data["errcode"] == "M_UNKNOWN":
+                print("Room gone, error box not implemented")
+
         self.invite_by = None
         self.update_ui()
 

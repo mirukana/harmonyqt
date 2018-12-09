@@ -5,9 +5,7 @@ import json
 import time
 from multiprocessing.pool import ThreadPool
 
-from matrix_client.client import MatrixClient
 from matrix_client.errors import MatrixRequestError
-from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QLabel, QMainWindow
@@ -16,7 +14,8 @@ from . import base
 
 
 class CreateRoom(base.GridDialog):
-    room_created_signal = pyqtSignal(MatrixClient, Room)
+    # User ID, Room ID
+    room_created_signal = pyqtSignal(str, str)
 
     def __init__(self, main_window: QMainWindow) -> None:
         super().__init__(main_window, "Create room")
@@ -109,7 +108,7 @@ class CreateRoom(base.GridDialog):
             self.info_line.set_err("Selected creator not connected")
             return
 
-        def create() -> Room:
+        def create() -> None:
             # client.create_room doesn't have a federate param
             answer = client.api.create_room(
                 name=name, is_public=public, invitees=invitees,
@@ -118,7 +117,7 @@ class CreateRoom(base.GridDialog):
             # pylint: disable=protected-access
             room = client._mkroom(answer["room_id"])
             client.join_room(room.room_id)
-            self.room_created_signal.emit(client, room)
+            self.room_created_signal.emit(client.user_id, room.room_id)
 
         self._pool.apply_async(create, error_callback=self.on_error)
 
@@ -132,6 +131,6 @@ class CreateRoom(base.GridDialog):
             raise err
 
 
-    def on_room_created(self, client: MatrixClient, room: Room) -> None:
+    def on_room_created(self, user_id: str, room_id: str) -> None:
         self.done(0)
-        self.main_window.go_to_chat_dock(client, room)
+        self.main_window.go_to_chat_dock(user_id, room_id)

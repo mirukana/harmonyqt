@@ -5,7 +5,6 @@ import time
 from threading import Event, Lock, Thread
 from typing import Optional
 
-from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor, QTextTableFormat
@@ -13,7 +12,6 @@ from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
 from .. import accounts
-from ..caches import USER_DISPLAY_NAMES
 
 
 class MessageList(QTextBrowser):
@@ -69,9 +67,9 @@ class MessageList(QTextBrowser):
 
     def add_message(self, msg: dict, to_top: bool = False) -> None:
         with self._lock:  # Ensures messages are posted in the right order
-            sender = User(self.chat.client, msg["sender"])
-            extra  = {
-                "name":      USER_DISPLAY_NAMES.get(sender),  # cached
+            dispname = self.chat.room.members_displaynames[msg["sender"]]
+            extra    = {
+                "name":      dispname or msg["sender"],
                 "date_time": QDateTime.\
                              fromMSecsSinceEpoch(msg["origin_server_ts"])
             }

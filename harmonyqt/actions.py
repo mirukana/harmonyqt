@@ -107,9 +107,6 @@ class DirectChat(Action):
             shortcut = "Ctrl+Shift+D",
         )
 
-    def on_trigger(self, _) -> None:
-        dialogs.DirectChat(self.parent.window()).open_modeless()
-
 class CreateRoom(Action):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(

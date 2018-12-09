@@ -66,7 +66,7 @@ class Login(base.GridDialog):
         remember = self.remember.isChecked()
 
         self.expected_login_user_id = self.main_window.accounts.login(
-            server, user, pw, remember, self.on_login, self.on_error
+            server, user, pw, remember, self.on_error
         )
 
 

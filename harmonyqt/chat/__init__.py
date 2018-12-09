@@ -1,20 +1,17 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from matrix_client.client import MatrixClient
-from matrix_client.room import Room
-from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 
 class Chat(QWidget):
-    def __init__(self, window: QMainWindow, client: MatrixClient, room: Room
+    def __init__(self, window: QMainWindow, user_id: str, room_id: str
                 ) -> None:
         super().__init__(window)
         self.window = window
-        self.client = client
-        self.room   = room
+        self.client = window.accounts[user_id]
+        self.room   = self.client.rooms[room_id]
 
         self.vbox = QVBoxLayout(self)
 
