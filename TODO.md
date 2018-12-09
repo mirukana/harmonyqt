@@ -23,6 +23,8 @@
   - Handle user display name changes
   - Room-specific display names
   - Don't expand rows if user collapsed manually
+  - Multiple selections
+  - Drag and drop to reorder
 
 - Global
   - Float/close dock title bar buttons and bindings

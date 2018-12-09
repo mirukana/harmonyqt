@@ -22,4 +22,4 @@ def get_icon(filename: str) -> QIcon:
 # pylint: disable=wrong-import-position
 from . import (caches, dialogs,
                accounts, events, actions, chat, usertree,
-               homepage, toolbar, main)
+               homepage, toolbar, main, menu)

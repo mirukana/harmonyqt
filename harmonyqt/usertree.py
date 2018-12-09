@@ -7,14 +7,15 @@ from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 from matrix_client.user import User
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QPoint, QSize, Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (QHeaderView, QMainWindow, QSizePolicy,
+from PyQt5.QtWidgets import (QAction, QHeaderView, QMainWindow, QSizePolicy,
                              QTreeWidget, QTreeWidgetItem)
 
-from . import __about__
+from . import __about__, actions
 from .caches import ROOM_DISPLAY_NAMES, USER_DISPLAY_NAMES
 from .dialogs import AcceptRoomInvite
+from .menu import Menu
 
 
 class UserTree(QTreeWidget):
@@ -29,15 +30,18 @@ class UserTree(QTreeWidget):
         self.setUniformRowHeights(True)
         self.setAnimated(True)
         self.setAutoExpandDelay(500)
-        self.setHeaderHidden(True)           # TODO: customizable cols
+        self.setHeaderHidden(True)  # TODO: customizable cols
         # self.setIndentation(0)
         # self.setSortingEnabled(True)
+        self.setSelectionMode(QTreeWidget.ExtendedSelection)
 
         self.header().setMinimumSectionSize(0)
         self.header().setStretchLastSection(False)
         self.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.on_context_menu_request)
         self.itemActivated.connect(self.on_row_activation)
 
         self.window.accounts.signal.login.connect(self.add_account)
@@ -65,11 +69,23 @@ class UserTree(QTreeWidget):
                 self.blank_rows.append(blank)
 
 
-
     def on_row_activation(self, row: QTreeWidgetItem, _: int) -> None:
         if hasattr(row, "on_activation"):
             row.on_activation()
             self.really_clear_selection()
+
+
+    def on_context_menu_request(self, position: QPoint) -> None:
+        selected = [self.itemFromIndex(s) for s in self.selectedIndexes()
+                    if s.column() == 0]
+
+        acts = []
+        for row in selected:
+            if hasattr(row, "get_context_menu_actions"):
+                acts += row.get_context_menu_actions()
+
+        menu = Menu(self, acts)
+        menu.exec_(self.mapToGlobal(position))
 
 
     def on_add_room(self, client: MatrixClient, room: Room,
@@ -130,7 +146,15 @@ class AccountRow(QTreeWidgetItem):
         self.setToolTip(0, self.client.user_id)
 
 
+    def get_context_menu_actions(self) -> List[QAction]:
+        return [actions.DelAccount(self.user_tree, self.client)]
+
+
     def add_room(self, room: Room, invite_by: Optional[User] = None) -> None:
+        if room.room_id in self.rooms:
+            print(f"WARN Duplicate: {room}")
+            return
+
         self.rooms[room.room_id] = RoomRow(self, room, invite_by)
         self.sortChildren(0, Qt.AscendingOrder)
 
@@ -140,8 +164,9 @@ class AccountRow(QTreeWidgetItem):
 
 
     def del_room(self, room_id: str) -> None:
-        self.removeChild(self.rooms[room_id])
-        del self.rooms[room_id]
+        if room_id in self.rooms:
+            self.removeChild(self.rooms[room_id])
+            del self.rooms[room_id]
 
 
 class RoomRow(QTreeWidgetItem):
@@ -196,6 +221,11 @@ class RoomRow(QTreeWidgetItem):
         self.account_row.user_tree.window.go_to_chat_dock(client, self.room)
 
 
+    def get_context_menu_actions(self) -> List[QAction]:
+        tree = self.account_row.user_tree
+        return [actions.LeaveRoom(tree, self.room, self.leave)]
+
+
     def ensure_is_invited(self) -> None:
         if not self.invite_by:
             raise RuntimeError(f"No invitation for {self.room.room_id}.")
@@ -210,6 +240,10 @@ class RoomRow(QTreeWidgetItem):
 
     def decline_invite(self) -> None:
         self.ensure_is_invited()
+        self.leave()
+
+
+    def leave(self) -> None:
         try:
             self.room.leave()
         except KeyError:  # matrix_client bug

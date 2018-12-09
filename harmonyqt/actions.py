@@ -2,16 +2,21 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import webbrowser
-from typing import List
+from typing import Callable, Optional, Sequence
 
+from matrix_client.client import MatrixClient
+from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QAction, QMenu, QWidget
+from PyQt5.QtWidgets import QAction, QWidget
 
-from . import __about__, dialogs, get_icon
+from . import __about__, dialogs, get_icon, menu
 
 KEYS_BOUND = {}
+
+
+# General functions
 
 def safe_bind(action: QAction, key: str) -> str:
     name = type(action).__name__
@@ -28,22 +33,26 @@ def safe_bind(action: QAction, key: str) -> str:
 
 class Action(QAction):
     def __init__(self,
-                 parent:   QWidget,
-                 text:     str,
-                 tooltip:  str = "",
-                 icon:     str = "",
-                 shortcut: str = "") -> None:
+                 parent:           QWidget,
+                 text:             str,
+                 tooltip:          str = "",
+                 icon:             str = "",
+                 shortcut:         str = "",
+                 multiselect_text: str = "") -> None:
         super().__init__(parent)
-        self.parent = parent
+        self.parent           = parent
+        self.multiselect_text = multiselect_text
         self.setText(text)
 
         tooltip = "\n".join((tooltip, shortcut)).strip()
         if tooltip:
             self.setToolTip(tooltip)
 
+        self.icon_str = icon
         if icon:
             self.setIcon(get_icon(icon))
 
+        self.shortcut_str = shortcut
         if shortcut:
             self.setShortcutContext(Qt.ApplicationShortcut)
             self.setShortcut(QKeySequence(safe_bind(self, shortcut)))
@@ -59,14 +68,20 @@ class Action(QAction):
         pass
 
 
-class Menu(QMenu):
-    def __init__(self, parent: QWidget, actions: List[QAction]) -> None:
-        super().__init__(parent)
-        self.setWindowOpacity(0.9)
-        self.addActions(actions)
-        self.setTearOffEnabled(True)
-        self.setToolTipsVisible(True)
+class MultiselectAction(Action):
+    def __init__(self, actions: Sequence[Action]) -> None:
+        super().__init__(
+            parent   = actions[0].parent,
+            text     = actions[0].multiselect_text,
+            tooltip  = actions[0].toolTip(),
+            icon     = actions[0].icon_str,
+            shortcut = actions[0].shortcut_str
+        )
+        self.actions = actions
 
+    def on_trigger(self, checked: bool) -> None:
+        for act in self.actions:
+            act.on_trigger(checked)
 
 # Rooms
 
@@ -80,7 +95,7 @@ class NewChat(Action):
             shortcut = "Ctrl+Shift+N",
         )
         actions = [a(parent) for a in (DirectChat, CreateRoom, JoinRoom)]
-        self.setMenu(Menu(parent, actions))
+        self.setMenu(menu.Menu(parent, actions))
 
 
 class DirectChat(Action):
@@ -119,6 +134,27 @@ class JoinRoom(Action):
             shortcut = "Ctrl+Shift+J",
         )
 
+class LeaveRoom(Action):
+    def __init__(self,
+                 parent:     QWidget,
+                 room:       Room,
+                 leave_func: Optional[Callable[[], None]]= None
+                ) -> None:
+        super().__init__(
+            parent           = parent,
+            text             = "&Leave room",
+            tooltip          = "Leave and remove this room from the list",
+            icon             = "leave.png",
+            multiselect_text = "&Leave selected rooms",
+        )
+        self.room       = room
+        self.leave_func = leave_func
+
+    def on_trigger(self, _) -> None:
+        if callable(self.leave_func):
+            self.leave_func()
+        else:
+            self.room.leave()
 
 # Status
 
@@ -132,7 +168,7 @@ class SetStatus(Action):
             shortcut = "Ctrl+Shift+S",
         )
         actions = [a(parent) for a in (Online, Away, Invisible, Offline)]
-        self.setMenu(Menu(parent, actions))
+        self.setMenu(menu.Menu(parent, actions))
 
 class StatusAction(Action):
     def __init__(self, parent, text = None, shortcut = None) -> None:
@@ -141,7 +177,7 @@ class StatusAction(Action):
             parent   = parent,
             text     = text or f"&{name}",
             tooltip  = f"Change status for all accounts to {name.lower()}",
-            icon     = "status_{name.lower()}.png",
+            icon     = f"status_{name.lower()}.png",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
         )
 
@@ -167,11 +203,27 @@ class AddAccount(Action):
             parent   = parent,
             text     = "Add &account",
             tooltip  = "Add a new account to Harmony",
-            icon     = "add_account.png",
+            icon     = "account_add.png",
             shortcut = "Ctrl+Shift+A",
         )
         actions = [a(parent) for a in (Login, Register)]
-        self.setMenu(Menu(parent, actions))
+        self.setMenu(menu.Menu(parent, actions))
+
+class DelAccount(Action):
+    def __init__(self, parent: QWidget, client: MatrixClient) -> None:
+        super().__init__(
+            parent   = parent,
+            icon     = "account_del.png",
+            text     = "Remove &account",
+            tooltip  = ("Remove this account from Harmony\n"
+                        "The account will still exist on the server and can "
+                        "be added again later"),
+            multiselect_text = "&Remove selected accounts",
+        )
+        self.client = client
+
+    def on_trigger(self, _) -> None:
+        print("del account test", self.client.user_id)
 
 class Login(Action):
     def __init__(self, parent: QWidget) -> None:
