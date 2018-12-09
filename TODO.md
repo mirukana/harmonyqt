@@ -49,5 +49,4 @@ and kwargs that will be processed by the main thread when we need to modify
 the GUI.
 
 TMP
-login connect emit: start eventmanager, which emits signal to start other stuff 
 FIXME.png

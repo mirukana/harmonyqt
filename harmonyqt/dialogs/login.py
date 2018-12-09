@@ -55,7 +55,7 @@ class Login(base.GridDialog):
 
 
         self.expected_login_user_id: str = ""
-        self.main_window.accounts.signal.login.connect(self.on_login)
+        self.main_window.events.signal.new_account.connect(self.on_login)
 
 
     def validate(self, _) -> None:

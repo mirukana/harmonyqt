@@ -24,7 +24,7 @@ class CreateRoom(base.GridDialog):
         self.room_created_signal.connect(self.on_room_created)
 
         logged_in = sorted(self.main_window.accounts.keys())
-        self.main_window.accounts.signal.login.connect(self.on_new_login)
+        self.main_window.events.signal.new_account.connect(self.on_new_login)
 
         self.info_line = base.InfoLine(self)
         self.about     = QLabel(

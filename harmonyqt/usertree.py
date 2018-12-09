@@ -44,9 +44,9 @@ class UserTree(QTreeWidget):
         self.customContextMenuRequested.connect(self.on_context_menu_request)
         self.itemActivated.connect(self.on_row_activation)
 
-        self.window.accounts.signal.login.connect(self.add_account)
-        self.window.accounts.signal.logout.connect(self.del_account)
         event_sig = self.window.events.signal
+        event_sig.new_account.connect(self.add_account)
+        event_sig.account_gone.connect(self.del_account)
         event_sig.new_room.connect(self.on_add_room)
         event_sig.new_invite.connect(self.on_add_room)
         event_sig.room_rename.connect(self.on_rename_room)

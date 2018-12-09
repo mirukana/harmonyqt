@@ -18,10 +18,12 @@ from .caches.rooms import Levels
 
 
 class _SignalObject(QObject):
-    room_rename      = pyqtSignal(MatrixClient, Room)
-    new_room         = pyqtSignal(MatrixClient, Room)
-    new_invite       = pyqtSignal(MatrixClient, Room, User)
-    left_room        = pyqtSignal(MatrixClient, str)
+    new_account  = pyqtSignal(MatrixClient)
+    account_gone = pyqtSignal(str)
+    new_room     = pyqtSignal(MatrixClient, Room)
+    new_invite   = pyqtSignal(MatrixClient, Room, User)
+    room_rename  = pyqtSignal(MatrixClient, Room)
+    left_room    = pyqtSignal(MatrixClient, str)
 
 
 class EventManager:
@@ -61,11 +63,13 @@ class EventManager:
 
         client.start_listener_thread()
 
+        self.signal.new_account.emit(client)
         # TODO: room.add_state_listener
 
 
     def on_account_logout(self, user_id: str) -> None:
         self.added_rooms = [i for i in self.added_rooms if i[0] != user_id]
+        self.signal.account_gone.emit(user_id)
 
 
     def watch_rooms(self, client: MatrixClient) -> None:
