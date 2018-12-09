@@ -83,11 +83,11 @@ class CreateRoom(base.GridDialog):
 
 
     # TODO: handle disconnect
-    def on_new_login(self, client: MatrixClient) -> None:
+    def on_new_login(self, user_id: str) -> None:
         while not hasattr(self, "creator"):
             time.sleep(0.05)
 
-        self.creator.combo_box.addItem(client.user_id)
+        self.creator.combo_box.addItem(user_id)
 
 
     def validate(self, _) -> None:

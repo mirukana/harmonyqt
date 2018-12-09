@@ -7,8 +7,6 @@ from threading import Lock, Thread
 from typing import Dict, List, Tuple
 
 from matrix_client.client import MatrixClient
-from matrix_client.room import Room
-from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
@@ -18,12 +16,13 @@ from .caches.rooms import Levels
 
 
 class _SignalObject(QObject):
-    new_account  = pyqtSignal(MatrixClient)
+    # User ID, Room ID, Invited by user ID
+    new_account  = pyqtSignal(str)
     account_gone = pyqtSignal(str)
-    new_room     = pyqtSignal(MatrixClient, Room)
-    new_invite   = pyqtSignal(MatrixClient, Room, User)
-    room_rename  = pyqtSignal(MatrixClient, Room)
-    left_room    = pyqtSignal(MatrixClient, str)
+    new_room     = pyqtSignal(str, str)
+    new_invite   = pyqtSignal(str, str, str)
+    room_rename  = pyqtSignal(str, str)
+    left_room    = pyqtSignal(str, str)
 
 
 class EventManager:
@@ -59,11 +58,11 @@ class EventManager:
             lambda rid, state, c=client: self.on_invite_event(c, rid, state))
 
         client.add_leave_listener(
-            lambda rid, room, c=client: self.on_leave_event(c, rid, room))
+            lambda rid, _, c=client: self.on_leave_event(c, rid))
 
         client.start_listener_thread()
 
-        self.signal.new_account.emit(client)
+        self.signal.new_account.emit(client.user_id)
         # TODO: room.add_state_listener
 
 
@@ -87,12 +86,14 @@ class EventManager:
                 ids = (client.user_id, room.room_id)
 
                 if client.user_id not in self.window.accounts:
-                    # this is being loogging off
+                    # this client is being logged off
                     continue
 
                 if ids not in self.added_rooms:
-                    self.signal.new_room.emit(client, room)
+                    self.signal.new_room.emit(client.user_id, room.room_id)
                     self.added_rooms.append(ids)
+
+                continue
 
                 for attr, (level, prev_values) in watch_attrs.items():
                     if ids not in prev_values:
@@ -108,7 +109,7 @@ class EventManager:
                         ROOM_DISPLAY_NAMES.notify_change(
                             client.user_id, room.room_id, level
                         )
-                        self.signal.room_rename.emit(client, room)
+                        self.signal.room_rename.emit(client, room.room_id)
                         watch_attrs[attr][1][ids] = value_now
 
             time.sleep(0.2)
@@ -120,7 +121,7 @@ class EventManager:
 
         with self._lock:
             if etype != "m.room.message":
-                _log("blue", client.user_id, ev)
+                _log("blue", client.user_id, ev, force=True)
 
             if etype == "m.room.message":
                 msg_events = self.messages[client.user_id]
@@ -143,13 +144,12 @@ class EventManager:
 
     def on_invite_event(self, client: MatrixClient, room_id: int, state: dict
                        ) -> None:
-        invite_by = User(client, state["events"][-1]["sender"])
-        self.signal.new_invite.emit(client, Room(client, room_id), invite_by)
+        invite_by = state["events"][-1]["sender"]
+        self.signal.new_invite.emit(client.user_id, room_id, invite_by)
         self.added_rooms.append((client.user_id, room_id))
 
 
-    def on_leave_event(self, client: MatrixClient, room_id: str, _: dict
-                      ) -> None:
+    def on_leave_event(self, client: MatrixClient, room_id: str) -> None:
         self.signal.left_room.emit(client, room_id)
 
         for i, (uid, rid) in enumerate(self.added_rooms):

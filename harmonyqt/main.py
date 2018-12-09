@@ -124,24 +124,24 @@ class HarmonyQt(QMainWindow):
         self.chat_docks.append(dock)
 
 
-    def remove_chat_dock(self, client: MatrixClient, room_id: str) -> None:
+    def remove_chat_dock(self, user_id: str, room_id: str) -> None:
         for i, dock in enumerate(self.chat_docks):
             if dock.widget().room.room_id   == room_id and \
-               dock.widget().client.user_id == client.user_id:
+               dock.widget().client.user_id == user_id:
                 dock.hide()
                 del self.chat_docks[i]
 
 
-    def rename_chat_dock(self, client: MatrixClient, room_id: str) -> None:
+    def rename_chat_dock(self, user_id: str, room_id: str) -> None:
         for dock in self.chat_docks:
-            dock_room = dock.widget().room
+            droom = dock.widget().room
+            duid  = dock.widget().user_id
 
-            if dock_room.room_id != room_id or \
-               dock.widget().client.user_id != client.user_id:
+            if droom.room_id != room_id or duid != user_id:
                 continue
 
-            title = (f"{USER_DISPLAY_NAMES.get(client)}: "
-                     f"{ROOM_DISPLAY_NAMES.get(dock_room)}")
+            title = (f"{USER_DISPLAY_NAMES.get(user_id)}: "
+                     f"{ROOM_DISPLAY_NAMES.get(droom)}")
             dock.setWindowTitle(title)
 
 

@@ -1,11 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from matrix_client.client import MatrixClient
 from matrix_client.room import Room
-from matrix_client.user import User
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, QSize, Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
@@ -53,8 +52,8 @@ class UserTree(QTreeWidget):
         event_sig.left_room.connect(self.on_left_room)
 
 
-    def add_account(self, client: MatrixClient) -> None:
-        self.accounts[client.user_id] = AccountRow(self, client)
+    def add_account(self, user_id: str) -> None:
+        self.accounts[user_id] = AccountRow(self, user_id)
 
         root = self.invisibleRootItem()
         root.sortChildren(0, Qt.AscendingOrder)
@@ -108,19 +107,19 @@ class UserTree(QTreeWidget):
         menu.exec_(self.mapToGlobal(position))
 
 
-    def on_add_room(self, client: MatrixClient, room: Room,
-                    invite_by: Optional[User] = None) -> None:
-        self.accounts[client.user_id].add_room(room, invite_by)
+    def on_add_room(self, user_id: str, room_id: str, invite_by: str = ""
+                   ) -> None:
+        self.accounts[user_id].add_room(room_id, invite_by)
 
 
-    def on_rename_room(self, client: MatrixClient, room: Room) -> None:
-        rooms = self.accounts[client.user_id].rooms
-        if room.room_id in rooms:
-            rooms[room.room_id].update_ui()
+    def on_rename_room(self, user_id: str, room_id: str) -> None:
+        rooms = self.accounts[user_id].rooms
+        if room_id in rooms:
+            rooms[room_id].update_ui()
 
 
-    def on_left_room(self, client: MatrixClient, room_id: str) -> None:
-        self.accounts[client.user_id].del_room(room_id)
+    def on_left_room(self, user_id: str, room_id: str) -> None:
+        self.accounts[user_id].del_room(room_id)
 
 
     def really_clear_selection(self) -> None:
@@ -153,10 +152,10 @@ class BlankRow(QTreeWidgetItem):
 
 
 class AccountRow(QTreeWidgetItem):
-    def __init__(self, parent: UserTree, client: MatrixClient) -> None:
+    def __init__(self, parent: UserTree, user_id: str) -> None:
         super().__init__(parent)
         self.user_tree: UserTree           = parent
-        self.client:    MatrixClient       = client
+        self.client:    MatrixClient       = parent.window.accounts[user_id]
         self.rooms:     Dict[str, RoomRow] = {}
 
         self.auto_expanded_once: bool = False
@@ -172,12 +171,12 @@ class AccountRow(QTreeWidgetItem):
         return [actions.DelAccount(self.user_tree, self.client.user_id)]
 
 
-    def add_room(self, room: Room, invite_by: Optional[User] = None) -> None:
-        if room.room_id in self.rooms:
-            print(f"WARN Duplicate: {room}")
+    def add_room(self, room_id: str, invite_by: str = "") -> None:
+        if room_id in self.rooms:
+            print(f"WARN Duplicate: {room_id}")
             return
 
-        self.rooms[room.room_id] = RoomRow(self, room, invite_by)
+        self.rooms[room_id] = RoomRow(self, room_id, invite_by)
         self.sortChildren(0, Qt.AscendingOrder)
 
         if not self.auto_expanded_once:
@@ -192,14 +191,12 @@ class AccountRow(QTreeWidgetItem):
 
 
 class RoomRow(QTreeWidgetItem):
-    def __init__(self,
-                 parent:    AccountRow,
-                 room:      Room,
-                 invite_by: Optional[User] = None) -> None:
+    def __init__(self, parent: AccountRow, room_id: str, invite_by: str = ""
+                ) -> None:
         super().__init__(parent)
-        self.account_row: AccountRow     = parent
-        self.room:        Room           = room
-        self.invite_by:   Optional[User] = invite_by
+        self.account_row: AccountRow = parent
+        self.room:        Room       = parent.client.rooms[room_id]
+        self.invite_by:   str        = invite_by
 
         self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
         self.update_ui()
@@ -211,9 +208,7 @@ class RoomRow(QTreeWidgetItem):
 
         if self.invite_by:
             texts[1] = "?"
-            tooltips.insert(
-                0, f"Pending invitation from {self.invite_by.user_id}"
-            )
+            tooltips.insert(0, f"Pending invitation from {self.invite_by}")
 
         for col, txt in enumerate(texts):
             self.setText(col, txt)
@@ -228,7 +223,7 @@ class RoomRow(QTreeWidgetItem):
 
         if self.invite_by:
             dialog = AcceptRoomInvite(
-                client.user_id, self.text(0), self.invite_by.user_id
+                client.user_id, self.text(0), self.invite_by
             )
             dialog.exec()
             clicked = dialog.clickedButton()
