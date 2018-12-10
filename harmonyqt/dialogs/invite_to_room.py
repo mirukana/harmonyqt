@@ -28,6 +28,7 @@ class InviteToRoom(base.GridDialog):
         room_uids  = {m.user_id for m in room.get_joined_members()}
         us_in_room = {i for i in main_window().accounts if i in room_uids}
         main_window().events.signal.new_account.connect(self.on_new_login)
+        main_window().events.signal.account_gone.connect(self.on_account_gone)
 
         self.info_line = base.InfoLine(self)
         self.sender    = base.ComboBox(self, "Send invite as:",
@@ -61,7 +62,6 @@ class InviteToRoom(base.GridDialog):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
 
-    # TODO: handle disconnect
     def on_new_login(self, user_id: str) -> None:
         while not hasattr(self, "sender"):
             time.sleep(0.05)
@@ -69,6 +69,12 @@ class InviteToRoom(base.GridDialog):
         for member in self.room.get_joined_members():
             if member.user_id == user_id:
                 self.creator.combo_box.addItem(user_id)
+
+
+    def on_account_gone(self, user_id: str) -> None:
+        while not hasattr(self, "sender"):
+            time.sleep(0.05)
+        self.sender.del_items_with_text(user_id)
 
 
     def validate(self, _) -> None:

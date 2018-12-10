@@ -31,11 +31,6 @@ def main_window() -> QMainWindow:
         raise RuntimeError("Main window not initialized.")
     return _MAIN_WINDOW
 
-# pylint: disable=wrong-import-position
-# from . import (dialogs,
-               # accounts, events, actions, chat, usertree,
-               # homepage, toolbar, menu)
-
 
 def run(argv: Optional[List[str]] = None) -> None:
     app = QApplication(argv or sys.argv)

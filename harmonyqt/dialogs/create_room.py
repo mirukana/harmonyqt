@@ -24,7 +24,8 @@ class CreateRoom(base.GridDialog):
         self.room_created_signal.connect(self.on_room_created)
 
         logged_in = sorted(main_window().accounts.keys())
-        main_window().events.signal.new_account.connect(self.on_new_login)
+        main_window().events.signal.new_account.connect(self.on_new_account)
+        main_window().events.signal.account_gone.connect(self.on_account_gone)
 
         self.info_line = base.InfoLine(self)
         self.about     = QLabel(
@@ -83,12 +84,16 @@ class CreateRoom(base.GridDialog):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
 
-    # TODO: handle disconnect
-    def on_new_login(self, user_id: str) -> None:
+    def on_new_account(self, user_id: str) -> None:
         while not hasattr(self, "creator"):
             time.sleep(0.05)
-
         self.creator.combo_box.addItem(user_id)
+
+
+    def on_account_gone(self, user_id: str) -> None:
+        while not hasattr(self, "creator"):
+            time.sleep(0.05)
+        self.creator.del_items_with_text(user_id)
 
 
     def validate(self, _) -> None:

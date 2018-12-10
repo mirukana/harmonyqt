@@ -139,6 +139,12 @@ class ComboBox(QWidget):
                 obj.setToolTip(tooltip)
 
 
+    def del_items_with_text(self, text: str) -> None:
+        for i in range(self.combo_box.count()):
+            if self.combo_box.itemText(i) == text:
+                self.combo_box.removeItem(i)
+
+
 class AcceptButton(QPushButton):
     def __init__(self,
                  dialog:          QDialog,
