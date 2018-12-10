@@ -4,21 +4,26 @@
 # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
+from .. import STYLESHEET, actions
+
 
 class AcceptRoomInvite(QMessageBox):
-    def __init__(self, parent: QWidget,
-                 user_id: str, room_name: str, inviter_id: str) -> None:
+    def __init__(self, parent: QWidget, room, room_name: str, inviter_id: str
+                ) -> None:
         super().__init__(parent)
-        from .. import STYLESHEET
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle("Harmony - Accept room invitation")
 
+        user_id = room.client.user_id
         self.setText(f"<b>{user_id}</b> has been invited to join the "
                      f"room <b>{room_name}</b> by <b>{inviter_id}</b>.")
 
         self.yes    = self.addButton("Accept",  QMessageBox.YesRole)
         self.no     = self.addButton("Decline", QMessageBox.NoRole)
         self.cancel = self.addButton("Cancel",  QMessageBox.RejectRole)
+
+        self.yes.clicked.connect(actions.AcceptInvite(self, room).on_trigger)
+        self.no.clicked.connect(actions.DeclineInvite(self, room).on_trigger)
 
         self.setDefaultButton(self.yes)
         self.setIcon(QMessageBox.Question)

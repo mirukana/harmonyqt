@@ -19,7 +19,6 @@
   - Don't expand rows if user collapsed manually
   - Drag and drop to reorder
   - Show error box when accepting invite for a gone room 
-  - Accept/decline invite in context menu
   - Confirmation dialog when leaving a private room
   - Del key
   - Change display name (+F2)

@@ -245,22 +245,23 @@ class RoomRow(QTreeWidgetItem):
 
     def on_activation(self) -> None:
         user_id = self.account_row.client.user_id
+        room_id = self.room.room_id
 
         if self.invite_by:
-            dialog = AcceptRoomInvite(main_window(),
-                                      user_id, self.text(0), self.invite_by)
+            dialog = AcceptRoomInvite(
+                main_window(), self.room, self.text(0), self.invite_by,
+            )
             dialog.exec()
-            clicked = dialog.clickedButton()
 
-            if clicked is dialog.yes:
-                self.accept_invite()
-            elif clicked is dialog.no:
-                self.decline_invite()
+            if dialog.clickedButton() is dialog.yes:
+                self.on_invite_accept()
+            elif dialog.clickedButton() is dialog.no:
+                self.on_leave()
                 return
             else:
                 return
 
-        main_window().go_to_chat_dock(user_id, self.room.room_id)
+        main_window().go_to_chat_dock(user_id, room_id)
 
 
     def get_context_menu_actions(self) -> List[QAction]:
@@ -286,26 +287,3 @@ class RoomRow(QTreeWidgetItem):
 
     def on_leave(self) -> None:
         self.account_row.del_room(self.room.room_id)
-
-
-    def ensure_is_invited(self) -> None:
-        if not self.invite_by:
-            raise RuntimeError(f"No invitation for {self.room.room_id}.")
-
-
-    def accept_invite(self) -> None:
-        self.ensure_is_invited()
-        try:
-            self.account_row.client.join_room(self.room.room_id)
-        except MatrixRequestError as err:
-            data = json.loads(err.content)
-            if data["errcode"] == "M_UNKNOWN":
-                print("Room gone, error box not implemented")
-
-        self.invite_by = None
-        self.update_ui()
-
-
-    def decline_invite(self) -> None:
-        self.ensure_is_invited()
-        # self.leave()

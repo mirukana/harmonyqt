@@ -51,7 +51,6 @@ class Action(QAction):
         self.multiselect_text    = multiselect_text
         self.multiselect_tooltip = multiselect_tooltip
         self.immediate_func      = immediate_func
-        print(self.immediate_func)
         self.thread_triggers     = thread_triggers
         self._pool               = ThreadPool(8)
 
@@ -82,7 +81,7 @@ class Action(QAction):
             self.immediate_func()
 
         if self.thread_triggers:
-            self._pool.apply_async(self.on_trigger, checked)
+            self._pool.apply_async(self.on_trigger, (checked,))
         else:
             self.on_trigger(checked)
 
