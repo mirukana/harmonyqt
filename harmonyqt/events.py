@@ -60,7 +60,6 @@ class EventManager:
         client.start_listener_thread()
 
         self.signal.new_account.emit(client.user_id)
-        # TODO: room.add_state_listener
 
 
     def on_account_logout(self, user_id: str) -> None:

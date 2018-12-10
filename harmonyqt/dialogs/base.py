@@ -190,11 +190,11 @@ class CancelButton(QPushButton):
 
 
 class GridDialog(QDialog):
-    def __init__(self, title: str) -> None:
+    def __init__(self, title: str = "") -> None:
         super().__init__(main_window())
 
         self.setStyleSheet(STYLESHEET)
-        self.setWindowTitle(f"Harmony - {title}")
+        self.setWindowTitle(" - ".join(("Harmony", title)))
         self.setWindowOpacity(0.9)
 
         self.grid = QGridLayout(self)

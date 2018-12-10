@@ -19,16 +19,18 @@ class InviteToRoom(base.GridDialog):
 
 
     def __init__(self, room: Room) -> None:
-        # TODO: conn rename
-        super().__init__(f"Invite to room: {room.display_name}")
+        super().__init__()
         self.room  = room
         self._pool = ThreadPool(8)
+        self.update_wintitle()
+
         self.invites_sent_signal.connect(self.on_invites_sent)
+        main_window().events.signal.new_account.connect(self.on_new_login)
+        main_window().events.signal.account_gone.connect(self.on_account_gone)
+        main_window().events.signal.room_rename.connect(self.update_wintitle)
 
         room_uids  = {m.user_id for m in room.get_joined_members()}
         us_in_room = {i for i in main_window().accounts if i in room_uids}
-        main_window().events.signal.new_account.connect(self.on_new_login)
-        main_window().events.signal.account_gone.connect(self.on_account_gone)
 
         self.info_line = base.InfoLine(self)
         self.sender    = base.ComboBox(self, "Send invite as:",
@@ -60,6 +62,12 @@ class InviteToRoom(base.GridDialog):
 
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 160)
+
+
+    def update_wintitle(self) -> None:
+        self.setWindowTitle(
+            f"Harmony - Invite to room: {self.room.display_name}"
+        )
 
 
     def on_new_login(self, user_id: str) -> None:
