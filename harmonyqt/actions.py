@@ -56,23 +56,24 @@ class Action(QAction):
                  thread_triggers:     bool          = False) -> None:
         super().__init__(parent)
         self.parent              = parent
+        self.text                = text
+        self.tooltip             = "\n".join((tooltip, shortcut)).strip()
+        self.icon_str            = icon
+        self.shortcut_str        = shortcut
         self.multiselect_text    = multiselect_text
         self.multiselect_tooltip = multiselect_tooltip
         self.immediate_func      = immediate_func
         self.thread_triggers     = thread_triggers
         self._pool               = ThreadPool(8)
 
-        self.setText(text)
+        self.setText(self.text)
 
-        tooltip = "\n".join((tooltip, shortcut)).strip()
-        if tooltip:
+        if self.tooltip:
             self.setToolTip(tooltip)
 
-        self.icon_str = icon
         if icon:
             self.setIcon(get_icon(icon))
 
-        self.shortcut_str = shortcut
         if shortcut:
             self.setShortcutContext(Qt.ApplicationShortcut)
             self.setShortcut(QKeySequence(safe_bind(self, shortcut)))
@@ -100,11 +101,11 @@ class Action(QAction):
 class MultiselectAction(Action):
     def __init__(self, actions: Sequence[Action]) -> None:
         super().__init__(
-            parent          = actions[0].parent,
-            text            = actions[0].multiselect_text,
-            tooltip         = actions[0].multiselect_tooltip,
-            icon            = actions[0].icon_str,
-            shortcut        = actions[0].shortcut_str,
+            parent   = actions[0].parent,
+            text     = actions[0].multiselect_text,
+            tooltip  = actions[0].multiselect_tooltip or actions[0].tooltip,
+            icon     = actions[0].icon_str,
+            shortcut = actions[0].shortcut_str,
             thread_triggers = actions[0].thread_triggers,
         )
         self.actions         = actions
@@ -129,10 +130,10 @@ class MultiselectAction(Action):
 class NewChat(Action):
     def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
         super().__init__(
-            parent   = parent,
-            text     = "&New chat",
-            tooltip  = "Create/join a chat room",
-            icon     = "new_chat.png",
+            parent  = parent,
+            text    = "&New chat",
+            tooltip = "Create/join a chat room",
+            icon    = "new_chat.png",
         )
         acts = [a(parent, for_user_id)
                 for a in (DirectChat, CreateRoom, JoinRoom)]

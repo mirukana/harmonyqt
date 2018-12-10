@@ -98,7 +98,7 @@ class UserTree(QTreeWidget):
 
     def on_context_menu_request(self, position: QPoint) -> None:
         selected = [self.itemFromIndex(s) for s in self.selectedIndexes()
-                    if s.column() == 0]
+                    if s.column() == 0 and not isinstance(s, BlankRow)]
 
         acts = []
         for row in selected:
@@ -109,12 +109,14 @@ class UserTree(QTreeWidget):
             acts += self.get_context_menu_actions()
 
         menu = Menu(self, acts)
-        menu.exec_(self.mapToGlobal(position))
+        menu.exec_if_not_empty(self.mapToGlobal(position))
 
 
     @staticmethod
     def get_context_menu_actions() -> List[QAction]:
-        return [actions.AddAccount(main_window())]
+        return [actions.AddAccount(main_window()),
+                actions.NewChat(main_window()),
+                actions.SetStatus(main_window())]
 
 
     def on_add_room(self, user_id: str, room_id: str,

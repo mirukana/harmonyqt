@@ -15,9 +15,8 @@
   - Invite to current room action binding
 
 - Accounts
-  - Confirmation dialog when leaving a private room
+  - Confirmation dialogs for leave/decline/remove account entries
   - Del key
-  - Change display name (+F2)
   - Show error box when accepting invite for a gone room 
 
   - Don't expand rows if user collapsed manually
