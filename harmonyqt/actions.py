@@ -133,7 +133,7 @@ class JoinRoom(Action):
         )
 
 class InviteToRoom(Action):
-    def __init__(self, parent: QWidget, room: Room) -> None:
+    def __init__(self, parent: QWidget, room: Room, as_user: str = "") -> None:
         tooltip = "Invite a user to join selected room"
         super().__init__(
             parent              = parent,
@@ -143,10 +143,11 @@ class InviteToRoom(Action):
             multiselect_text    = "&Invite to selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms")
         )
-        self.room = room
+        self.room    = room
+        self.as_user = as_user
 
     def on_trigger(self, _) -> None:
-        dialogs.InviteToRoom(self.room).open_modeless()
+        dialogs.InviteToRoom(self.room, self.as_user).open_modeless()
 
 class LeaveRoom(Action):
     def __init__(self,

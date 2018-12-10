@@ -32,6 +32,8 @@ class Login(base.GridDialog):
         )
         self.cancel = base.CancelButton(self)
 
+        self.username.text_edit.setFocus()
+
         blank = lambda: base.BlankLine(self)
 
         self.add_spacer(0, 0)

@@ -116,10 +116,11 @@ class CheckBox(QCheckBox):
 
 class ComboBox(QWidget):
     def __init__(self,
-                 parent:  QWidget,
-                 label:   str,
-                 items:   List[str],
-                 tooltip: str = "") -> None:
+                 parent:       QWidget,
+                 label:        str,
+                 items:        List[str],
+                 tooltip:      str = "",
+                 initial_item: str = "") -> None:
         super().__init__(parent)
 
         self.grid = QGridLayout(self)
@@ -138,11 +139,25 @@ class ComboBox(QWidget):
             for obj in (self.label, self.combo_box):
                 obj.setToolTip(tooltip)
 
+        if initial_item:
+            self.select_item_with_text(initial_item)
 
-    def del_items_with_text(self, text: str) -> None:
+
+    def del_items_with_text(self, text: str) -> int:
+        deleted = 0
         for i in range(self.combo_box.count()):
             if self.combo_box.itemText(i) == text:
                 self.combo_box.removeItem(i)
+                deleted += 1
+        return deleted
+
+
+    def select_item_with_text(self, text: str) -> bool:
+        for i in range(self.combo_box.count()):
+            if self.combo_box.itemText(i) == text:
+                self.combo_box.setCurrentIndex(i)
+                return True
+        return False
 
 
 class AcceptButton(QPushButton):

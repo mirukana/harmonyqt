@@ -263,8 +263,9 @@ class RoomRow(QTreeWidgetItem):
 
 
     def get_context_menu_actions(self) -> List[QAction]:
-        tree = self.account_row.user_tree
-        return [actions.InviteToRoom(tree, self.room),
+        tree    = self.account_row.user_tree
+        user_id = self.account_row.client.user_id
+        return [actions.InviteToRoom(tree, self.room, user_id),
                 actions.LeaveRoom(tree, self.room, self.leave)]
 
 

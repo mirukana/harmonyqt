@@ -18,7 +18,7 @@ class InviteToRoom(base.GridDialog):
     invites_sent_signal = pyqtSignal()
 
 
-    def __init__(self, room: Room) -> None:
+    def __init__(self, room: Room, as_user: str = "") -> None:
         super().__init__()
         self.room  = room
         self._pool = ThreadPool(8)
@@ -33,8 +33,12 @@ class InviteToRoom(base.GridDialog):
         us_in_room = {i for i in main_window().accounts if i in room_uids}
 
         self.info_line = base.InfoLine(self)
-        self.sender    = base.ComboBox(self, "Send invite as:",
-                                       items=sorted(us_in_room))
+        self.sender    = base.ComboBox(
+            self,
+            "Send invite as:",
+            items        = sorted(us_in_room),
+            initial_item = as_user
+        )
         self.invitees  = base.Field(
             self,
             "Users to invite:",
@@ -45,6 +49,9 @@ class InviteToRoom(base.GridDialog):
         )
         self.send   = base.AcceptButton(self, "&Send", self.validate)
         self.cancel = base.CancelButton(self, "&Cancel")
+
+        if as_user:
+            self.invitees.text_edit.setFocus()
 
         blank = lambda: base.BlankLine(self)
 
