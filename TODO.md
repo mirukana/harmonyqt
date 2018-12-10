@@ -20,7 +20,6 @@
   - Drag and drop to reorder
   - Show error box when accepting invite for a gone room 
   - Accept/decline invite in context menu
-  - Ensure invites accepted/declined in another client affect us
   - Confirmation dialog when leaving a private room
   - Del key
   - Change display name (+F2)

@@ -32,15 +32,17 @@ def safe_bind(action: QAction, key: str) -> str:
 
 class Action(QAction):
     def __init__(self,
-                 parent:           QWidget,
-                 text:             str,
-                 tooltip:          str = "",
-                 icon:             str = "",
-                 shortcut:         str = "",
-                 multiselect_text: str = "") -> None:
+                 parent:              QWidget,
+                 text:                str,
+                 tooltip:             str = "",
+                 icon:                str = "",
+                 shortcut:            str = "",
+                 multiselect_text:    str = "",
+                 multiselect_tooltip: str = "") -> None:
         super().__init__(parent)
-        self.parent           = parent
-        self.multiselect_text = multiselect_text
+        self.parent              = parent
+        self.multiselect_text    = multiselect_text
+        self.multiselect_tooltip = multiselect_tooltip
         self.setText(text)
 
         tooltip = "\n".join((tooltip, shortcut)).strip()
@@ -72,7 +74,7 @@ class MultiselectAction(Action):
         super().__init__(
             parent   = actions[0].parent,
             text     = actions[0].multiselect_text,
-            tooltip  = actions[0].toolTip(),
+            tooltip  = actions[0].multiselect_tooltip,
             icon     = actions[0].icon_str,
             shortcut = actions[0].shortcut_str
         )
@@ -130,18 +132,36 @@ class JoinRoom(Action):
             shortcut = "Ctrl+Shift+J",
         )
 
+class InviteToRoom(Action):
+    def __init__(self, parent: QWidget, room: Room) -> None:
+        tooltip = "Invite a user to join selected room"
+        super().__init__(
+            parent              = parent,
+            text                = "&Invite to room",
+            icon                = "invite.png",
+            tooltip             = tooltip,
+            multiselect_text    = "&Invite to selected rooms",
+            multiselect_tooltip = tooltip.replace("room", "rooms")
+        )
+        self.room = room
+
+    def on_trigger(self, _) -> None:
+        dialogs.InviteToRoom(self.parent.window()).open_modeless()
+
 class LeaveRoom(Action):
     def __init__(self,
                  parent:     QWidget,
                  room:       Room,
                  leave_func: Optional[Callable[[], None]]= None
                 ) -> None:
+        tooltip = "Leave and remove selected room from the list"
         super().__init__(
-            parent           = parent,
-            text             = "&Leave room",
-            tooltip          = "Leave and remove this room from the list",
-            icon             = "leave.png",
-            multiselect_text = "&Leave selected rooms",
+            parent              = parent,
+            text                = "&Leave room",
+            icon                = "leave.png",
+            tooltip             = tooltip,
+            multiselect_text    = "&Leave selected rooms",
+            multiselect_tooltip = tooltip.replace("room", "rooms")
         )
         self.room       = room
         self.leave_func = leave_func
@@ -207,14 +227,16 @@ class AddAccount(Action):
 
 class DelAccount(Action):
     def __init__(self, parent: QWidget, user_id: str) -> None:
+        tooltip  = "Remove selected account from Harmony\n" \
+                   "The account will still exist on the server and can " \
+                   "be added again later"
         super().__init__(
-            parent   = parent,
-            icon     = "account_del.png",
-            text     = "Remove &account",
-            tooltip  = ("Remove this account from Harmony\n"
-                        "The account will still exist on the server and can "
-                        "be added again later"),
-            multiselect_text = "&Remove selected accounts",
+            parent              = parent,
+            icon                = "account_del.png",
+            text                = "Remove &account",
+            tooltip             = tooltip,
+            multiselect_text    = "&Remove selected accounts",
+            multiselect_tooltip = tooltip.replace("account", "accounts")
         )
         self.user_id = user_id
 
