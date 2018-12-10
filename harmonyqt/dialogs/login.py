@@ -60,9 +60,9 @@ class Login(base.GridDialog):
     def validate(self, _) -> None:
         self.info_line.set_info("Logging in...")
 
-        server   = self.server.line_edit.text()
-        user     = self.username.line_edit.text()
-        pw       = self.password.line_edit.text()
+        server   = self.server.get_text()
+        user     = self.username.get_text()
+        pw       = self.password.get_text()
         remember = self.remember.isChecked()
 
         self.expected_login_user_id = self.main_window.accounts.login(

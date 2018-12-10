@@ -4,9 +4,10 @@
 from typing import Callable, List, Optional, Sequence
 
 # pylint: disable=no-name-in-module
+from PyQt5.QtGui import QFontMetrics
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout,
-                             QLabel, QLineEdit, QMainWindow, QPushButton,
-                             QSizePolicy, QSpacerItem, QWidget)
+                             QLabel, QLineEdit, QMainWindow, QPlainTextEdit,
+                             QPushButton, QSizePolicy, QSpacerItem, QWidget)
 
 from .. import STYLESHEET, get_icon
 
@@ -53,25 +54,55 @@ class Field(QWidget):
                  placeholder : str  = "",
                  default_text: str  = "",
                  tooltip:      str  = "",
-                 is_password:  bool = False) -> None:
+                 is_password:  bool = False,
+                 lines:        int  = 1) -> None:
         super().__init__(parent)
+        assert lines >= 1
+        self.lines = lines
 
         self.grid = QGridLayout(self)
 
         self.label = QLabel(label, parent)
         self.grid.addWidget(self.label, 0, 0)
 
-        self.line_edit = QLineEdit(parent)
-        self.line_edit.setDragEnabled(True)
-        self.line_edit.setPlaceholderText(placeholder)
-        self.line_edit.setText(default_text)
-        if is_password:
-            self.line_edit.setEchoMode(QLineEdit.Password)
-        self.grid.addWidget(self.line_edit, 1, 0)
+        if self.lines == 1:
+            self.text_edit = QLineEdit(parent)
+            self.text_edit.setDragEnabled(True)
+            if is_password:
+                self.text_edit.setEchoMode(QLineEdit.Password)
+        else:
+            self.text_edit = QPlainTextEdit(parent)
+            self.text_edit.setTabChangesFocus(True)
+
+            doc         = self.text_edit.document()
+            doc_margins = doc.documentMargin()
+            margins     = self.text_edit.contentsMargins()
+            frame_width = self.text_edit.frameWidth()
+            font_height = QFontMetrics(doc.defaultFont()).lineSpacing()
+            self.text_edit.setFixedHeight((1 + self.lines) * font_height +
+                                          (frame_width + doc_margins) * 2 +
+                                          margins.top() + margins.bottom())
+
+        self.text_edit.setPlaceholderText(placeholder)
+        self.set_text(default_text)
+        self.grid.addWidget(self.text_edit, 1, 0)
 
         if tooltip:
-            for obj in (self.label, self.line_edit):
+            for obj in (self.label, self.text_edit):
                 obj.setToolTip(tooltip)
+
+
+    def get_text(self) -> str:
+        try:
+            return self.text_edit.text()
+        except AttributeError:
+            return self.text_edit.toPlainText()
+
+    def set_text(self, text: str) -> None:
+        try:
+            self.text_edit.setText(text)
+        except AttributeError:
+            self.text_edit.setPlainText(text)
 
 
 class CheckBox(QCheckBox):
@@ -125,9 +156,9 @@ class AcceptButton(QPushButton):
 
         # Button will be disabled until all these fields have a value:
         for field in required_fields:
-            self.text_in_fields[field] = bool(field.line_edit.text())
+            self.text_in_fields[field] = bool(field.get_text())
 
-            field.line_edit.textChanged.connect(
+            field.text_edit.textChanged.connect(
                 lambda text, f=field: self.on_field_change(f, text)
             )
 

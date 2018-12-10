@@ -35,10 +35,11 @@ class CreateRoom(base.GridDialog):
         self.name      = base.Field(self, "Room name:")
         self.invitees  = base.Field(
             self,
-            "User ID to invite:",
-            "@user1:server.tld @user2:matrix.org …",
+            "Users to invite:",
+            "@user1:server.tld\n@user2:matrix.org\n…",
             "",
-            "Space-delimited list of user IDs to invite in this room"
+            "Whitespace-delimited list of user IDs to invite in this room",
+            lines = 3
         )
         self.public = base.CheckBox(
             self,
@@ -93,8 +94,8 @@ class CreateRoom(base.GridDialog):
         self.info_line.set_info("Creating room...")
 
         creator  = self.creator.combo_box.currentText()
-        name     = self.name.line_edit.text()
-        invitees = self.invitees.line_edit.text().split()
+        name     = self.name.get_text()
+        invitees = self.invitees.get_text().split()
         public   = self.public.isChecked()
         federate = self.federate.isChecked()
 
