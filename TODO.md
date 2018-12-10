@@ -24,7 +24,6 @@
   - Confirmation dialog when leaving a private room
   - Del key
   - Change display name (+F2)
-  - Close tabs when removing account
 
 - Global
   - Properly log off accounts when closing the client

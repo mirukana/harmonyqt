@@ -67,9 +67,18 @@ class MessageList(QTextBrowser):
 
     def add_message(self, msg: dict, to_top: bool = False) -> None:
         with self._lock:  # Ensures messages are posted in the right order
-            dispname = self.chat.room.members_displaynames[msg["sender"]]
+            dispname = self.chat.room.members_displaynames.get(msg["sender"])
+
+            if not dispname:
+                known_users = self.chat.client.users
+                for other_client in self.chat.window.accounts.values():
+                    known_users.update(other_client.users)
+
+                user     = known_users.get(msg["sender"])
+                dispname = user.get_display_name() if user else msg["sender"]
+
             extra    = {
-                "name":      dispname or msg["sender"],
+                "name":      dispname,
                 "date_time": QDateTime.\
                              fromMSecsSinceEpoch(msg["origin_server_ts"])
             }
