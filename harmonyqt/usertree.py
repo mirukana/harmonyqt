@@ -187,6 +187,7 @@ class AccountRow(QTreeWidgetItem):
                  invite_by: str = "", display_name: str = "",
                  name:      str = "", alias:        str = "") -> None:
         if room_id in self.rooms:
+            self.rooms[room_id].update_ui()
             return
 
         self.rooms[room_id] = RoomRow(self, room_id,
@@ -265,8 +266,26 @@ class RoomRow(QTreeWidgetItem):
     def get_context_menu_actions(self) -> List[QAction]:
         tree    = self.account_row.user_tree
         user_id = self.account_row.client.user_id
-        return [actions.InviteToRoom(tree, self.room, user_id),
-                actions.LeaveRoom(tree, self.room, self.leave)]
+        acts    = []
+
+        if self.invite_by:
+            acts += [
+                actions.AcceptInvite(tree, self.room, self.on_invite_accept),
+                actions.DeclineInvite(tree, self.room, self.on_leave)
+            ]
+        else:
+            acts += [actions.InviteToRoom(tree, self.room, user_id),
+                     actions.LeaveRoom(tree, self.room, self.on_leave)]
+        return acts
+
+
+    def on_invite_accept(self) -> None:
+        self.invite_by = None
+        self.update_ui()
+
+
+    def on_leave(self) -> None:
+        self.account_row.del_room(self.room.room_id)
 
 
     def ensure_is_invited(self) -> None:
@@ -289,12 +308,4 @@ class RoomRow(QTreeWidgetItem):
 
     def decline_invite(self) -> None:
         self.ensure_is_invited()
-        self.leave()
-
-
-    def leave(self) -> None:
-        try:
-            self.room.leave()
-        except KeyError:  # matrix_client bug
-            pass
-        self.account_row.del_room(self.room.room_id)
+        # self.leave()

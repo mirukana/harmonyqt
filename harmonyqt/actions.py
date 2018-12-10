@@ -1,16 +1,21 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import json
 import webbrowser
+from multiprocessing.pool import ThreadPool
 from typing import Callable, Optional, Sequence
 
+from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QWidget
 
-from . import main_window, __about__, dialogs, get_icon, menu
+from . import __about__, dialogs, get_icon, main_window, menu
+
+ImmediateFunc = Optional[Callable[[], None]]
 
 KEYS_BOUND = {}
 
@@ -34,15 +39,22 @@ class Action(QAction):
     def __init__(self,
                  parent:              QWidget,
                  text:                str,
-                 tooltip:             str = "",
-                 icon:                str = "",
-                 shortcut:            str = "",
-                 multiselect_text:    str = "",
-                 multiselect_tooltip: str = "") -> None:
+                 tooltip:             str           = "",
+                 icon:                str           = "",
+                 shortcut:            str           = "",
+                 multiselect_text:    str           = "",
+                 multiselect_tooltip: str           = "",
+                 immediate_func:      ImmediateFunc = None,
+                 thread_triggers:     bool          = False) -> None:
         super().__init__(parent)
         self.parent              = parent
         self.multiselect_text    = multiselect_text
         self.multiselect_tooltip = multiselect_tooltip
+        self.immediate_func      = immediate_func
+        print(self.immediate_func)
+        self.thread_triggers     = thread_triggers
+        self._pool               = ThreadPool(8)
+
         self.setText(text)
 
         tooltip = "\n".join((tooltip, shortcut)).strip()
@@ -63,7 +75,16 @@ class Action(QAction):
             except AttributeError:
                 pass
 
-        self.triggered.connect(self.on_trigger)
+        self.triggered.connect(self._on_trig)
+
+    def _on_trig(self, checked: bool) -> None:
+        if self.immediate_func:
+            self.immediate_func()
+
+        if self.thread_triggers:
+            self._pool.apply_async(self.on_trigger, checked)
+        else:
+            self.on_trigger(checked)
 
     def on_trigger(self, checked: bool) -> None:
         pass
@@ -72,17 +93,29 @@ class Action(QAction):
 class MultiselectAction(Action):
     def __init__(self, actions: Sequence[Action]) -> None:
         super().__init__(
-            parent   = actions[0].parent,
-            text     = actions[0].multiselect_text,
-            tooltip  = actions[0].multiselect_tooltip,
-            icon     = actions[0].icon_str,
-            shortcut = actions[0].shortcut_str
+            parent          = actions[0].parent,
+            text            = actions[0].multiselect_text,
+            tooltip         = actions[0].multiselect_tooltip,
+            icon            = actions[0].icon_str,
+            shortcut        = actions[0].shortcut_str,
+            thread_triggers = actions[0].thread_triggers,
         )
-        self.actions = actions
+        self.actions         = actions
+        self._pool           = ThreadPool(8)
+        self.immediate_funcs = [a.immediate_func for a in actions
+                                if a.immediate_func]
+
+    def _on_trig(self, checked: bool) -> None:
+        for func in self.immediate_funcs:
+            func()
+        self.on_trigger(checked)
 
     def on_trigger(self, checked: bool) -> None:
-        for act in self.actions:
-            act.on_trigger(checked)
+        if self.thread_triggers:
+            self._pool.map_async(lambda a: a.on_trigger(checked), self.actions)
+        else:
+            for act in self.actions:
+                act.on_trigger(checked)
 
 # Rooms
 
@@ -150,11 +183,8 @@ class InviteToRoom(Action):
         dialogs.InviteToRoom(self.room, self.as_user).open_modeless()
 
 class LeaveRoom(Action):
-    def __init__(self,
-                 parent:     QWidget,
-                 room:       Room,
-                 leave_func: Optional[Callable[[], None]] = None
-                ) -> None:
+    def __init__(self, parent: QWidget, room: Room,
+                 immediate_func: ImmediateFunc = None) -> None:
         tooltip = "Leave and remove selected room from the list"
         super().__init__(
             parent              = parent,
@@ -162,16 +192,60 @@ class LeaveRoom(Action):
             icon                = "leave.png",
             tooltip             = tooltip,
             multiselect_text    = "&Leave selected rooms",
-            multiselect_tooltip = tooltip.replace("room", "rooms")
+            multiselect_tooltip = tooltip.replace("room", "rooms"),
+            immediate_func      = immediate_func,
+            thread_triggers     = True,
         )
-        self.room       = room
-        self.leave_func = leave_func
+        self.room = room
 
     def on_trigger(self, _) -> None:
-        if callable(self.leave_func):
-            self.leave_func()
-        else:
+        try:
             self.room.leave()
+        except KeyError:  # matrix_client bug
+            pass
+
+class AcceptInvite(Action):
+    def __init__(self, parent: QWidget, room: Room,
+                 immediate_func: ImmediateFunc = None) -> None:
+        tooltip = "Accept invitation and join selected room"
+        super().__init__(
+            parent              = parent,
+            text                = "&Accept invitation",
+            icon                = "accept_small.png",
+            tooltip             = tooltip,
+            multiselect_text    = "&Accept invitations for selected rooms",
+            multiselect_tooltip = tooltip.replace("room", "rooms"),
+            immediate_func      = immediate_func,
+            thread_triggers     = True,
+        )
+        self.room = room
+
+    def on_trigger(self, _) -> None:
+        try:
+            self.room.client.join_room(self.room.room_id)
+        except MatrixRequestError as err:
+            data = json.loads(err.content)
+            if data["errcode"] == "M_UNKNOWN":
+                print("Room gone, error box not implemented")
+
+class DeclineInvite(Action):
+    def __init__(self, parent: QWidget, room: Room,
+                 immediate_func: ImmediateFunc = None) -> None:
+        tooltip = "Decline invitation for selected room"
+        super().__init__(
+            parent              = parent,
+            text                = "&Decline invitation",
+            icon                = "cancel_small.png",
+            tooltip             = tooltip,
+            multiselect_text    = "&Decline invitations for selected rooms",
+            multiselect_tooltip = tooltip.replace("room", "rooms"),
+            immediate_func      = immediate_func,
+            thread_triggers     = True,
+        )
+        self.room           = room
+        self._leave         = LeaveRoom(parent, room, immediate_func)
+        self.on_trigger     = self._leave.on_trigger
+
 
 # Status
 
@@ -196,6 +270,7 @@ class StatusAction(Action):
             tooltip  = f"Change status for all accounts to {name.lower()}",
             icon     = f"status_{name.lower()}.png",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
+            thread_triggers = True,
         )
 
 class Online(StatusAction):

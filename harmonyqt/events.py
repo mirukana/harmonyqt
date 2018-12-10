@@ -3,7 +3,7 @@
 
 from queue import Queue
 from threading import Lock
-from typing import Dict
+from typing import Dict, Set
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -28,8 +28,10 @@ class _SignalObject(QObject):
 class EventManager:
     def __init__(self) -> None:
         self.signal = _SignalObject()
-        # self.messages[client.user_id[room.room_id[Queue[event]]]
+        # {user_id: {room_id: Queue}}
         self.messages: Dict[str, Dict[str, Queue]] = {}
+        # {user_id: {room_id}}
+        self._known_rooms: Dict[str, Set[str]] = {}
 
         self._lock = Lock()
 
@@ -67,12 +69,19 @@ class EventManager:
 
 
     def on_event(self, user_id: str, event: dict) -> None:
-        ev    = event
-        etype = event.get("type")
+        ev      = event
+        etype   = event.get("type")
+        room_id = event.get("room_id")
+
+        with self._lock:
+            if user_id not in self._known_rooms:
+                self._known_rooms[user_id] = set()
+
+            if room_id not in self._known_rooms[user_id]:
+                self._known_rooms[user_id].add(room_id)
+                self.signal.new_room.emit(user_id, room_id)
 
         if etype == "m.room.member" and ev.get("membership") == "join":
-            self.signal.new_room.emit(user_id, ev["room_id"])
-
             if ev.get("state_key") in main_window().accounts:
                 prev = ev.get("unsigned", {}).get("prev_content")
                 new  = ev.get("content")
@@ -85,25 +94,25 @@ class EventManager:
                     user.displayname = dispname
 
                     self.signal.account_change.emit(
-                        ev["state_key"], ev["room_id"],
+                        ev["state_key"], room_id,
                         dispname, new["avatar_url"] or ""
                     )
 
         elif etype == "m.room.message":
             msg_events = self.messages[user_id]
 
-            if ev["room_id"] not in msg_events:
-                msg_events[ev["room_id"]] = Queue()
+            if room_id not in msg_events:
+                msg_events[room_id] = Queue()
 
             with self._lock:
-                msg_events[ev["room_id"]].put(ev)
+                msg_events[room_id].put(ev)
 
         else:
             self._log("blue", user_id, ev, force=True)
 
         if etype in ("m.room.name", "m.room.canonical_alias",
                      "m.room.member"):
-            self.signal.room_rename.emit(user_id, ev["room_id"])
+            self.signal.room_rename.emit(user_id, room_id)
 
 
     def on_presence_event(self, user_id: str, event: dict) -> None:
@@ -151,7 +160,9 @@ class EventManager:
 
 
     def on_leave_event(self, user_id: str, room_id: str) -> None:
-        self.signal.left_room.emit(user_id, room_id)
+        with self._lock:
+            self._known_rooms[user_id].discard(room_id)
+            self.signal.left_room.emit(user_id, room_id)
 
 
     def _log(self, color: str, *args, force: bool = False) -> None:

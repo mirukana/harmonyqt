@@ -102,7 +102,8 @@ class CreateRoom(base.GridDialog):
 
         creator  = self.creator.combo_box.currentText()
         name     = self.name.get_text()
-        invitees = self.invitees.get_text().split()
+        invitees = [t.strip() for t in self.invitees.get_text().split()
+                    if t.strip()]
         public   = self.public.isChecked()
         federate = self.federate.isChecked()
 
