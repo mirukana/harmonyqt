@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QWidget
 
-from . import __about__, dialogs, get_icon, menu
+from . import main_window, __about__, dialogs, get_icon, menu
 
 KEYS_BOUND = {}
 
@@ -120,7 +120,7 @@ class CreateRoom(Action):
         )
 
     def on_trigger(self, _) -> None:
-        dialogs.CreateRoom(self.parent.window()).open_modeless()
+        dialogs.CreateRoom().open_modeless()
 
 class JoinRoom(Action):
     def __init__(self, parent: QWidget) -> None:
@@ -146,13 +146,13 @@ class InviteToRoom(Action):
         self.room = room
 
     def on_trigger(self, _) -> None:
-        dialogs.InviteToRoom(self.parent.window()).open_modeless()
+        dialogs.InviteToRoom(self.room).open_modeless()
 
 class LeaveRoom(Action):
     def __init__(self,
                  parent:     QWidget,
                  room:       Room,
-                 leave_func: Optional[Callable[[], None]]= None
+                 leave_func: Optional[Callable[[], None]] = None
                 ) -> None:
         tooltip = "Leave and remove selected room from the list"
         super().__init__(
@@ -241,7 +241,7 @@ class DelAccount(Action):
         self.user_id = user_id
 
     def on_trigger(self, _) -> None:
-        self.parent.window.accounts.remove(self.user_id)
+        main_window().accounts.remove(self.user_id)
 
 class Login(Action):
     def __init__(self, parent: QWidget) -> None:
@@ -254,7 +254,7 @@ class Login(Action):
         )
 
     def on_trigger(self, _) -> None:
-        dialogs.Login(self.parent.window()).open_modeless()
+        dialogs.Login().open_modeless()
 
 
 class Register(Action):
@@ -286,7 +286,7 @@ class ToggleTitleBars(Action):
         )
 
     def on_trigger(self, _) -> None:
-        self.parent.window().show_dock_title_bars()
+        main_window().show_dock_title_bars()
 
 
 # Settings

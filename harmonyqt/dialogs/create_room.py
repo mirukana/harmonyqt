@@ -8,22 +8,23 @@ from multiprocessing.pool import ThreadPool
 from matrix_client.errors import MatrixRequestError
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QLabel, QMainWindow
+from PyQt5.QtWidgets import QLabel
 
 from . import base
+from .. import main_window
 
 
 class CreateRoom(base.GridDialog):
     # User ID, Room ID
     room_created_signal = pyqtSignal(str, str)
 
-    def __init__(self, main_window: QMainWindow) -> None:
-        super().__init__(main_window, "Create room")
+    def __init__(self) -> None:
+        super().__init__("Create room")
         self._pool = ThreadPool(8)
         self.room_created_signal.connect(self.on_room_created)
 
-        logged_in = sorted(self.main_window.accounts.keys())
-        self.main_window.events.signal.new_account.connect(self.on_new_login)
+        logged_in = sorted(main_window().accounts.keys())
+        main_window().events.signal.new_account.connect(self.on_new_login)
 
         self.info_line = base.InfoLine(self)
         self.about     = QLabel(
@@ -104,7 +105,7 @@ class CreateRoom(base.GridDialog):
             return
 
         try:
-            client = self.main_window.accounts[creator]
+            client = main_window().accounts[creator]
         except KeyError:
             self.info_line.set_err("Selected creator not connected")
             return
@@ -134,4 +135,4 @@ class CreateRoom(base.GridDialog):
 
     def on_room_created(self, user_id: str, room_id: str) -> None:
         self.done(0)
-        self.main_window.go_to_chat_dock(user_id, room_id)
+        main_window().go_to_chat_dock(user_id, room_id)

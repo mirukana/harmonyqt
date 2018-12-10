@@ -5,14 +5,14 @@ from matrix_client.errors import (MatrixError, MatrixHttpLibError,
                                   MatrixRequestError)
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow
 
 from . import base
+from .. import main_window
 
 
 class Login(base.GridDialog):
-    def __init__(self, main_window: QMainWindow) -> None:
-        super().__init__(main_window, "Login")
+    def __init__(self) -> None:
+        super().__init__("Login")
 
         self.info_line = base.InfoLine(self)
         self.server    = base.Field(
@@ -54,7 +54,7 @@ class Login(base.GridDialog):
 
 
         self.expected_login_user_id: str = ""
-        self.main_window.events.signal.new_account.connect(self.on_login)
+        main_window().events.signal.new_account.connect(self.on_login)
 
 
     def validate(self, _) -> None:
@@ -65,7 +65,7 @@ class Login(base.GridDialog):
         pw       = self.password.get_text()
         remember = self.remember.isChecked()
 
-        self.expected_login_user_id = self.main_window.accounts.login(
+        self.expected_login_user_id = main_window().accounts.login(
             server, user, pw, remember, self.on_error
         )
 

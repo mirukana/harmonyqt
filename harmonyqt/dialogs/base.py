@@ -6,10 +6,10 @@ from typing import Callable, List, Optional, Sequence
 # pylint: disable=no-name-in-module
 from PyQt5.QtGui import QFontMetrics
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout,
-                             QLabel, QLineEdit, QMainWindow, QPlainTextEdit,
-                             QPushButton, QSizePolicy, QSpacerItem, QWidget)
+                             QLabel, QLineEdit, QPlainTextEdit, QPushButton,
+                             QSizePolicy, QSpacerItem, QWidget)
 
-from .. import STYLESHEET, get_icon
+from .. import main_window, STYLESHEET, get_icon
 
 
 class InfoLine(QLabel):
@@ -184,9 +184,8 @@ class CancelButton(QPushButton):
 
 
 class GridDialog(QDialog):
-    def __init__(self, main_window: QMainWindow, title: str) -> None:
-        super().__init__(main_window)
-        self.main_window = main_window
+    def __init__(self, title: str) -> None:
+        super().__init__(main_window())
 
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle(f"Harmony - {title}")

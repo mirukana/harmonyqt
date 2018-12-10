@@ -3,16 +3,14 @@
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import (QMainWindow, QSizePolicy, QToolBar, QToolButton,
-                             QWidget)
+from PyQt5.QtWidgets import QSizePolicy, QToolBar, QToolButton, QWidget
 
-from . import __about__, actions, get_icon
+from . import main_window, __about__, actions, get_icon
 
 
 class ActionsBar(QToolBar):
-    def __init__(self, window: QMainWindow) -> None:
-        super().__init__(window)
-        self.window = window
+    def __init__(self) -> None:
+        super().__init__(main_window())
 
         self.setIconSize(QSize(24, 24))
 
@@ -22,8 +20,8 @@ class ActionsBar(QToolBar):
                 actions.ToggleTitleBars, actions.Preferences]
 
         for action in acts:
-            self.add_spacer()                    # "distribute" items equally
-            self.addAction(action(self.window))  # row, col
+            self.add_spacer()  # "distribute" items equally
+            self.addAction(action(main_window()))  # row, col
         self.add_spacer()
 
         for child in self.children():

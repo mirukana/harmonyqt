@@ -2,12 +2,13 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QWidget
 
 
 class AcceptRoomInvite(QMessageBox):
-    def __init__(self, user_id: str, room_name: str, inviter_id: str) -> None:
-        super().__init__()
+    def __init__(self, parent: QWidget,
+                 user_id: str, room_name: str, inviter_id: str) -> None:
+        super().__init__(parent)
         from .. import STYLESHEET
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle("Harmony - Accept room invitation")

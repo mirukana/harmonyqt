@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 from atomicfile import AtomicFile
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow
 
 from .__about__ import __pkg_name__
 from .matrix import HMatrixClient
@@ -27,16 +26,10 @@ class _SignalObject(QObject):
 
 
 class AccountManager(UserDict):
-    def __init__(self,
-                 window:      Optional[QMainWindow] = None,
-                 initialdata: Optional[dict]        = None) -> None:
+    def __init__(self, initialdata: Optional[dict] = None) -> None:
         super().__init__(initialdata)
-        self.window = window
-        self.signal = None
+        self.signal = _SignalObject()
         self._pool  = ThreadPool(8)
-
-        if self.window:
-            self.signal = _SignalObject()
 
 
     def login(self,

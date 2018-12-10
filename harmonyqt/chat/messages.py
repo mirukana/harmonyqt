@@ -11,7 +11,7 @@ from PyQt5.QtGui import QTextCursor, QTextTableFormat
 from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
-from .. import accounts
+from .. import main_window, accounts
 
 
 class MessageList(QTextBrowser):
@@ -56,7 +56,7 @@ class MessageList(QTextBrowser):
 
         while True:
             try:
-                msg = self.chat.window.events.messages[user_id][room_id].get()
+                msg = main_window().events.messages[user_id][room_id].get()
             except KeyError:
                 time.sleep(0.05)
             else:
@@ -71,7 +71,7 @@ class MessageList(QTextBrowser):
 
             if not dispname:
                 known_users = self.chat.client.users
-                for other_client in self.chat.window.accounts.values():
+                for other_client in main_window().accounts.values():
                     known_users.update(other_client.users)
 
                 user     = known_users.get(msg["sender"])

@@ -41,7 +41,7 @@ setup(
     package_data         = {__about__.__pkg_name__: ["*.qss", "icons/**/*"]},
     entry_points    = {
         "console_scripts": [
-            f"{__about__.__pkg_name__}={__about__.__pkg_name__}.main:run"
+            f"{__about__.__pkg_name__}={__about__.__pkg_name__}:run"
         ]
     },
 

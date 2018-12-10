@@ -9,19 +9,18 @@ from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, QSize, Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (QAction, QHeaderView, QMainWindow, QSizePolicy,
-                             QTreeWidget, QTreeWidgetItem)
+from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
+                             QTreeWidgetItem)
 
-from . import __about__, actions
+from . import main_window, __about__, actions
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
 
 
 class UserTree(QTreeWidget):
-    def __init__(self, window: QMainWindow) -> None:
-        super().__init__(window)
-        self.window   = window
+    def __init__(self) -> None:
+        super().__init__()
         self.accounts:   Dict[str, "AccountRow"] = {}
         self.blank_rows: List["BlankRow"]        = []
 
@@ -44,7 +43,7 @@ class UserTree(QTreeWidget):
         self.customContextMenuRequested.connect(self.on_context_menu_request)
         self.itemActivated.connect(self.on_row_activation)
 
-        event_sig = self.window.events.signal
+        event_sig = main_window().events.signal
         event_sig.new_account.connect(self.add_account)
         event_sig.account_gone.connect(self.del_account)
         event_sig.new_room.connect(self.on_add_room)
@@ -156,7 +155,7 @@ class UserTree(QTreeWidget):
 
     def sizeHint(self) -> QSize:
         cols = sum([self.columnWidth(c) for c in range(self.columnCount())])
-        return QSize(max(cols, min(self.window.width() // 3, 360)), -1)
+        return QSize(max(cols, min(main_window().width() // 3, 360)), -1)
 
 
 class BlankRow(QTreeWidgetItem):
@@ -166,8 +165,8 @@ class BlankRow(QTreeWidgetItem):
 class AccountRow(QTreeWidgetItem):
     def __init__(self, parent: UserTree, user_id: str) -> None:
         super().__init__(parent)
-        self.user_tree: UserTree           = parent
-        self.client:    HMatrixClient      = parent.window.accounts[user_id]
+        self.user_tree: UserTree         = parent
+        self.client:    HMatrixClient    = main_window().accounts[user_id]
         self.rooms:     Dict[str, RoomRow] = {}
 
         self.auto_expanded_once: bool = False
@@ -247,7 +246,8 @@ class RoomRow(QTreeWidgetItem):
         user_id = self.account_row.client.user_id
 
         if self.invite_by:
-            dialog = AcceptRoomInvite(user_id, self.text(0), self.invite_by)
+            dialog = AcceptRoomInvite(main_window(),
+                                      user_id, self.text(0), self.invite_by)
             dialog.exec()
             clicked = dialog.clickedButton()
 
@@ -259,13 +259,13 @@ class RoomRow(QTreeWidgetItem):
             else:
                 return
 
-        self.account_row.user_tree.window.go_to_chat_dock(user_id,
-                                                          self.room.room_id)
+        main_window().go_to_chat_dock(user_id, self.room.room_id)
 
 
     def get_context_menu_actions(self) -> List[QAction]:
         tree = self.account_row.user_tree
-        return [actions.LeaveRoom(tree, self.room, self.leave)]
+        return [actions.InviteToRoom(tree, self.room),
+                actions.LeaveRoom(tree, self.room, self.leave)]
 
 
     def ensure_is_invited(self) -> None:

@@ -12,7 +12,7 @@ class Menu(QMenu):
                 ) -> None:
         super().__init__(parent)
         self.setWindowOpacity(0.9)
-        self.setTearOffEnabled(True)
+        # self.setTearOffEnabled(True)
         self.setToolTipsVisible(True)
 
         if not actions:

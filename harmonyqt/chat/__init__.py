@@ -4,13 +4,13 @@
 # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
+from .. import main_window
+
 
 class Chat(QWidget):
-    def __init__(self, window: QMainWindow, user_id: str, room_id: str
-                ) -> None:
-        super().__init__(window)
-        self.window = window
-        self.client = window.accounts[user_id]
+    def __init__(self, user_id: str, room_id: str) -> None:
+        super().__init__()
+        self.client = main_window().accounts[user_id]
         self.room   = self.client.rooms[room_id]
 
         self.vbox = QVBoxLayout(self)

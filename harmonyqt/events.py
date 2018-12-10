@@ -7,8 +7,8 @@ from typing import Dict
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow
 
+from . import main_window
 from .matrix import HMatrixClient
 
 
@@ -26,16 +26,15 @@ class _SignalObject(QObject):
 
 
 class EventManager:
-    def __init__(self, window: QMainWindow) -> None:
-        self.window = window
+    def __init__(self) -> None:
         self.signal = _SignalObject()
         # self.messages[client.user_id[room.room_id[Queue[event]]]
         self.messages: Dict[str, Dict[str, Queue]] = {}
 
         self._lock = Lock()
 
-        self.window.accounts.signal.login.connect(self.add_account)
-        self.window.accounts.signal.logout.connect(self.on_account_logout)
+        main_window().accounts.signal.login.connect(self.add_account)
+        main_window().accounts.signal.logout.connect(self.on_account_logout)
 
 
     def add_account(self, client: HMatrixClient) -> None:
@@ -75,13 +74,13 @@ class EventManager:
         if etype == "m.room.member" and ev.get("membership") == "join":
             self.signal.new_room.emit(user_id, ev["room_id"])
 
-            if ev.get("state_key") in self.window.accounts:
+            if ev.get("state_key") in main_window().accounts:
                 prev = ev.get("unsigned", {}).get("prev_content")
                 new  = ev.get("content")
 
                 if prev and new and prev != new:
                     # This won't update automatically in these cases otherwise
-                    user = self.window.accounts[ev["state_key"]].h_user
+                    user = main_window().accounts[ev["state_key"]].h_user
 
                     dispname         = new["displayname"] or ev["state_key"]
                     user.displayname = dispname

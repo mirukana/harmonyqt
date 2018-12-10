@@ -1,8 +1,8 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-"Call main.run() when this package is executed from 'python -m <pkgname>'."
+"Run app when this package is executed from 'python -m <pkgname>'."
 
-from . import main
+from . import run
 
-main.run()
+run()
