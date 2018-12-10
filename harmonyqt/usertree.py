@@ -5,12 +5,12 @@ from typing import Dict, List
 
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QPoint, QSize, Qt
+from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
                              QTreeWidgetItem)
 
-from . import main_window, __about__, actions
+from . import __about__, actions, main_window
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
@@ -22,7 +22,7 @@ class UserTree(QTreeWidget):
         self.accounts:   Dict[str, "AccountRow"] = {}
         self.blank_rows: List["BlankRow"]        = []
 
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setColumnCount(2)  # avatar/name; unread msg num/invite indicator
         self.setUniformRowHeights(True)
         self.setAnimated(True)
@@ -32,7 +32,7 @@ class UserTree(QTreeWidget):
         # self.setSortingEnabled(True)
         self.setSelectionMode(QTreeWidget.ExtendedSelection)
 
-        self.header().setMinimumSectionSize(0)
+        self.header().setMinimumSectionSize(1)
         self.header().setStretchLastSection(False)
         self.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -159,11 +159,6 @@ class UserTree(QTreeWidget):
 
         if not self.itemAt(event.pos()):
             self.really_clear_selection()
-
-
-    def sizeHint(self) -> QSize:
-        cols = sum([self.columnWidth(c) for c in range(self.columnCount())])
-        return QSize(max(cols, min(main_window().width() // 3, 360)), -1)
 
 
 class BlankRow(QTreeWidgetItem):
