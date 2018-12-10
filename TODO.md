@@ -12,6 +12,7 @@
   - fix blank lines
   - fix scroll up history
   - Rooms topic
+  - Invite to current room action binding
 
 - Accounts
   - Confirmation dialog when leaving a private room

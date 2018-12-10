@@ -4,7 +4,7 @@
 import json
 import webbrowser
 from multiprocessing.pool import ThreadPool
-from typing import Callable, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence
 
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
@@ -17,7 +17,16 @@ from . import __about__, dialogs, get_icon, main_window, menu
 
 ImmediateFunc = Optional[Callable[[], None]]
 
-KEYS_BOUND = {}
+KEYS_BOUND: Dict[str, str] = {}
+
+
+class KeysAlreadyBoundError(Exception):
+    def __init__(self, key: str, action: str, bound_to: str) -> None:
+        super().__init__(f"Can't set {key!r} for action {action!r}, "
+                         f"already bound to {bound_to!r}.")
+        self.key      = key
+        self.action   = action
+        self.bound_to = bound_to
 
 
 # General functions
@@ -25,9 +34,8 @@ KEYS_BOUND = {}
 def safe_bind(action: QAction, key: str) -> str:
     name = type(action).__name__
 
-    if key in KEYS_BOUND:
-        raise RuntimeError(f"Can't set {key!r} for action {name!r}, "
-                           f"already bound to {KEYS_BOUND[key]!r}")
+    if key in KEYS_BOUND and KEYS_BOUND[key] != name:
+        raise KeysAlreadyBoundError(key, name, KEYS_BOUND[key])
 
     KEYS_BOUND[key] = name
     return key
@@ -125,7 +133,6 @@ class NewChat(Action):
             text     = "&New chat",
             tooltip  = "Create/join a chat room",
             icon     = "new_chat.png",
-            shortcut = "Ctrl+Shift+N" if not for_user_id else "",
         )
         acts = [a(parent, for_user_id)
                 for a in (DirectChat, CreateRoom, JoinRoom)]
@@ -259,7 +266,6 @@ class SetStatus(Action):
             text     = "&Status",
             tooltip  = "Change status for all accounts",
             icon     = "status_set.png",
-            shortcut = "Ctrl+Shift+S",
         )
         acts = [a(parent) for a in (Online, Away, Invisible, Offline)]
         self.setMenu(menu.Menu(parent, acts))
@@ -299,7 +305,6 @@ class AddAccount(Action):
             text     = "Add &account",
             tooltip  = "Add a new account to Harmony",
             icon     = "account_add.png",
-            shortcut = "Ctrl+Shift+A",
         )
         acts = [a(parent) for a in (Login, Register)]
         self.setMenu(menu.Menu(parent, acts))

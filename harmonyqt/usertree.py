@@ -105,8 +105,16 @@ class UserTree(QTreeWidget):
             if hasattr(row, "get_context_menu_actions"):
                 acts += row.get_context_menu_actions()
 
+        if not selected:
+            acts += self.get_context_menu_actions()
+
         menu = Menu(self, acts)
         menu.exec_(self.mapToGlobal(position))
+
+
+    @staticmethod
+    def get_context_menu_actions() -> List[QAction]:
+        return [actions.AddAccount(main_window())]
 
 
     def on_add_room(self, user_id: str, room_id: str,
