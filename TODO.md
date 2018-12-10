@@ -14,35 +14,32 @@
   - Rooms topic
 
 - Accounts
-  - Fix the freeze when logging in,
-    thread everywhere where cache info retrieval is needed
-  - Don't expand rows if user collapsed manually
-  - Drag and drop to reorder
-  - Show error box when accepting invite for a gone room 
   - Confirmation dialog when leaving a private room
   - Del key
   - Change display name (+F2)
+  - Show error box when accepting invite for a gone room 
 
-- Global
-  - Properly log off accounts when closing the client
-  - Use rgba opacity instead of black levels for CSS
-  - Float/close dock title bar buttons and bindings
-  - Alt+things for invite msg box buttons
-  - Lower icons brightness to match the text
-  - Window icons
-  - Focused chat dock in window title
+  - Don't expand rows if user collapsed manually
+  - Drag and drop to reorder
+
+  - Fix the small freeze when logging in,
+    thread everywhere where cache info retrieval is needed
+
+- General
   - Handle errors, avoid crashes
-  - Fix floating docks opacity
+  - Properly log off accounts when closing the client
   - QMainWindow Storing State
   - Tabs middle click to close
 
-- Actions
-  - Join room & direct chat dialogs
-  - View button shows open/close docks menu
-  - Prevent create/join/etc actions if no account logged in,
-    gray out buttons and disable shortcuts
+- Appearance
+  - Use rgba opacity instead of black levels for CSS
+  - Float/close dock title bar buttons and bindings
+  - Lower icons brightness to match the text
+  - Window icons
+  - Focused chat dock in window title
+  - Fix floating docks opacity
 
-Idea to solve freezes:  
-Execute whatever we want in threads and emit a signal with a list of args
-and kwargs that will be processed by the main thread when we need to modify
-the GUI.
+- Actions/dialogs
+  - Join room & direct chat dialogs
+  - View button should show the open/close docks menu
+  - Gray out dialog accept button if creator/sender combo box has no value

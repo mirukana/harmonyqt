@@ -36,8 +36,8 @@ class InviteToRoom(base.GridDialog):
         self.sender    = base.ComboBox(
             self,
             "Send invite as:",
-            items        = sorted(us_in_room),
-            initial_item = as_user
+            "Select the account that will be used to send this invite",
+            items=sorted(us_in_room), initial_item=as_user
         )
         self.invitees  = base.Field(
             self,

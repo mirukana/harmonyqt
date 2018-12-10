@@ -18,7 +18,7 @@ class CreateRoom(base.GridDialog):
     # User ID, Room ID
     room_created_signal = pyqtSignal(str, str)
 
-    def __init__(self) -> None:
+    def __init__(self, for_user_id: str = "") -> None:
         super().__init__("Create room")
         self._pool = ThreadPool(8)
         self.room_created_signal.connect(self.on_room_created)
@@ -30,11 +30,18 @@ class CreateRoom(base.GridDialog):
 
         self.info_line = base.InfoLine(self)
         self.about     = QLabel(
-            "All fields are optional.\n"
-            "Room can be further customized after creation.",
+            "All fields are optional.<br>"
+            "Room can be further customized after creation.<br>"
+            "<i>Settings with a * cannot be changed later.</i>",
             self
         )
-        self.creator   = base.ComboBox(self, "Create with account:", logged_in)
+        self.about.setTextFormat(Qt.RichText)
+        self.creator   = base.ComboBox(
+            self,
+            "Create with account:",
+            "Select the account that will be the administrator of this room",
+            items=logged_in, initial_item=for_user_id
+        )
         self.name      = base.Field(self, "Room name:")
         self.invitees  = base.Field(
             self,
@@ -51,7 +58,7 @@ class CreateRoom(base.GridDialog):
         )
         self.federate = base.CheckBox(
             self,
-            "&Allow users from different servers",
+            "&Allow users from different servers*",
             ("User accounts from different homeservers than your account's "
              "will be able to join.\n"
              "These servers will get a copy of the room's history.\n"
@@ -60,6 +67,9 @@ class CreateRoom(base.GridDialog):
         )
         self.create = base.AcceptButton(self, "&Create", self.validate)
         self.cancel = base.CancelButton(self, "Ca&ncel")
+
+        if for_user_id:
+            self.name.text_edit.setFocus()
 
         blank = lambda: base.BlankLine(self)
 

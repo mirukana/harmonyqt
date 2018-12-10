@@ -118,9 +118,9 @@ class ComboBox(QWidget):
     def __init__(self,
                  parent:       QWidget,
                  label:        str,
-                 items:        List[str],
-                 tooltip:      str = "",
-                 initial_item: str = "") -> None:
+                 tooltip:      str           = "",
+                 items:        Sequence[str] = (),
+                 initial_item: str           = "") -> None:
         super().__init__(parent)
 
         self.grid = QGridLayout(self)
@@ -132,7 +132,7 @@ class ComboBox(QWidget):
         self.combo_box.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.combo_box.setInsertPolicy(QComboBox.NoInsert)
         self.combo_box.setMinimumWidth(192)
-        self.combo_box.addItems(items)
+        self.combo_box.addItems(list(items))
         self.grid.addWidget(self.combo_box, 0, 1)
 
         if tooltip:

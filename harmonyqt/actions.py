@@ -119,50 +119,54 @@ class MultiselectAction(Action):
 # Rooms
 
 class NewChat(Action):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
         super().__init__(
             parent   = parent,
             text     = "&New chat",
             tooltip  = "Create/join a chat room",
             icon     = "new_chat.png",
-            shortcut = "Ctrl+Shift+N",
+            shortcut = "Ctrl+Shift+N" if not for_user_id else "",
         )
-        actions = [a(parent) for a in (DirectChat, CreateRoom, JoinRoom)]
-        self.setMenu(menu.Menu(parent, actions))
+        acts = [a(parent, for_user_id)
+                for a in (DirectChat, CreateRoom, JoinRoom)]
+        self.setMenu(menu.Menu(parent, acts))
 
 
 class DirectChat(Action):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
         super().__init__(
             parent   = parent,
             text     = "&Direct chat",
             tooltip  = "Start a direct chat with another user",
             icon     = "direct_chat.png",
-            shortcut = "Ctrl+Shift+D",
+            shortcut = "Ctrl+Shift+D" if not for_user_id else "",
         )
+        self.for_user_id = for_user_id
 
 class CreateRoom(Action):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
         super().__init__(
             parent   = parent,
             text     = "&Create room",
             tooltip  = "Create a new chat room",
             icon     = "create_room.png",
-            shortcut = "Ctrl+Shift+C",
+            shortcut = "Ctrl+Shift+C" if not for_user_id else "",
         )
+        self.for_user_id = for_user_id
 
     def on_trigger(self, _) -> None:
-        dialogs.CreateRoom().open_modeless()
+        dialogs.CreateRoom(self.for_user_id).open_modeless()
 
 class JoinRoom(Action):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
         super().__init__(
             parent   = parent,
             text     = "&Join room",
             tooltip  = "Join an existing chat room",
             icon     = "join_room.png",
-            shortcut = "Ctrl+Shift+J",
+            shortcut = "Ctrl+Shift+J" if not for_user_id else "",
         )
+        self.for_user_id = for_user_id
 
 class InviteToRoom(Action):
     def __init__(self, parent: QWidget, room: Room, as_user: str = "") -> None:
@@ -257,8 +261,8 @@ class SetStatus(Action):
             icon     = "status_set.png",
             shortcut = "Ctrl+Shift+S",
         )
-        actions = [a(parent) for a in (Online, Away, Invisible, Offline)]
-        self.setMenu(menu.Menu(parent, actions))
+        acts = [a(parent) for a in (Online, Away, Invisible, Offline)]
+        self.setMenu(menu.Menu(parent, acts))
 
 class StatusAction(Action):
     def __init__(self, parent, text = None, shortcut = None) -> None:
@@ -297,8 +301,8 @@ class AddAccount(Action):
             icon     = "account_add.png",
             shortcut = "Ctrl+Shift+A",
         )
-        actions = [a(parent) for a in (Login, Register)]
-        self.setMenu(menu.Menu(parent, actions))
+        acts = [a(parent) for a in (Login, Register)]
+        self.setMenu(menu.Menu(parent, acts))
 
 class DelAccount(Action):
     def __init__(self, parent: QWidget, user_id: str) -> None:

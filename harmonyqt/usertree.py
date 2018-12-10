@@ -1,10 +1,8 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import json
 from typing import Dict, List
 
-from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, QSize, Qt
@@ -180,7 +178,8 @@ class AccountRow(QTreeWidgetItem):
 
 
     def get_context_menu_actions(self) -> List[QAction]:
-        return [actions.DelAccount(self.user_tree, self.client.user_id)]
+        return [actions.NewChat(self.user_tree, self.client.user_id),
+                actions.DelAccount(self.user_tree, self.client.user_id)]
 
 
     def add_room(self, room_id: str,
