@@ -113,9 +113,10 @@ class UserTree(QTreeWidget):
 
 
     def on_add_room(self, user_id: str, room_id: str,
-                    invite_by: str = "", display_name: str = ""
-                   ) -> None:
-        self.accounts[user_id].add_room(room_id, invite_by, display_name)
+                    invite_by: str = "", display_name: str = "",
+                    name:      str = "", alias:        str = "") -> None:
+        self.accounts[user_id].add_room(room_id,
+                                        invite_by, display_name, name, alias)
 
 
     def on_rename_room(self, user_id: str, room_id: str) -> None:
@@ -184,11 +185,13 @@ class AccountRow(QTreeWidgetItem):
 
 
     def add_room(self, room_id: str,
-                 invite_by: str = "", display_name: str = "") -> None:
+                 invite_by: str = "", display_name: str = "",
+                 name:      str = "", alias:        str = "") -> None:
         if room_id in self.rooms:
             return
 
-        self.rooms[room_id] = RoomRow(self, room_id, invite_by, display_name)
+        self.rooms[room_id] = RoomRow(self, room_id,
+                                      invite_by, display_name, name, alias)
         self.sortChildren(0, Qt.AscendingOrder)
 
         if not self.auto_expanded_once:
@@ -204,14 +207,18 @@ class AccountRow(QTreeWidgetItem):
 
 class RoomRow(QTreeWidgetItem):
     def __init__(self, parent: AccountRow, room_id: str,
-                 invite_by: str = "", display_name: str = ""
-                ) -> None:
+                 invite_by: str = "", display_name: str = "",
+                 name:      str = "", alias:        str = "") -> None:
         super().__init__(parent)
         self.account_row: AccountRow = parent
         self.invite_by:   str        = invite_by
 
-        self.room: Room = Room(parent.client, room_id) \
-                          if invite_by else parent.client.rooms[room_id]
+        if invite_by:
+            self.room: Room           = Room(parent.client, room_id)
+            self.room.name            = self.room.name            or name
+            self.room.canonical_alias = self.room.canonical_alias or alias
+        else:
+            self.room: Room = parent.client.rooms[room_id]
 
         self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
         self.update_ui(display_name)

@@ -19,8 +19,8 @@ class _SignalObject(QObject):
     new_room     = pyqtSignal(str, str)
     room_rename  = pyqtSignal(str, str)
     left_room    = pyqtSignal(str, str)
-    # User ID, room ID, invited by user ID, calculated room display name
-    new_invite = pyqtSignal(str, str, str, str)
+    # User ID, room ID, invited by user ID, display name, name, canon alias
+    new_invite = pyqtSignal(str, str, str, str, str, str)
     # User ID, room ID, new display name, new avatar URL
     account_change = pyqtSignal(str, str, str, str)
 
@@ -147,7 +147,9 @@ class EventManager:
                 members.sort()
                 dispname = f"{members[0]} and {len(members) - 1} others"
 
-        self.signal.new_invite.emit(user_id, room_id, invite_by, dispname)
+        self.signal.new_invite.emit(
+            user_id, room_id, invite_by, dispname, name, alias
+        )
 
 
     def on_leave_event(self, user_id: str, room_id: str) -> None:
