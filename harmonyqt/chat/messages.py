@@ -69,34 +69,34 @@ class MessageList(QTextBrowser):
     def add_message(self, msg: dict) -> None:
         to_top = msg["display"]["is_from_past"]
 
-        scrollbar = self.verticalScrollBar()
-        at_bottom = scrollbar.value() >= scrollbar.maximum()
+        sb = self.verticalScrollBar()
 
         cursor = QTextCursor(self.document())
         cursor.movePosition(QTextCursor.Start if to_top else QTextCursor.End)
+
+        distance_from_bottom = sb.maximum() - sb.value()
 
         msg_table  = cursor.insertTable(1, 2, self.msg_tables_format)
         msg_cursor = msg_table.cellAt(0, 1).lastCursorPosition()
         msg_cursor.insertHtml(msg["display"]["msg"])
 
-        if at_bottom:
-            scrollbar.setValue(scrollbar.maximum())
+        if to_top or distance_from_bottom == 0:
+            sb.setValue(sb.maximum() - distance_from_bottom)
 
 
-    def autoload_history(self, chunk_msgs: int = 10) -> None:
+    def autoload_history(self, chunk_msgs: int = 50) -> None:
         sb = self.verticalScrollBar()
 
         while not self.reached_history_end:
             current = sb.value()
 
             if current <= sb.minimum() or sb.maximum() <= sb.pageStep():
-                print("LOAD")
                 self.load_one_history_chunk(chunk_msgs)
 
             # time.sleep(0.1)
 
 
-    def load_one_history_chunk(self, msgs: int = 10) -> None:
+    def load_one_history_chunk(self, msgs: int = 50) -> None:
         result = self.chat.client.api.get_room_messages(
             room_id   = self.chat.room.room_id,
             token     = self.history_token or self.chat.room.prev_batch,

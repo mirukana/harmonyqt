@@ -35,9 +35,6 @@
   - `<del>` → `</s>` (Qt HTML striketrough)
   - Instant message display when sending one without waiting for server
   - Smooth animated scroll
-  - up/down normal scroll, alt+up/down or something for message-message scroll
-  - fix blank lines
-  - fix scroll up history
   - Rooms topic
   - Invite to current room action binding
 
