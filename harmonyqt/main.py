@@ -6,11 +6,11 @@ from typing import Dict, Optional, Tuple
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (QDesktopWidget, QDockWidget, QLabel,
-                             QMainWindow, QTabWidget, QWidget)
+from PyQt5.QtWidgets import (QDesktopWidget, QDockWidget, QLabel, QMainWindow,
+                             QTabWidget, QWidget)
 
-from . import (STYLESHEET, __about__, accounts, chat, events,
-               homepage, toolbar, usertree)
+from . import (STYLESHEET, __about__, accounts, chat, events, homepage,
+               messages, toolbar, usertree)
 
 
 class DockTitleBar(QLabel):
@@ -53,6 +53,7 @@ class HarmonyQt(QMainWindow):
         # pylint: disable=attribute-defined-outside-init
         self.accounts = accounts.AccountManager()
         self.events   = events.EventManager()
+        self.messages = messages.MessageProcessor()
 
         self.events.signal.left_room.connect(self.remove_chat_dock)
         self.events.signal.room_rename.connect(self.rename_chat_dock)
@@ -88,6 +89,7 @@ class HarmonyQt(QMainWindow):
         )
 
         self.show()
+
         try:
             self.accounts.login_using_config()
         except FileNotFoundError:

@@ -4,13 +4,17 @@
   - 0.6: Status, presence, receipts
 
 - General
+  - Use dict.setdefault when possible
   - Rename project to Harmony, forget about old harmony
+  - Handle bad events
   - Handle errors, avoid crashes
   - Properly log off accounts when closing the client
   - QMainWindow Storing State
   - Tabs middle click to close
 
 - Appearance
+  - [Application font](https://stackoverflow.com/a/48242138)
+  - Always display tabs when there are multiple chats in a window
   - Use rgba opacity instead of black levels for CSS
   - Float/close dock title bar buttons and bindings
   - Lower icons brightness to match the text
@@ -24,6 +28,9 @@
   - Gray out dialog accept button if creator/sender combo box has no value
 
 - Chat
+  - Warn on unknown message format
+  - Handle msgtype other than m.text
+  - `<del>` → `</s>` (Qt HTML striketrough)
   - Instant message display when sending one without waiting for server
   - Smooth animated scroll
   - up/down normal scroll, alt+up/down or something for message-message scroll

@@ -1,7 +1,6 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from queue import Queue
 from threading import Lock
 from typing import Dict, Set
 
@@ -13,6 +12,8 @@ from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
+    # User ID, room ID, message event
+    new_message  = pyqtSignal(str, str, dict)
     # User ID, room ID
     new_account  = pyqtSignal(str)
     account_gone = pyqtSignal(str)
@@ -28,8 +29,6 @@ class _SignalObject(QObject):
 class EventManager:
     def __init__(self) -> None:
         self.signal = _SignalObject()
-        # {user_id: {room_id: Queue}}
-        self.messages: Dict[str, Dict[str, Queue]] = {}
         # {user_id: {room_id}}
         self._known_rooms: Dict[str, Set[str]] = {}
 
@@ -42,8 +41,6 @@ class EventManager:
     def add_account(self, client: HMatrixClient) -> None:
         "Setup event listeners for client. Called from AccountManager.login()."
         user_id = client.user_id
-
-        self.messages[user_id] = {}
 
         client.add_listener(lambda ev, u=user_id: self.on_event(u, ev))
 
@@ -99,16 +96,10 @@ class EventManager:
                     )
 
         elif etype == "m.room.message":
-            msg_events = self.messages[user_id]
-
-            if room_id not in msg_events:
-                msg_events[room_id] = Queue()
-
-            with self._lock:
-                msg_events[room_id].put(ev)
+            self.signal.new_message.emit(user_id, room_id, ev)
 
         else:
-            self._log("blue", user_id, ev, force=True)
+            self._log("blue", user_id, ev, force=False)
 
         if etype in ("m.room.name", "m.room.canonical_alias",
                      "m.room.member"):

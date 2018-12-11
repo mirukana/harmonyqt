@@ -13,7 +13,7 @@ QWidget, QMessageBox, QMainWindow::separator {
 /* To organize */
 
 QMainWindow::separator:hover {
-    background: rgb(40, 40, 40);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 QToolBar, QToolBar QWidget {
@@ -58,13 +58,18 @@ ActionsBar QToolButton::menu-indicator {
 
 /* Accounts */
 
-/* branch, item = left, right parts of a row*/
+/* branch; item = arrow; columns parts of a row*/
 QTreeView::branch:hover, QTreeView::item:hover {
     background: rgb(40, 40, 40)
 }
 
 QTreeView::branch:selected, QTreeView::item:selected {
     background: rgb(20, 20, 20)
+}
+
+/* account rows */
+QTreeView::item:has-children {
+    color: rgb(0, 165, 220);
 }
 
 /* Dialogs */
@@ -79,14 +84,14 @@ QDialog BlankLine {
 
 QDialog InfoLine {
     background:          black;
-    color:               rgb(0, 120, 230);
+    color:               rgb(0, 165, 220);
     padding:             11px;
     qproperty-alignment: "AlignCenter | AlignVCenter";
 
 }
 
 QDialog InfoLine[error=true] {
-    color: rgb(230, 0, 80);
+    color: rgb(210, 35, 110);
 }
 
 

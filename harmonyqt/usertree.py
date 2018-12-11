@@ -10,7 +10,7 @@ from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
                              QTreeWidgetItem)
 
-from . import __about__, actions, main_window
+from . import __about__, actions, get_icon, main_window
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
@@ -231,16 +231,13 @@ class RoomRow(QTreeWidgetItem):
     def update_ui(self, invite_display_name: str = "") -> None:
         # The later crashes for rooms we're invited to but not joined
         dispname = invite_display_name or self.room.display_name
+        self.setText(0, dispname)
 
-        texts    = [dispname, ""]
         tooltips = self.room.aliases + [self.room.room_id]
 
         if self.invite_by:
-            texts[1] = "?"
+            self.setIcon(1, get_icon("indicator_invite.png"))
             tooltips.insert(0, f"Pending invitation from {self.invite_by}")
-
-        for col, txt in enumerate(texts):
-            self.setText(col, txt)
 
         tooltips = "\n".join(tooltips)
         for col in range(self.columnCount()):

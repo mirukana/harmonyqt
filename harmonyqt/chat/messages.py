@@ -2,11 +2,11 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import time
-from threading import Event, Lock, Thread
+from threading import Event, Thread
 from typing import Optional
 
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor, QTextTableFormat
 from PyQt5.QtWidgets import QTextBrowser
 
@@ -15,7 +15,7 @@ from .. import main_window, accounts
 
 
 class MessageList(QTextBrowser):
-    add_message_signal = pyqtSignal(dict, dict, bool)
+    new_message_from_queue_signal = pyqtSignal(dict, bool)
 
 
     def __init__(self, chat: Chat) -> None:
@@ -30,9 +30,8 @@ class MessageList(QTextBrowser):
         self.msg_tables_format.setBorder(0)
         self.msg_tables_format.setBottomMargin(16)
 
-        self._lock: Lock = Lock()
-        self.add_message_signal.connect(self._add_msg)
-        self.queue_thread = Thread(target=self.process_events, daemon=True)
+        self.new_message_from_queue_signal.connect(self.add_message)
+        self.queue_thread = Thread(target=self.process_queue, daemon=True)
         self.queue_thread.start()
 
         self._adding_history:     Event         = Event()
@@ -40,73 +39,38 @@ class MessageList(QTextBrowser):
         self.reached_history_end: bool          = False
         self.history_token:       Optional[str] = None
         self.history_thread = Thread(target=self.load_history, daemon=True)
-        self.history_thread.start()
+        # self.history_thread.start()
 
 
-    # pylint: disable=invalid-name
-    def updateGeometries(self) -> None:
-        # Smoother scrolling when user e.g. clicks scrollbar arrows
-        super().updateGeometries()
-        self.verticalScrollBar().setSingleStep(2)
-
-
-    def process_events(self) -> None:
+    def process_queue(self) -> None:
         user_id = self.chat.client.user_id
         room_id = self.chat.room.room_id
+        msgs    = main_window().messages
 
         while True:
             try:
-                msg = main_window().events.messages[user_id][room_id].get()
+                queue = msgs[user_id][room_id]
+                break
             except KeyError:
-                time.sleep(0.05)
-            else:
-                Thread(target = self.add_message,
-                       args   = (msg,),
-                       daemon = True).start()
+                time.sleep(0.1)
+
+        while True:
+            # [0] = timestamp (priority queue ordering key)
+            msg = queue.get()[1]
+
+            self.new_message_from_queue_signal.emit(msg, False)
 
 
     def add_message(self, msg: dict, to_top: bool = False) -> None:
-        with self._lock:  # Ensures messages are posted in the right order
-            dispname = self.chat.room.members_displaynames.get(msg["sender"])
-
-            if not dispname:
-                known_users = self.chat.client.users
-                for other_client in main_window().accounts.values():
-                    known_users.update(other_client.users)
-
-                user     = known_users.get(msg["sender"])
-                dispname = user.get_display_name() if user else msg["sender"]
-
-            extra    = {
-                "name":      dispname,
-                "date_time": QDateTime.\
-                             fromMSecsSinceEpoch(msg["origin_server_ts"])
-            }
-            self.add_message_signal.emit(msg, extra, to_top)
-
-
-    def _add_msg(self, event: dict, extra: dict, to_top: bool = False) -> None:
-        display_name = extra["name"]
-        datetime     = extra["date_time"].toString("HH:mm:ss")
-        content      = event["content"]
-        html         = content.get("formatted_body")
-        plain        = content.get("body")
-
         scrollbar = self.verticalScrollBar()
         at_bottom = scrollbar.value() >= scrollbar.maximum()
 
         cursor = QTextCursor(self.document())
         cursor.movePosition(QTextCursor.Start if to_top else QTextCursor.End)
 
-        msg_table = cursor.insertTable(1, 2, self.msg_tables_format)
-        # img_cell  = msg_table.cellAt(1, 1)
+        msg_table  = cursor.insertTable(1, 2, self.msg_tables_format)
         msg_cursor = msg_table.cellAt(0, 1).lastCursorPosition()
-
-
-        if html:
-            msg_cursor.insertHtml(f"{display_name} &nbsp;{datetime}<br>{html}")
-        elif plain:
-            msg_cursor.insertText(f"{display_name}  {datetime}\n{plain}")
+        msg_cursor.insertHtml(msg["display"]["msg"])
 
         if at_bottom:
             scrollbar.setValue(scrollbar.maximum())
@@ -146,8 +110,6 @@ class MessageList(QTextBrowser):
                 self._ignored_events += 1
                 continue
 
-            Thread(target = self.add_message,
-                   kwargs = {"msg": event, "to_top": True},
-                   daemon = True).start()
+            self.new_message_from_queue_signal.emit(event, True)  # to_top
 
         self._adding_history.clear()
