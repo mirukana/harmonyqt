@@ -2,7 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 from threading import Lock
-from typing import Dict, Set
+from typing import Dict
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -13,6 +13,7 @@ from .matrix import HMatrixClient
 
 class _SignalObject(QObject):
     # User ID, room ID, message event
+    old_message  = pyqtSignal(str, str, dict)
     new_message  = pyqtSignal(str, str, dict)
     # User ID, room ID
     new_account  = pyqtSignal(str)
@@ -29,8 +30,8 @@ class _SignalObject(QObject):
 class EventManager:
     def __init__(self) -> None:
         self.signal = _SignalObject()
-        # {user_id: {room_id}}
-        self._known_rooms: Dict[str, Set[str]] = {}
+        # {user_id: {room_id: added_timestamp}}
+        self._added_rooms: Dict[str, Dict[str, int]] = {}
 
         self._lock = Lock()
 
@@ -66,16 +67,17 @@ class EventManager:
 
 
     def on_event(self, user_id: str, event: dict) -> None:
-        ev      = event
-        etype   = event.get("type")
-        room_id = event.get("room_id")
+        ev        = event
+        etype     = event["type"]
+        room_id   = event["room_id"]
+        timestamp = int(event["origin_server_ts"])
 
         with self._lock:
-            if user_id not in self._known_rooms:
-                self._known_rooms[user_id] = set()
+            if user_id not in self._added_rooms:
+                self._added_rooms[user_id] = {}
 
-            if room_id not in self._known_rooms[user_id]:
-                self._known_rooms[user_id].add(room_id)
+            if room_id not in self._added_rooms[user_id]:
+                self._added_rooms[user_id][room_id] = timestamp
                 self.signal.new_room.emit(user_id, room_id)
 
         if etype == "m.room.member" and ev.get("membership") == "join":
@@ -152,7 +154,7 @@ class EventManager:
 
     def on_leave_event(self, user_id: str, room_id: str) -> None:
         with self._lock:
-            self._known_rooms[user_id].discard(room_id)
+            self._added_rooms[user_id].pop(room_id, None)
             self.signal.left_room.emit(user_id, room_id)
 
 

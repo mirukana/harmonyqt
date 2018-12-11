@@ -1,6 +1,7 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+from multiprocessing.pool import ThreadPool
 from threading import Thread
 from typing import Optional
 
@@ -16,6 +17,7 @@ class SendBox(QPlainTextEdit):
     def __init__(self, area: "SendArea") -> None:
         super().__init__()
         self.area = area
+        self._pool  = ThreadPool(1)  # 1 to keep message sending order
 
         self.setPlaceholderText("Send a message…")
         self.setCenterOnScroll(False)
@@ -84,7 +86,7 @@ class SendBox(QPlainTextEdit):
             self.area.chat.parent().hide()
 
         else:
-            Thread(target=do_it, args=(text,)).start()
+            self._pool.apply_async(do_it, (text,))
 
 
 class SendArea(QWidget):

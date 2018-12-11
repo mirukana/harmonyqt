@@ -13,6 +13,7 @@
   - Tabs middle click to close
 
 - Appearance
+  - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
   - [Application font](https://stackoverflow.com/a/48242138)
   - Always display tabs when there are multiple chats in a window
   - Use rgba opacity instead of black levels for CSS
@@ -23,6 +24,7 @@
   - Fix floating docks opacity
 
 - Actions/dialogs
+  - Better user ID verifications (@ŧ...)
   - Join room & direct chat dialogs
   - View button should show the open/close docks menu
   - Gray out dialog accept button if creator/sender combo box has no value

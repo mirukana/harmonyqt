@@ -13,7 +13,7 @@ QWidget, QMessageBox, QMainWindow::separator {
 /* To organize */
 
 QMainWindow::separator:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgb(40, 40, 40);
 }
 
 QToolBar, QToolBar QWidget {
@@ -39,7 +39,7 @@ HomePage QLabel {
     color: rgb(160, 160, 160);
 }
 
-QLineEdit, QComboBox {
+QLineEdit, QPlainTextEdit, QTextEdit, QComboBox {
     background: rgb(20, 20, 20);
 }
 
@@ -58,7 +58,7 @@ ActionsBar QToolButton::menu-indicator {
 
 /* Accounts */
 
-/* branch; item = arrow; columns parts of a row*/
+/* branch, item = arrow, columns parts of a row*/
 QTreeView::branch:hover, QTreeView::item:hover {
     background: rgb(40, 40, 40)
 }

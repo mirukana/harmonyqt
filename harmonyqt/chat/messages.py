@@ -2,8 +2,8 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import time
-from threading import Event, Thread
-from typing import Optional
+from queue import PriorityQueue
+from threading import Thread
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -11,16 +11,25 @@ from PyQt5.QtGui import QTextCursor, QTextTableFormat
 from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
-from .. import main_window, accounts
+from .. import main_window
 
 
 class MessageList(QTextBrowser):
-    new_message_from_queue_signal = pyqtSignal(dict, bool)
+    new_message_from_queue_signal = pyqtSignal(dict)
 
 
     def __init__(self, chat: Chat) -> None:
         super().__init__()
         self.chat = chat
+
+        uid, rid = self.chat.client.user_id, self.chat.room.room_id
+        while True:
+            try:
+                self.old_queue = main_window().messages.old[uid][rid]
+                self.new_queue = main_window().messages.new[uid][rid]
+                break
+            except KeyError:
+                time.sleep(0.05)
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
@@ -31,37 +40,35 @@ class MessageList(QTextBrowser):
         self.msg_tables_format.setBottomMargin(16)
 
         self.new_message_from_queue_signal.connect(self.add_message)
-        self.queue_thread = Thread(target=self.process_queue, daemon=True)
-        self.queue_thread.start()
 
-        self._adding_history:     Event         = Event()
-        self._ignored_events:     int           = 0
-        self.reached_history_end: bool          = False
-        self.history_token:       Optional[str] = None
-        self.history_thread = Thread(target=self.load_history, daemon=True)
-        # self.history_thread.start()
+        self.old_queue_thread = Thread(
+            target=self.process_queue, args=(self.old_queue,), daemon=True
+        )
+        self.old_queue_thread.start()
+
+        self.new_queue_thread = Thread(
+            target=self.process_queue, args=(self.new_queue,), daemon=True
+        )
+        self.new_queue_thread.start()
+
+        self._ignored_events:     int  = 0
+        self.reached_history_end: bool = False
+        self.history_token:       str  = ""
+
+        self.history_thread = Thread(target=self.autoload_history, daemon=True)
+        self.history_thread.start()
 
 
-    def process_queue(self) -> None:
-        user_id = self.chat.client.user_id
-        room_id = self.chat.room.room_id
-        msgs    = main_window().messages
-
+    def process_queue(self, queue: PriorityQueue) -> None:
         while True:
-            try:
-                queue = msgs[user_id][room_id]
-                break
-            except KeyError:
-                time.sleep(0.1)
-
-        while True:
-            # [0] = timestamp (priority queue ordering key)
-            msg = queue.get()[1]
-
-            self.new_message_from_queue_signal.emit(msg, False)
+            event = queue.get()
+            # [0]: timestamp, negated if old queue (priority ordering key)
+            self.new_message_from_queue_signal.emit(event[1])
 
 
-    def add_message(self, msg: dict, to_top: bool = False) -> None:
+    def add_message(self, msg: dict) -> None:
+        to_top = msg["display"]["is_from_past"]
+
         scrollbar = self.verticalScrollBar()
         at_bottom = scrollbar.value() >= scrollbar.maximum()
 
@@ -76,40 +83,40 @@ class MessageList(QTextBrowser):
             scrollbar.setValue(scrollbar.maximum())
 
 
-    def load_history(self) -> None:
-        sbar = self.verticalScrollBar()
+    def autoload_history(self, chunk_msgs: int = 10) -> None:
+        sb = self.verticalScrollBar()
 
         while not self.reached_history_end:
-            busy = self._adding_history.is_set()
+            current = sb.value()
 
-            if not busy and sbar.value() <= sbar.minimum() + sbar.pageStep():
-                Thread(target=self._load_history_chunk, daemon=True).start()
+            if current <= sb.minimum() or sb.maximum() <= sb.pageStep():
+                print("LOAD")
+                self.load_one_history_chunk(chunk_msgs)
 
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
 
-    def _load_history_chunk(self) -> None:
-        self._adding_history.set()
-
+    def load_one_history_chunk(self, msgs: int = 10) -> None:
         result = self.chat.client.api.get_room_messages(
             room_id   = self.chat.room.room_id,
             token     = self.history_token or self.chat.room.prev_batch,
             direction = "b",  # backward
-            limit     = 50,
+            limit     = msgs,
         )
 
         if result["end"] == self.history_token:
             self.reached_history_end = True
+            print("END")
             return
 
         self.history_token = result["end"]
         print("History token:", result["end"])
 
         for event in result["chunk"]:
-            if self._ignored_events <= accounts.LOAD_NUM_EVENTS_ON_START:
-                self._ignored_events += 1
-                continue
-
-            self.new_message_from_queue_signal.emit(event, True)  # to_top
-
-        self._adding_history.clear()
+            if event["type"] == "m.room.message":
+                main_window().messages.on_new_message(
+                    user_id      = self.chat.client.user_id,
+                    room_id      = self.chat.room.room_id,
+                    event        = event,
+                    is_from_past = True
+                )
