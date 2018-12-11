@@ -6,7 +6,7 @@ from typing import Dict, List
 from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, Qt
-from PyQt5.QtGui import QKeyEvent, QMouseEvent
+from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
                              QTreeWidgetItem)
 
@@ -238,6 +238,8 @@ class RoomRow(QTreeWidgetItem):
         if self.invite_by:
             self.setIcon(1, get_icon("indicator_invite.png"))
             tooltips.insert(0, f"Pending invitation from {self.invite_by}")
+        else:
+            self.setIcon(1, QIcon())
 
         tooltips = "\n".join(tooltips)
         for col in range(self.columnCount()):
