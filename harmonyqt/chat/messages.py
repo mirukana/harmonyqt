@@ -1,9 +1,11 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import re
 import time
 from queue import PriorityQueue
 from threading import Thread
+from typing import Dict
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -12,6 +14,11 @@ from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
 from .. import main_window
+
+MESSAGE_FILTERS: Dict[str, str] = {
+    # Qt only knows <s> for striketrough
+    r"(</?)\s*(del|strike)>": r"\1s>",
+}
 
 
 class MessageList(QTextBrowser):
@@ -78,7 +85,7 @@ class MessageList(QTextBrowser):
 
         msg_table  = cursor.insertTable(1, 2, self.msg_tables_format)
         msg_cursor = msg_table.cellAt(0, 1).lastCursorPosition()
-        msg_cursor.insertHtml(msg["display"]["msg"])
+        msg_cursor.insertHtml(self.filter_msg_content((msg["display"]["msg"])))
 
         if to_top or distance_from_bottom == 0:
             sb.setValue(sb.maximum() - distance_from_bottom)
@@ -120,3 +127,10 @@ class MessageList(QTextBrowser):
                     event        = event,
                     is_from_past = True
                 )
+
+
+    @staticmethod
+    def filter_msg_content(content: str) -> str:  # content: HTML
+        for regex, repl in MESSAGE_FILTERS.items():
+            content = re.sub(regex, repl, content, re.IGNORECASE, re.MULTILINE)
+        return content
