@@ -30,13 +30,16 @@
   - Gray out dialog accept button if creator/sender combo box has no value
 
 - Chat
+  - `<del>` and `<strike>` → `<s>` (Qt HTML striketrough)
+  - Instant message display when sending one without waiting for server
   - Warn on unknown message format
   - Handle msgtype other than m.text
-  - `<del>` → `</s>` (Qt HTML striketrough)
-  - Instant message display when sending one without waiting for server
+  - Stylesheet for content, also pygments code blocks:
+    <https://github.com/trentm/python-markdown2/wiki/fenced-code-blocks>
   - Smooth animated scroll
   - Rooms topic
   - Invite to current room action binding
+  - Check for Matrix max mesage size
 
   - Send Area
     - Bindings: ctrl-w/a/e, alt-shift-i/a

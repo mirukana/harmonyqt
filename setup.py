@@ -28,6 +28,8 @@ setup(
     python_requires  = ">=3.6, <4",
     install_requires = [
         "atomicfile",
+        "markdown2",
+        "pygments",  # markdown2 fenced code blocks coloring
         "setuptools",
         "PyQt5",
     ],

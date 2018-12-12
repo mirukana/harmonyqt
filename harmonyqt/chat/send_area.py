@@ -2,7 +2,6 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 from multiprocessing.pool import ThreadPool
-from threading import Thread
 from typing import Optional
 
 # pylint: disable=no-name-in-module
@@ -10,7 +9,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFontMetrics, QKeyEvent
 from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
 
-from . import Chat
+from . import Chat, markdown
 
 
 class SendBox(QPlainTextEdit):
@@ -64,11 +63,7 @@ class SendBox(QPlainTextEdit):
 
 
     def send(self) -> None:
-        def do_it(text: str) -> None:
-            self.area.chat.room.send_html(text)
-
         text = self.toPlainText()
-        text = text.replace("\n", "<br>")
         if not text:
             return
 
@@ -76,7 +71,7 @@ class SendBox(QPlainTextEdit):
 
         # command escape
         if text.startswith("//") or text.startswith(r"\/"):
-            self._pool.apply_async(do_it, (text[1:],))
+            self._pool.apply_async(self._send_markdown, (text[1:],))
 
         elif text in ("/d",  "/debug"):
             import pdb
@@ -88,7 +83,19 @@ class SendBox(QPlainTextEdit):
             self.area.chat.parent().hide()
 
         else:
-            self._pool.apply_async(do_it, (text,))
+            self._pool.apply_async(self._send_markdown, (text,),
+                                   error_callback=self.on_error)
+
+
+    def _send_markdown(self, text: str) -> None:
+        html = markdown.MARKDOWN.convert(text)
+        print("\n", html, "\n")
+        # self.area.chat.room.send_html(html)
+
+
+    @staticmethod
+    def on_error(err: Exception) -> None:
+        raise err
 
 
 class SendArea(QWidget):
