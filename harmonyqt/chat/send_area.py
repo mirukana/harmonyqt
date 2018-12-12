@@ -38,12 +38,14 @@ class SendBox(QPlainTextEdit):
         return (widget_margin.top()    +
                 widget_margin.bottom() +
                 document_margin * 2    +
-                font_height     * lines)
+                # Extra pixel prevents wordwrap-scroll-box-grows from hiding
+                # the first line
+                font_height * lines + 1)
 
     # pylint: disable=invalid-name
 
     def sizeHint(self) -> QSize:
-        return QSize(-1, self.get_box_height())
+        return QSize(1, self.get_box_height())
 
     def minimumSizeHint(self) -> QSize:
         return QSize(1, self.get_box_height(lines=1))
@@ -74,7 +76,7 @@ class SendBox(QPlainTextEdit):
 
         # command escape
         if text.startswith("//") or text.startswith(r"\/"):
-            Thread(target=do_it, args=(text[1:],)).start()
+            self._pool.apply_async(do_it, (text[1:],))
 
         elif text in ("/d",  "/debug"):
             import pdb

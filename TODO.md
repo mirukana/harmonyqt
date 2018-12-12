@@ -42,7 +42,6 @@
     - Bindings: ctrl-w/a/e, alt-shift-i/a
     - Markdown
     - Spell check?
-    - Fix first line break hiding first line
     - Send, upload and other buttons
 
 - Accounts
