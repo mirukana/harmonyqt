@@ -122,8 +122,12 @@ class MainWindow(QMainWindow):
         self.title_bars_shown = show
 
 
-    def new_chat_dock(self, user_id: str, room_id: str, in_new: str = "",
-                      split_orientation: Qt.Orientation = Qt.Horizontal
+    def new_chat_dock(self,
+                      user_id: str,
+                      room_id: str,
+                      in_new: str = "",
+                      split_orientation:  Qt.Orientation = Qt.Horizontal,
+                      previously_focused: Optional[chat.ChatDock]  = None
                      ) -> chat.ChatDock:
         assert in_new in (None, "", "tab", "split")
 
@@ -132,7 +136,7 @@ class MainWindow(QMainWindow):
         if in_new == "split":
             self.addDockWidget(Qt.RightDockWidgetArea, dock, split_orientation)
         else:
-            self.tabifyDockWidget(self.home_dock, dock)
+            self.tabifyDockWidget(previously_focused or self.home_dock, dock)
 
         return dock
 
@@ -145,19 +149,18 @@ class MainWindow(QMainWindow):
             dock.focus()
             return
 
+        dock = app().focused_chat_dock or self.home_dock
+
         if in_new:
             dock = self.new_chat_dock(user_id, room_id, in_new,
-                                      split_orientation)
+                                      split_orientation, dock)
+        elif isinstance(dock, chat.ChatDock):
+            self.chat_docks.pop((dock.user_id, dock.room_id), None)
+            dock.change_room(user_id, room_id)
         else:
-            dock = app().focused_chat_dock or self.home_dock
-
-            if isinstance(dock, chat.ChatDock):
-                self.chat_docks.pop((dock.user_id, dock.room_id), None)
-                dock.change_room(user_id, room_id)
-            else:
-                self.home_dock.hide()
-                dock = self.new_chat_dock(user_id, room_id, in_new,
-                                          split_orientation)
+            self.home_dock.hide()
+            dock = self.new_chat_dock(user_id, room_id, in_new,
+                                      split_orientation, dock)
 
         self.chat_docks[(user_id, room_id)] = dock
         dock.focus()

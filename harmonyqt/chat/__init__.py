@@ -4,6 +4,7 @@
 from cachetools import LFUCache
 from kids.cache import cache
 # pylint: disable=no-name-in-module
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFocusEvent
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
@@ -20,6 +21,7 @@ class ChatDock(dock.Dock):
 
         # When e.g. user select the tab for this dock
         self.visibilityChanged.connect(self.on_visibility_change)
+        self.dockLocationChanged.connect(self.on_location_change)
 
 
     @property
@@ -50,6 +52,10 @@ class ChatDock(dock.Dock):
     def on_visibility_change(self, visible: bool) -> None:
         if visible:
             self.focus()
+
+
+    def on_location_change(self, _: Qt.AllDockWidgetAreas) -> None:
+        self.focus()
 
 
 @cache(use=LFUCache(maxsize=12))
