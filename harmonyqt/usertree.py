@@ -7,8 +7,9 @@ from matrix_client.room import Room
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
-                             QTreeWidgetItem)
+from PyQt5.QtWidgets import (
+    QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
+)
 
 from . import __about__, actions, main_window
 from .dialogs import AcceptRoomInvite
@@ -41,14 +42,30 @@ class UserTree(QTreeWidget):
         self.customContextMenuRequested.connect(self.on_context_menu_request)
         self.itemActivated.connect(self.on_row_activation)
 
-        event_sig = main_window().events.signal
-        event_sig.new_account.connect(self.add_account)
-        event_sig.account_gone.connect(self.del_account)
-        event_sig.new_room.connect(self.on_add_room)
-        event_sig.new_invite.connect(self.on_add_room)
-        event_sig.room_rename.connect(self.on_rename_room)
-        event_sig.left_room.connect(self.on_left_room)
-        event_sig.account_change.connect(self.on_account_change)
+        ev_sig = main_window().events.signal
+        ev_sig.new_account.connect(self.add_account)
+        ev_sig.account_gone.connect(self.del_account)
+        ev_sig.new_room.connect(self.on_add_room)
+        ev_sig.new_invite.connect(self.on_add_room)
+        ev_sig.room_rename.connect(self.on_rename_room)
+        ev_sig.left_room.connect(self.on_left_room)
+        ev_sig.account_change.connect(self.on_account_change)
+
+        self.actions: List[QAction] = []
+        self.init_actions()
+
+
+    def init_actions(self) -> None:
+        win = main_window()
+        self.actions = [
+            actions.AddAccount(win),
+            actions.NewChat(win),
+            actions.SetStatus(win),
+        ]
+
+
+    def get_context_menu_actions(self) -> List[QAction]:
+        return self.actions
 
 
     def add_account(self, user_id: str) -> None:
@@ -112,13 +129,6 @@ class UserTree(QTreeWidget):
         menu.exec_if_not_empty(self.mapToGlobal(position))
 
 
-    @staticmethod
-    def get_context_menu_actions() -> List[QAction]:
-        return [actions.AddAccount(main_window()),
-                actions.NewChat(main_window()),
-                actions.SetStatus(main_window())]
-
-
     def on_add_room(self, user_id: str, room_id: str,
                     invite_by: str = "", display_name: str = "",
                     name:      str = "", alias:        str = "") -> None:
@@ -175,16 +185,25 @@ class AccountRow(QTreeWidgetItem):
         self.auto_expanded_once: bool = False
         self.update_ui()
 
+        self.actions: List[QAction] = []
+        self.init_actions()
+
+
+    def init_actions(self) -> None:
+        self.actions = [
+            actions.NewChat(self.user_tree, self.client.user_id),
+            actions.DelAccount(self.user_tree, self.client.user_id),
+        ]
+
+
+    def get_context_menu_actions(self) -> List[QAction]:
+        return self.actions
+
 
     def update_ui(self, new_display_name: str = "", _: str = "") -> None:
         self.setText(0,
                      new_display_name or self.client.h_user.get_display_name())
         self.setToolTip(0, self.client.user_id)
-
-
-    def get_context_menu_actions(self) -> List[QAction]:
-        return [actions.NewChat(self.user_tree, self.client.user_id),
-                actions.DelAccount(self.user_tree, self.client.user_id)]
 
 
     def add_room(self, room_id: str,
@@ -227,6 +246,28 @@ class RoomRow(QTreeWidgetItem):
         self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
         self.update_ui(display_name)
 
+        self.actions_invite:  List[QAction] = []
+        self.actions_normal:  List[QAction] = []
+        self.init_actions()
+
+
+    def init_actions(self) -> None:
+        tree    = self.account_row.user_tree
+        user_id = self.account_row.client.user_id
+
+        self.actions_invite = [
+            actions.AcceptInvite(tree, self.room, self.on_invite_accept),
+            actions.DeclineInvite(tree, self.room, self.on_leave),
+        ]
+        self.actions_normal = [
+            actions.InviteToRoom(tree, self.room, user_id),
+            actions.LeaveRoom(tree, self.room, self.on_leave),
+        ]
+
+
+    def get_context_menu_actions(self) -> List[QAction]:
+        return self.actions_invite if self.invite_by else self.actions_normal
+
 
     def update_ui(self, invite_display_name: str = "") -> None:
         # The later crashes for rooms we're invited to but not joined
@@ -265,22 +306,6 @@ class RoomRow(QTreeWidgetItem):
                 return
 
         main_window().go_to_chat_dock(user_id, room_id)
-
-
-    def get_context_menu_actions(self) -> List[QAction]:
-        tree                = self.account_row.user_tree
-        user_id             = self.account_row.client.user_id
-        acts: List[QAction] = []
-
-        if self.invite_by:
-            acts += [
-                actions.AcceptInvite(tree, self.room, self.on_invite_accept),
-                actions.DeclineInvite(tree, self.room, self.on_leave)
-            ]
-        else:
-            acts += [actions.InviteToRoom(tree, self.room, user_id),
-                     actions.LeaveRoom(tree, self.room, self.on_leave)]
-        return acts
 
 
     def on_invite_accept(self) -> None:

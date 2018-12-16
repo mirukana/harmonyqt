@@ -1,10 +1,9 @@
 - Major version goals:
-  - 0.4: E2E, chat usability
-  - 0.5: Room members pane, avatars
-  - 0.6: Status, presence, receipts
+  - 0.5: E2E
+  - 0.6: Room members pane, avatars
+  - 0.7: Status, presence, receipts
 
 - General
-  - Use dict.setdefault when possible
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
   - Handle errors, avoid crashes
@@ -13,10 +12,11 @@
   - Tabs middle click to close
 
 - Appearance
+  - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
   - [Application font](https://stackoverflow.com/a/48242138)
-  - Always display tabs when there are multiple chats in a window
   - Use rgba opacity instead of black levels for CSS
+  - Always display tabs when there are multiple chats in a window
   - Float/close dock title bar buttons and bindings
   - Lower icons brightness to match the text
   - Window icons
@@ -31,7 +31,7 @@
   - Multiline fields: modifier+enter = accept dialog
 
 - Chat
-  - Instant message display when sending one without waiting for server
+  - Parse links even in HTML messages (e.g. in system alert's greeting)
   - Warn on unknown message format
   - Handle msgtype other than m.text
   - Stylesheet for content, also pygments code blocks:
@@ -43,7 +43,6 @@
 
   - Send Area
     - Bindings: ctrl-w/a/e, alt-shift-i/a
-    - Markdown
     - Spell check?
     - Send, upload and other buttons
 
