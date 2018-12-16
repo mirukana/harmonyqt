@@ -122,20 +122,32 @@ class MainWindow(QMainWindow):
         self.title_bars_shown = show
 
 
-    def go_to_chat_dock(self, user_id: str, room_id: str,
-                        force_new_tab: bool = False) -> None:
+    def new_chat_dock(self, user_id: str, room_id: str, in_new: str = "",
+                      split_orientation: Qt.Orientation = Qt.Horizontal
+                     ) -> chat.ChatDock:
+        assert in_new in (None, "", "tab", "split")
+
+        dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
+
+        if in_new == "split":
+            self.addDockWidget(Qt.RightDockWidgetArea, dock, split_orientation)
+        else:
+            self.tabifyDockWidget(self.home_dock, dock)
+
+        return dock
+
+
+    def go_to_chat_dock(self, user_id: str, room_id: str, in_new: str = "",
+                        split_orientation: Qt.Orientation = Qt.Horizontal
+                       ) -> None:
         dock = self.chat_docks.get((user_id, room_id))
         if dock:
             dock.focus()
             return
 
-        def new_tabbed_dock() -> chat.ChatDock:
-            dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
-            self.tabifyDockWidget(self.home_dock, dock)
-            return dock
-
-        if force_new_tab:
-            dock = new_tabbed_dock()
+        if in_new:
+            dock = self.new_chat_dock(user_id, room_id, in_new,
+                                      split_orientation)
         else:
             dock = app().focused_chat_dock or self.home_dock
 
@@ -144,7 +156,8 @@ class MainWindow(QMainWindow):
                 dock.change_room(user_id, room_id)
             else:
                 self.home_dock.hide()
-                dock = new_tabbed_dock()
+                dock = self.new_chat_dock(user_id, room_id, in_new,
+                                          split_orientation)
 
         self.chat_docks[(user_id, room_id)] = dock
         dock.focus()

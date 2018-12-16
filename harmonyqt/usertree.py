@@ -162,13 +162,15 @@ class UserTree(QTreeWidget):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         super().mousePressEvent(event)
 
-        if event.button() == Qt.RightButton:
-            return
-
+        btn  = event.button()
         mods = app().keyboardModifiers()
 
+        if btn == Qt.RightButton or \
+           btn == Qt.LeftButton and mods != Qt.NoModifier:
+            return
+
         clicked_row = self.itemAt(event.pos())
-        self.activate_row(clicked_row, mods, event.button() == Qt.MiddleButton)
+        self.activate_row(clicked_row, mods, btn == Qt.MiddleButton)
 
         if not clicked_row:
             self.really_clear_selection()
@@ -177,9 +179,9 @@ class UserTree(QTreeWidget):
     def activate_row(self,
                      row:             QTreeWidgetItem,
                      kb_modifiers:    Qt.KeyboardModifiers,
-                     by_middle_click: bool = False) -> None:
+                     middle_click: bool = False) -> None:
         if hasattr(row, "on_activation"):
-            row.on_activation(kb_modifiers, by_middle_click)
+            row.on_activation(kb_modifiers, middle_click)
             self.really_clear_selection()
 
 
@@ -299,6 +301,12 @@ class RoomRow(QTreeWidgetItem):
         else:
             self.setIcon(1, QIcon())
 
+        tooltips.append(
+            "\nMiddle click to open in a new tab\n"
+            "Shift + Middle click to open in a horizontal split\n"
+            "Ctrl + Middle click to open in a vertical split"
+        )
+
         tooltips = "\n".join(tooltips)
         for col in range(self.columnCount()):
             self.setToolTip(col, tooltips)
@@ -306,7 +314,7 @@ class RoomRow(QTreeWidgetItem):
 
     def on_activation(self,
                       kb_modifiers:    Qt.KeyboardModifiers,
-                      by_middle_click: bool = False) -> None:
+                      middle_click: bool = False) -> None:
         user_id = self.account_row.client.user_id
         room_id = self.room.room_id
 
@@ -324,11 +332,18 @@ class RoomRow(QTreeWidgetItem):
             else:
                 return
 
-        main_window().go_to_chat_dock(
-            user_id, room_id,
-            force_new_tab = \
-                by_middle_click or kb_modifiers == Qt.ControlModifier
-        )
+        in_new = ""
+        orient = Qt.Horizontal
+        if middle_click and kb_modifiers == Qt.ShiftModifier:
+            in_new = "split"
+        elif middle_click and kb_modifiers == Qt.ShiftModifier:
+            in_new = "split"
+            orient = Qt.Vertical
+        elif middle_click:
+            in_new = "tab"
+
+        main_window().go_to_chat_dock(user_id, room_id,
+                                      in_new=in_new, split_orientation=orient)
 
 
     def on_invite_accept(self) -> None:
