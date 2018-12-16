@@ -5,7 +5,7 @@
 
 - General
   - Middle click for new tabs
-  - Cache using kids.cache everywhere we can
+  - Move stuff to App instead of MainWindow when it makes sense
   - Don't show title bars when holding alt if other keys are held
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
@@ -16,6 +16,7 @@
   - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication)
 
 - Appearance
+  - Hover and disabled
   - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
   - [Application font](https://stackoverflow.com/a/48242138)

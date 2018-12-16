@@ -52,7 +52,7 @@ class ChatDock(dock.Dock):
             self.focus()
 
 
-@cache(use=LFUCache(maxsize=8))
+@cache(use=LFUCache(maxsize=12))
 class Chat(QWidget):
     def __init__(self, user_id: str, room_id: str) -> None:
         super().__init__()

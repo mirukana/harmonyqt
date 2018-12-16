@@ -29,9 +29,8 @@ class UserTree(QTreeWidget):
         self.setAnimated(True)
         self.setAutoExpandDelay(500)
         self.setHeaderHidden(True)  # TODO: customizable cols
-        # self.setIndentation(0)
-        # self.setSortingEnabled(True)
         self.setSelectionMode(QTreeWidget.ExtendedSelection)
+        self.setExpandsOnDoubleClick(False)  # Handled by signals/events
 
         self.header().setMinimumSectionSize(1)
         self.header().setStretchLastSection(False)
@@ -40,6 +39,9 @@ class UserTree(QTreeWidget):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.on_context_menu_request)
+
+        self.itemClicked.connect(self.on_row_activation)
+        # Double click, enter
         self.itemActivated.connect(self.on_row_activation)
 
         ev_sig = main_window().events.signal
@@ -204,6 +206,11 @@ class AccountRow(QTreeWidgetItem):
         self.setText(0,
                      new_display_name or self.client.h_user.get_display_name())
         self.setToolTip(0, self.client.user_id)
+
+
+    def on_activation(self) -> None:
+        expanded = self.isExpanded()
+        self.setExpanded(not expanded)
 
 
     def add_room(self, room_id: str,
