@@ -137,7 +137,7 @@ class MessageList(QTextBrowser):
 
 
     def autoload_history(self) -> None:
-        time.sleep(0.25)
+        time.sleep(0.25)  # Give time for initial events/msgs to be shown
         sb = self.verticalScrollBar()
 
         while not self.reached_history_end:

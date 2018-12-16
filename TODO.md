@@ -7,7 +7,6 @@
   - Middle click for new tabs
   - Cache using kids.cache everywhere we can
   - Don't show title bars when holding alt if other keys are held
-  - DeleteLater() old closed chats
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
   - Handle errors, avoid crashes

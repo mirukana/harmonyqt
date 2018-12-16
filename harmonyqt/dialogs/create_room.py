@@ -2,7 +2,6 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import json
-import time
 from multiprocessing.pool import ThreadPool
 
 from matrix_client.errors import MatrixRequestError
@@ -22,9 +21,6 @@ class CreateRoom(base.GridDialog):
         super().__init__("Create room")
         self._pool = ThreadPool(8)
         self.room_created_signal.connect(self.on_room_created)
-
-        main_window().events.signal.new_account.connect(self.on_new_account)
-        main_window().events.signal.account_gone.connect(self.on_account_gone)
 
         logged_in = sorted(main_window().accounts.keys())
 
@@ -94,16 +90,15 @@ class CreateRoom(base.GridDialog):
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
+        main_window().events.signal.new_account.connect(self.on_new_account)
+        main_window().events.signal.account_gone.connect(self.on_account_gone)
+
 
     def on_new_account(self, user_id: str) -> None:
-        while not hasattr(self, "creator"):
-            time.sleep(0.05)
         self.creator.combo_box.addItem(user_id)
 
 
     def on_account_gone(self, user_id: str) -> None:
-        while not hasattr(self, "creator"):
-            time.sleep(0.05)
         self.creator.del_items_with_text(user_id)
 
 

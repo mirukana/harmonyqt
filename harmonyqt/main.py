@@ -126,7 +126,6 @@ class MainWindow(QMainWindow):
                         force_new_tab: bool = False) -> None:
         dock = self.chat_docks.get((user_id, room_id))
         if dock:
-            print("focus")
             dock.focus()
             return
 
@@ -136,24 +135,19 @@ class MainWindow(QMainWindow):
             return dock
 
         if force_new_tab:
-            print("force")
             dock = new_tabbed_dock()
         else:
             dock = app().focused_chat_dock or self.home_dock
-            print(dock)
 
             if isinstance(dock, chat.ChatDock):
-                print("isinst")
                 self.chat_docks.pop((dock.user_id, dock.room_id), None)
                 dock.change_room(user_id, room_id)
             else:
-                print("notinst")
                 self.home_dock.hide()
                 dock = new_tabbed_dock()
 
         self.chat_docks[(user_id, room_id)] = dock
         dock.focus()
-        print(dock, "\n")
 
 
     def remove_chat_dock(self, user_id: str, room_id: str) -> None:

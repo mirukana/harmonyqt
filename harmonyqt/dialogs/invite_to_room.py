@@ -2,7 +2,6 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import json
-import time
 from multiprocessing.pool import ThreadPool
 from typing import Set
 
@@ -24,11 +23,6 @@ class InviteToRoom(base.GridDialog):
         self.room  = room
         self._pool = ThreadPool(8)
         self.update_wintitle()
-
-        self.invites_sent_signal.connect(self.on_invites_sent)
-        main_window().events.signal.new_account.connect(self.on_new_login)
-        main_window().events.signal.account_gone.connect(self.on_account_gone)
-        main_window().events.signal.room_rename.connect(self.update_wintitle)
 
         room_uids  = {m.user_id for m in room.get_joined_members()}
         us_in_room = {i for i in main_window().accounts if i in room_uids}
@@ -71,6 +65,11 @@ class InviteToRoom(base.GridDialog):
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
+        self.invites_sent_signal.connect(self.on_invites_sent)
+        main_window().events.signal.new_account.connect(self.on_new_login)
+        main_window().events.signal.account_gone.connect(self.on_account_gone)
+        main_window().events.signal.room_rename.connect(self.update_wintitle)
+
 
     def update_wintitle(self) -> None:
         self.setWindowTitle(
@@ -79,17 +78,12 @@ class InviteToRoom(base.GridDialog):
 
 
     def on_new_login(self, user_id: str) -> None:
-        while not hasattr(self, "sender"):
-            time.sleep(0.05)
-
         for member in self.room.get_joined_members():
             if member.user_id == user_id:
                 self.creator.combo_box.addItem(user_id)
 
 
     def on_account_gone(self, user_id: str) -> None:
-        while not hasattr(self, "sender"):
-            time.sleep(0.05)
         self.sender.del_items_with_text(user_id)
 
 
