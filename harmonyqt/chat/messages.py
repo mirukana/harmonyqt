@@ -136,19 +136,24 @@ class MessageList(QTextBrowser):
         self.new_message_from_queue_signal.emit(msg)
 
 
-    def autoload_history(self, chunk_msgs: int = 50) -> None:
+    def autoload_history(self) -> None:
+        time.sleep(0.25)
         sb = self.verticalScrollBar()
 
         while not self.reached_history_end:
             current = sb.value()
 
-            if current <= sb.minimum() or sb.maximum() <= sb.pageStep():
-                self.load_one_history_chunk(chunk_msgs)
+            if sb.maximum() <= sb.pageStep():
+                self.load_one_history_chunk(msgs=20)
 
-            # time.sleep(0.1)
+            elif current <= sb.minimum():
+                self.load_one_history_chunk()
+                time.sleep(0.25)
 
 
-    def load_one_history_chunk(self, msgs: int = 50) -> None:
+    def load_one_history_chunk(self, msgs: int = 100) -> None:
+        assert msgs <= 100  # matrix limit
+
         result = self.chat.client.api.get_room_messages(
             room_id   = self.chat.room.room_id,
             token     = self.history_token or self.chat.room.prev_batch,
