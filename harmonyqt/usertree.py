@@ -40,10 +40,6 @@ class UserTree(QTreeWidget):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.on_context_menu_request)
 
-        self.itemClicked.connect(self.on_row_activation)
-        # Double click, enter
-        self.itemActivated.connect(self.on_row_activation)
-
         ev_sig = main_window().events.signal
         ev_sig.new_account.connect(self.add_account)
         ev_sig.account_gone.connect(self.del_account)
@@ -109,12 +105,6 @@ class UserTree(QTreeWidget):
             root.removeChild(first)
 
 
-    def on_row_activation(self, row: QTreeWidgetItem, _: int) -> None:
-        if hasattr(row, "on_activation"):
-            row.on_activation()
-            self.really_clear_selection()
-
-
     def on_context_menu_request(self, position: QPoint) -> None:
         selected = [self.itemFromIndex(s) for s in self.selectedIndexes()
                     if s.column() == 0 and not isinstance(s, BlankRow)]
@@ -162,14 +152,30 @@ class UserTree(QTreeWidget):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         super().keyPressEvent(event)
 
-        if event.key() == Qt.Key_Escape:
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):  # Enter = keypad
+            self.activate_row(self.currentItem())
+
+        elif event.key() == Qt.Key_Escape:
             self.really_clear_selection()
 
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         super().mousePressEvent(event)
 
-        if not self.itemAt(event.pos()):
+        if event.button() == Qt.RightButton:
+            return
+
+        clicked_row = self.itemAt(event.pos())
+        self.activate_row(clicked_row, event.button() == Qt.MiddleButton)
+
+        if not clicked_row:
+            self.really_clear_selection()
+
+
+    def activate_row(self, row: QTreeWidgetItem, by_middle_click: bool = False
+                    ) -> None:
+        if hasattr(row, "on_activation"):
+            row.on_activation(by_middle_click)
             self.really_clear_selection()
 
 
@@ -208,7 +214,7 @@ class AccountRow(QTreeWidgetItem):
         self.setToolTip(0, self.client.user_id)
 
 
-    def on_activation(self) -> None:
+    def on_activation(self, _: bool) -> None:
         expanded = self.isExpanded()
         self.setExpanded(not expanded)
 
@@ -294,7 +300,7 @@ class RoomRow(QTreeWidgetItem):
             self.setToolTip(col, tooltips)
 
 
-    def on_activation(self) -> None:
+    def on_activation(self, by_middle_click: bool = False) -> None:
         user_id = self.account_row.client.user_id
         room_id = self.room.room_id
 
@@ -312,7 +318,8 @@ class RoomRow(QTreeWidgetItem):
             else:
                 return
 
-        main_window().go_to_chat_dock(user_id, room_id)
+        main_window().go_to_chat_dock(user_id, room_id,
+                                      force_new_tab=by_middle_click)
 
 
     def on_invite_accept(self) -> None:
