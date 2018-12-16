@@ -25,7 +25,7 @@ MESSAGE_FILTERS: Dict[str, str] = {
 
 
 class MessageList(QTextBrowser):
-    new_message_from_queue_signal = pyqtSignal(Message)
+    new_message_to_add_signal = pyqtSignal(Message)
 
 
     def __init__(self, chat: Chat) -> None:
@@ -62,7 +62,7 @@ class MessageList(QTextBrowser):
         self.local_echoed: List[Tuple[str, str]] = []
 
         self._queue: Optional[PriorityQueue] = None
-        self.new_message_from_queue_signal.connect(self.add_message)
+        self.new_message_to_add_signal.connect(self.add_message)
 
         self._ignored_events:     int  = 0
         self.reached_history_end: bool = False
@@ -86,7 +86,7 @@ class MessageList(QTextBrowser):
 
     def process_queue(self) -> None:
         while not self.queue:
-            time.sleep(0.1)
+            time.sleep(0.05)
 
         while True:
             item: Tuple[int, Message] = self.queue.get()  # (timestamp, msg)
@@ -100,7 +100,7 @@ class MessageList(QTextBrowser):
                 del self.local_echoed[index]
                 continue
 
-            self.new_message_from_queue_signal.emit(item[1])
+            self.new_message_to_add_signal.emit(item[1])
 
 
     def add_message(self, msg: Message) -> None:
@@ -133,7 +133,7 @@ class MessageList(QTextBrowser):
         uid = self.chat.client.user_id
         msg = Message(uid, uid, self.chat.room.room_id, text)
         self.local_echoed.append((uid, msg.html_content))
-        self.new_message_from_queue_signal.emit(msg)
+        self.new_message_to_add_signal.emit(msg)
 
 
     def autoload_history(self) -> None:

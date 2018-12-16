@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
 )
 
-from . import __about__, actions, main_window
+from . import __about__, actions, app, main_window
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
@@ -153,7 +153,7 @@ class UserTree(QTreeWidget):
         super().keyPressEvent(event)
 
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):  # Enter = keypad
-            self.activate_row(self.currentItem())
+            self.activate_row(self.currentItem(), event.modifiers())
 
         elif event.key() == Qt.Key_Escape:
             self.really_clear_selection()
@@ -165,17 +165,21 @@ class UserTree(QTreeWidget):
         if event.button() == Qt.RightButton:
             return
 
+        mods = app().keyboardModifiers()
+
         clicked_row = self.itemAt(event.pos())
-        self.activate_row(clicked_row, event.button() == Qt.MiddleButton)
+        self.activate_row(clicked_row, mods, event.button() == Qt.MiddleButton)
 
         if not clicked_row:
             self.really_clear_selection()
 
 
-    def activate_row(self, row: QTreeWidgetItem, by_middle_click: bool = False
-                    ) -> None:
+    def activate_row(self,
+                     row:             QTreeWidgetItem,
+                     kb_modifiers:    Qt.KeyboardModifiers,
+                     by_middle_click: bool = False) -> None:
         if hasattr(row, "on_activation"):
-            row.on_activation(by_middle_click)
+            row.on_activation(kb_modifiers, by_middle_click)
             self.really_clear_selection()
 
 
@@ -214,7 +218,7 @@ class AccountRow(QTreeWidgetItem):
         self.setToolTip(0, self.client.user_id)
 
 
-    def on_activation(self, _: bool) -> None:
+    def on_activation(self, *_) -> None:
         expanded = self.isExpanded()
         self.setExpanded(not expanded)
 
@@ -300,7 +304,9 @@ class RoomRow(QTreeWidgetItem):
             self.setToolTip(col, tooltips)
 
 
-    def on_activation(self, by_middle_click: bool = False) -> None:
+    def on_activation(self,
+                      kb_modifiers:    Qt.KeyboardModifiers,
+                      by_middle_click: bool = False) -> None:
         user_id = self.account_row.client.user_id
         room_id = self.room.room_id
 
@@ -318,8 +324,11 @@ class RoomRow(QTreeWidgetItem):
             else:
                 return
 
-        main_window().go_to_chat_dock(user_id, room_id,
-                                      force_new_tab=by_middle_click)
+        main_window().go_to_chat_dock(
+            user_id, room_id,
+            force_new_tab = \
+                by_middle_click or kb_modifiers == Qt.ControlModifier
+        )
 
 
     def on_invite_accept(self) -> None:
