@@ -5,75 +5,14 @@ from typing import Dict, Optional, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (
-    QDesktopWidget, QDockWidget, QLabel, QMainWindow, QTabWidget, QWidget
-)
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget
 
 from . import (
-    __about__, accounts, chat, events, homepage, main_window, messages,
-    theming, toolbar, usertree
+    __about__, accounts, chat, events, homepage, messages, theming,
+    toolbar, usertree
 )
-
-
-class DockTitleBar(QLabel):
-    # pylint: disable=invalid-name
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        super().mousePressEvent(event)
-
-        if event.button() == Qt.MiddleButton:
-            self.parent().hide()
-
-
-class Dock(QDockWidget):
-    def __init__(self, title: str, parent: QWidget, title_bar: bool = False
-                ) -> None:
-        super().__init__(title, parent)
-        self.title_bar:       DockTitleBar   = DockTitleBar(title, self)
-        self.title_bar_shown: Optional[bool] = None
-        self.show_title_bar(title_bar)
-
-
-    def show_title_bar(self, show: Optional[bool] = None) -> None:
-        if show is None:
-            show = not self.title_bar_shown
-
-        self.setTitleBarWidget(self.title_bar if show else QWidget())
-        self.title_bar_shown = show
-
-
-    def focus(self) -> None:
-        self.show()
-        self.raise_()
-
-
-class ChatDock(Dock):
-    def __init__(self, user_id: str, room_id: str, parent: QWidget,
-                 title_bar: bool = False) -> None:
-        self.user_id: str = user_id
-        self.room_id: str = room_id
-        super().__init__(self.title, parent, title_bar)
-        self.change_room(self.user_id, self.room_id)
-
-
-    @property
-    def title(self) -> str:
-        client = main_window().accounts[self.user_id]
-        return ": ".join((
-            client.h_user.get_display_name(),
-            client.rooms[self.room_id].display_name
-        ))
-
-
-    def update_title(self) -> None:
-        self.setWindowTitle(self.title)
-
-
-    def change_room(self, to_user_id: str, to_room_id: str) -> None:
-        self.chat = chat.Chat(to_user_id, to_room_id)
-        self.user_id, self.room_id = to_user_id, to_room_id
-        self.setWidget(self.chat)
-        self.update_title()
+from .dock import Dock
 
 
 class HarmonyQt(QMainWindow):
@@ -130,7 +69,7 @@ class HarmonyQt(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         # {(user_id, room_id): dock}
-        self.chat_docks: Dict[Tuple[str, str], ChatDock] = {}
+        self.chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
 
         self.actions_dock = Dock("Actions", self)
         self.actions_dock.setWidget(toolbar.ActionsBar())
@@ -168,7 +107,7 @@ class HarmonyQt(QMainWindow):
             dock.focus()
             return
 
-        dock = ChatDock(user_id, room_id, self, self.title_bars_shown)
+        dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
         self.tabifyDockWidget(self.home_dock, dock)
         self.chat_docks[(user_id, room_id)] = dock
         dock.focus()
