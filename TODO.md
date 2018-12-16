@@ -31,6 +31,7 @@
   - Multiline fields: modifier+enter = accept dialog
 
 - Chat
+  - Max message width when window is bigger than x px
   - Parse links even in HTML messages (e.g. in system alert's greeting)
   - Warn on unknown message format
   - Handle msgtype other than m.text

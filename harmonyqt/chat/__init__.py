@@ -21,6 +21,7 @@ class Chat(QWidget):
         from . import messages, send_area
         self.messages  = messages.MessageList(self)
         self.send_area = send_area.SendArea(self)
+        self.send_area.box.setFocus()
 
         self.vbox.addWidget(self.messages)
         self.vbox.addWidget(self.send_area)

@@ -9,7 +9,9 @@ from typing import Dict, List, Optional, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
-from PyQt5.QtGui import QFontMetrics, QTextCursor, QTextTableFormat
+from PyQt5.QtGui import (
+    QFontMetrics, QTextCursor, QTextLength, QTextTableFormat
+)
 from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
@@ -43,6 +45,10 @@ class MessageList(QTextBrowser):
         self.msg_table_format.setTopMargin(
             QFontMetrics(doc.defaultFont()).height()
         )
+        self.msg_table_format.setColumnWidthConstraints([
+            QTextLength(QTextLength.FixedLength,    48),  # avatar
+            QTextLength(QTextLength.VariableLength, 0),   # info/content
+        ])
 
         self.inner_info_content_table_format = QTextTableFormat()
         self.inner_info_content_table_format.setBorder(0)

@@ -89,9 +89,9 @@ class Message:
         cl = " message"
         cl = f" {cl} own-message" if self.sender_id == self.receiver_id else cl
 
-        self.html_content = f"<p class='content{cl}'>{self.content}</p>"
+        self.html_content = f"<div class='content{cl}'>{self.content}</div>"
 
-        self.html_avatar = "<p class='avatar%s'><img src='%s'></p>" % (
+        self.html_avatar = "<div class='avatar%s'><img src='%s'></div>" % (
             cl,
             self.avatar_url or main_window().icons.path("default_avatar_small")
         )
@@ -105,10 +105,10 @@ class Message:
 
 
         self.html_info = (
-            f"<p class='info{cl}'>"
+            f"<div class='info{cl}'>"
             f"<span class='name'>{self.user_display_name}</span>&nbsp;"
             f"<span class='date'>{date}</span>"
-            f"</p>"
+            f"</div>"
         )
 
 

@@ -6,11 +6,14 @@ from typing import Dict, Optional, Tuple
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import (QDesktopWidget, QDockWidget, QLabel, QMainWindow,
-                             QTabWidget, QWidget)
+from PyQt5.QtWidgets import (
+    QDesktopWidget, QDockWidget, QLabel, QMainWindow, QTabWidget, QWidget
+)
 
-from . import (__about__, accounts, chat, events, homepage, messages, theming,
-               toolbar, usertree)
+from . import (
+    __about__, accounts, chat, events, homepage, main_window, messages,
+    theming, toolbar, usertree
+)
 
 
 class DockTitleBar(QLabel):
@@ -37,6 +40,40 @@ class Dock(QDockWidget):
 
         self.setTitleBarWidget(self.title_bar if show else QWidget())
         self.title_bar_shown = show
+
+
+    def focus(self) -> None:
+        self.show()
+        self.raise_()
+
+
+class ChatDock(Dock):
+    def __init__(self, user_id: str, room_id: str, parent: QWidget,
+                 title_bar: bool = False) -> None:
+        self.user_id: str = user_id
+        self.room_id: str = room_id
+        super().__init__(self.title, parent, title_bar)
+        self.change_room(self.user_id, self.room_id)
+
+
+    @property
+    def title(self) -> str:
+        client = main_window().accounts[self.user_id]
+        return ": ".join((
+            client.h_user.get_display_name(),
+            client.rooms[self.room_id].display_name
+        ))
+
+
+    def update_title(self) -> None:
+        self.setWindowTitle(self.title)
+
+
+    def change_room(self, to_user_id: str, to_room_id: str) -> None:
+        self.chat = chat.Chat(to_user_id, to_room_id)
+        self.user_id, self.room_id = to_user_id, to_room_id
+        self.setWidget(self.chat)
+        self.update_title()
 
 
 class HarmonyQt(QMainWindow):
@@ -73,9 +110,9 @@ class HarmonyQt(QMainWindow):
         self.messages = messages.MessageProcessor()
 
         self.events.signal.left_room.connect(self.remove_chat_dock)
-        self.events.signal.room_rename.connect(self.rename_chat_dock)
+        self.events.signal.room_rename.connect(self.update_chat_dock_name)
         # Triggered by room renames that happen when account changes
-        # self.events.signal.account_change.connect(self.rename_chat_dock)
+        # self.events.signal.account_change.connect(self.update_chat_dock_name)
 
 
         # Setup docks:
@@ -93,7 +130,7 @@ class HarmonyQt(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         # {(user_id, room_id): dock}
-        self.chat_docks: Dict[Tuple[str, str], Dock] = {}
+        self.chat_docks: Dict[Tuple[str, str], ChatDock] = {}
 
         self.actions_dock = Dock("Actions", self)
         self.actions_dock.setWidget(toolbar.ActionsBar())
@@ -126,24 +163,15 @@ class HarmonyQt(QMainWindow):
 
 
     def go_to_chat_dock(self, user_id: str, room_id: str) -> None:
-        def go(dock: Dock) -> None:
-            dock.show()
-            dock.raise_()
-            dock.widget().send_area.box.setFocus()
-
         dock = self.chat_docks.get((user_id, room_id))
         if dock:
-            go(dock)
+            dock.focus()
             return
 
-        chat_ = chat.Chat(user_id, room_id)
-        title = self.get_dock_title(user_id, room_id)
-
-        dock  = Dock(title, self, self.title_bars_shown)
-        dock.setWidget(chat_)
+        dock = ChatDock(user_id, room_id, self, self.title_bars_shown)
         self.tabifyDockWidget(self.home_dock, dock)
-        go(dock)
         self.chat_docks[(user_id, room_id)] = dock
+        dock.focus()
 
 
     def remove_chat_dock(self, user_id: str, room_id: str) -> None:
@@ -153,19 +181,10 @@ class HarmonyQt(QMainWindow):
             del self.chat_docks[(user_id, room_id)]
 
 
-    def rename_chat_dock(self, user_id: str, room_id: str) -> None:
+    def update_chat_dock_name(self, user_id: str, room_id: str) -> None:
         dock = self.chat_docks.get((user_id, room_id))
-        if not dock:
-            return
-        dock.setWindowTitle(self.get_dock_title(user_id, room_id))
-
-
-    def get_dock_title(self, user_id: str, room_id: str) -> str:
-        client = self.accounts[user_id]
-        return ": ".join((
-            client.h_user.get_display_name(),
-            client.rooms[room_id].display_name
-        ))
+        if dock:
+            dock.update_title()
 
 
     # pylint: disable=invalid-name
