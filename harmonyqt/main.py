@@ -1,21 +1,43 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget
+from PyQt5.QtWidgets import (
+    QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
+)
 
 from . import (
-    __about__, accounts, chat, events, homepage, messages, theming,
+    __about__, accounts, app, chat, events, homepage, messages, theming,
     toolbar, usertree
 )
 from .dock import Dock
 
 
-class HarmonyQt(QMainWindow):
+class App(QApplication):
+    def __init__(self, argv: Optional[List[str]] = None) -> None:
+        super().__init__(argv or [])
+        # if not self.styleSheet:  # user can load one with --stylesheet
+            # self.
+            # pass
+
+        self.focused_chat_dock: Optional[chat.ChatDock] = None
+        self.focusChanged.connect(self.on_focus_change)
+
+
+    def on_focus_change(self, _: QWidget, new: QWidget) -> None:
+        while not isinstance(new, chat.ChatDock):
+            if new is None:
+                return
+            new = new.parent()
+
+        self.focused_chat_dock = new
+
+
+class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.title_bars_shown       = False
@@ -27,8 +49,8 @@ class HarmonyQt(QMainWindow):
         # Can't define all that __init__ instead.
         # The UI elements need _MAIN_WINDOW to be set, see run() in __init__.
 
-
         # Setup appearance:
+
         self.setWindowTitle("Harmony")
         screen = QDesktopWidget().screenGeometry()
         self.resize(min(screen.width(), 800), min(screen.height(), 600))
@@ -38,7 +60,6 @@ class HarmonyQt(QMainWindow):
 
         self.theme = theming.Theme("glass")
         self.icons = theming.Icons("flat_white")
-
         self.setStyleSheet(self.theme.style("interface"))
 
 
@@ -101,16 +122,38 @@ class HarmonyQt(QMainWindow):
         self.title_bars_shown = show
 
 
-    def go_to_chat_dock(self, user_id: str, room_id: str) -> None:
+    def go_to_chat_dock(self, user_id: str, room_id: str,
+                        force_new_tab: bool = False) -> None:
         dock = self.chat_docks.get((user_id, room_id))
         if dock:
+            print("focus")
             dock.focus()
             return
 
-        dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
-        self.tabifyDockWidget(self.home_dock, dock)
+        def new_tabbed_dock() -> chat.ChatDock:
+            dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
+            self.tabifyDockWidget(self.home_dock, dock)
+            return dock
+
+        if force_new_tab:
+            print("force")
+            dock = new_tabbed_dock()
+        else:
+            dock = app().focused_chat_dock or self.home_dock
+            print(dock)
+
+            if isinstance(dock, chat.ChatDock):
+                print("isinst")
+                self.chat_docks.pop((dock.user_id, dock.room_id), None)
+                dock.change_room(user_id, room_id)
+            else:
+                print("notinst")
+                self.home_dock.hide()
+                dock = new_tabbed_dock()
+
         self.chat_docks[(user_id, room_id)] = dock
         dock.focus()
+        print(dock, "\n")
 
 
     def remove_chat_dock(self, user_id: str, room_id: str) -> None:

@@ -27,12 +27,16 @@ setup(
 
     python_requires  = ">=3.6, <4",
     install_requires = [
+        "PyQt5",
         "atomicfile",
         "dataclasses;python_version<'3.7'",
+        "setuptools",
+
         "markdown2",
         "pygments",  # for markdown2 fenced code blocks coloring
-        "setuptools",
-        "PyQt5",
+
+        "cachetools",
+        "kids.cache",
     ],
     dependency_links=[
         "http://github.com/mirukan/matrix-python-sdk/tarball/master",

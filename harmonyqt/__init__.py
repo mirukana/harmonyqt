@@ -13,7 +13,15 @@ from .__about__ import __doc__
 from . import __about__
 
 
-_MAIN_WINDOW: Optional[QMainWindow] = None
+_APP:         Optional[QApplication] = None
+_MAIN_WINDOW: Optional[QMainWindow]  = None
+
+
+def app() -> QApplication:
+    if not _APP:
+        raise RuntimeError("Application not initialized.")
+    return _APP
+
 
 def main_window() -> QMainWindow:
     if not _MAIN_WINDOW:
@@ -22,12 +30,13 @@ def main_window() -> QMainWindow:
 
 
 def run(argv: Optional[List[str]] = None) -> None:
-    app = QApplication(argv or sys.argv)
-
-    from .main import HarmonyQt
+    from . import main
     # pylint: disable=global-statement
+    global _APP
+    _APP = main.App(argv or sys.argv)
+
     global _MAIN_WINDOW
-    _MAIN_WINDOW = HarmonyQt()
+    _MAIN_WINDOW = main.MainWindow()
     _MAIN_WINDOW.construct()
 
     # Make CTRL-C work
@@ -35,4 +44,4 @@ def run(argv: Optional[List[str]] = None) -> None:
     timer.timeout.connect(lambda: None)
     timer.start(100)
 
-    sys.exit(app.exec_())
+    sys.exit(_APP.exec_())

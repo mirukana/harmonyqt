@@ -1,7 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+from cachetools import LFUCache
+from kids.cache import cache
 # pylint: disable=no-name-in-module
+from PyQt5.QtGui import QFocusEvent
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 from .. import dock, main_window
@@ -14,6 +17,9 @@ class ChatDock(dock.Dock):
         self.room_id: str = room_id
         super().__init__(self.title, parent, title_bar)
         self.change_room(self.user_id, self.room_id)
+
+        # When e.g. user select the tab for this dock
+        self.visibilityChanged.connect(self.on_visibility_change)
 
 
     @property
@@ -41,6 +47,12 @@ class ChatDock(dock.Dock):
         self.chat.send_area.box.setFocus()
 
 
+    def on_visibility_change(self, visible: bool) -> None:
+        if visible:
+            self.focus()
+
+
+@cache(use=LFUCache(maxsize=8))
 class Chat(QWidget):
     def __init__(self, user_id: str, room_id: str) -> None:
         super().__init__()

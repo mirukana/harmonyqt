@@ -4,12 +4,17 @@
   - 0.7: Status, presence, receipts
 
 - General
+  - Middle click for new tabs
+  - Cache using kids.cache everywhere we can
+  - Don't show title bars when holding alt if other keys are held
+  - DeleteLater() old closed chats
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
   - Handle errors, avoid crashes
   - Properly log off accounts when closing the client
   - QMainWindow Storing State
   - Tabs middle click to close
+  - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication)
 
 - Appearance
   - Background and alignment for chat bubbles
@@ -31,7 +36,11 @@
   - Multiline fields: modifier+enter = accept dialog
 
 - Chat
+  - Fix duplicate System Alerts greeting message
+  - Scroll bindings, auto-focus sendbox back
   - Max message width when window is bigger than x px
+  - Keep x most recent messages loaded, pop out oldests unless user is
+    scrolled up enough
   - Parse links even in HTML messages (e.g. in system alert's greeting)
   - Warn on unknown message format
   - Handle msgtype other than m.text
