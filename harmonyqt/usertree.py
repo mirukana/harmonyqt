@@ -10,7 +10,7 @@ from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QAction, QHeaderView, QSizePolicy, QTreeWidget,
                              QTreeWidgetItem)
 
-from . import __about__, actions, get_icon, main_window
+from . import __about__, actions, main_window
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
@@ -100,7 +100,7 @@ class UserTree(QTreeWidget):
         selected = [self.itemFromIndex(s) for s in self.selectedIndexes()
                     if s.column() == 0 and not isinstance(s, BlankRow)]
 
-        acts = []
+        acts: List[QAction] = []
         for row in selected:
             if hasattr(row, "get_context_menu_actions"):
                 acts += row.get_context_menu_actions()
@@ -236,7 +236,7 @@ class RoomRow(QTreeWidgetItem):
         tooltips = self.room.aliases + [self.room.room_id]
 
         if self.invite_by:
-            self.setIcon(1, get_icon("indicator_invite.png"))
+            self.setIcon(1, main_window().icons.icon("indicator_invite"))
             tooltips.insert(0, f"Pending invitation from {self.invite_by}")
         else:
             self.setIcon(1, QIcon())
@@ -268,9 +268,9 @@ class RoomRow(QTreeWidgetItem):
 
 
     def get_context_menu_actions(self) -> List[QAction]:
-        tree    = self.account_row.user_tree
-        user_id = self.account_row.client.user_id
-        acts    = []
+        tree                = self.account_row.user_tree
+        user_id             = self.account_row.client.user_id
+        acts: List[QAction] = []
 
         if self.invite_by:
             acts += [
@@ -284,7 +284,7 @@ class RoomRow(QTreeWidgetItem):
 
 
     def on_invite_accept(self) -> None:
-        self.invite_by = None
+        self.invite_by = ""
         self.update_ui()
 
 

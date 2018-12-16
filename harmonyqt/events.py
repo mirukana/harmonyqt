@@ -12,19 +12,21 @@ from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
-    # User ID, room ID, message event
-    old_message  = pyqtSignal(str, str, dict)
-    new_message  = pyqtSignal(str, str, dict)
-    # User ID, room ID
+    # Receiver user ID, message event dict
+    new_message = pyqtSignal(str, dict)
+
+    # User ID
     new_account  = pyqtSignal(str)
     account_gone = pyqtSignal(str)
-    new_room     = pyqtSignal(str, str)
-    room_rename  = pyqtSignal(str, str)
-    left_room    = pyqtSignal(str, str)
-    # User ID, room ID, invited by user ID, display name, name, canon alias
-    new_invite = pyqtSignal(str, str, str, str, str, str)
     # User ID, room ID, new display name, new avatar URL
     account_change = pyqtSignal(str, str, str, str)
+
+    # User ID, room ID
+    new_room    = pyqtSignal(str, str)
+    room_rename = pyqtSignal(str, str)
+    left_room   = pyqtSignal(str, str)
+    # User ID, room ID, invited by user ID, display name, name, canon alias
+    new_invite = pyqtSignal(str, str, str, str, str, str)
 
 
 class EventManager:
@@ -98,7 +100,7 @@ class EventManager:
                     )
 
         elif etype == "m.room.message":
-            self.signal.new_message.emit(user_id, room_id, ev)
+            self.signal.new_message.emit(user_id, ev)
 
         else:
             self._log("blue", user_id, ev, force=False)
@@ -163,10 +165,10 @@ class EventManager:
             return
 
         import json
-        args = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
-        nums = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
-                "purple": 5, "magenta": 5, "cyan": 6, "white": 7, "gray": 7}
+        jsons = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
+        nums  = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
+                 "purple": 5, "magenta": 5, "cyan": 6, "white": 7, "gray": 7}
 
         with self._lock:
-            print(f"\033[3{nums[color]}m", *args, "\033[0m",
+            print(f"\033[3{nums[color]}m", *jsons, "\033[0m",
                   sep="\n", end="\n\n")

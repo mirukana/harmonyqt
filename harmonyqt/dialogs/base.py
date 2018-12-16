@@ -1,15 +1,16 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtGui import QFontMetrics
-from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QGridLayout,
-                             QLabel, QLineEdit, QPlainTextEdit, QPushButton,
-                             QSizePolicy, QSpacerItem, QWidget)
+from PyQt5.QtWidgets import (
+    QCheckBox, QComboBox, QDialog, QGridLayout, QLabel, QLineEdit,
+    QPlainTextEdit, QPushButton, QSizePolicy, QSpacerItem, QWidget
+)
 
-from .. import main_window, STYLESHEET, get_icon
+from .. import main_window
 
 
 class InfoLine(QLabel):
@@ -166,9 +167,11 @@ class AcceptButton(QPushButton):
                  text:            str             = "&Accept",
                  on_click:        Optional[Callable[[bool], None]] = None,
                  required_fields: Sequence[Field] = ()) -> None:
-        super().__init__(get_icon("accept_small.png"), text, dialog)
-        self.dialog         = dialog
-        self.text_in_fields = {}
+        super().__init__(main_window().icons.icon("accept_small"),
+                         text, dialog)
+
+        self.dialog:         QDialog           = dialog
+        self.text_in_fields: Dict[Field, bool] = {}
 
         self.on_click = on_click if on_click else \
                         lambda _: self.dialog.done(0)
@@ -186,7 +189,7 @@ class AcceptButton(QPushButton):
         self.clicked.connect(self.on_click)
 
 
-    def on_field_change(self, field: str, text: str) -> None:
+    def on_field_change(self, field: Field, text: str) -> None:
         self.text_in_fields[field] = bool(text)
         self.setEnabled(
             all((has_text for has_text in self.text_in_fields.values()))
@@ -195,7 +198,9 @@ class AcceptButton(QPushButton):
 
 class CancelButton(QPushButton):
     def __init__(self, dialog: QDialog, text: str = "&Cancel") -> None:
-        super().__init__(get_icon("cancel_small.png"), text, dialog)
+        super().__init__(main_window().icons.icon("cancel_small"),
+                         text, dialog)
+
         self.dialog = dialog
         self.clicked.connect(self.on_click)
 
@@ -208,7 +213,7 @@ class GridDialog(QDialog):
     def __init__(self, title: str = "") -> None:
         super().__init__(main_window())
 
-        self.setStyleSheet(STYLESHEET)
+        self.setStyleSheet(main_window().theme.style("interface"))
         self.setWindowTitle(" - ".join(("Harmony", title)))
         self.setWindowOpacity(0.9)
 

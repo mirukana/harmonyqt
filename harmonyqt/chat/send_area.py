@@ -63,7 +63,7 @@ class SendBox(QPlainTextEdit):
 
 
     def send(self) -> None:
-        text = self.toPlainText()
+        text = self.toPlainText().rstrip()
         if not text:
             return
 
@@ -89,12 +89,12 @@ class SendBox(QPlainTextEdit):
 
     def _send_markdown(self, text: str) -> None:
         html = markdown.MARKDOWN.convert(text)
-        print("\n", html, "\n")
-        # self.area.chat.room.send_html(html)
+        self.area.chat.messages.local_echo(html)
+        self.area.chat.room.send_html(html)
 
 
     @staticmethod
-    def on_error(err: Exception) -> None:
+    def on_error(err: BaseException) -> None:
         raise err
 
 

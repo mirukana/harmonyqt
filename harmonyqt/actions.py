@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QWidget
 
-from . import __about__, dialogs, get_icon, main_window, menu
+from . import __about__, dialogs, main_window, menu
 
 ImmediateFunc = Optional[Callable[[], None]]
 
@@ -72,7 +72,7 @@ class Action(QAction):
             self.setToolTip(tooltip)
 
         if icon:
-            self.setIcon(get_icon(icon))
+            self.setIcon(main_window().icons.icon(icon))
 
         if shortcut:
             self.setShortcutContext(Qt.ApplicationShortcut)
@@ -119,8 +119,11 @@ class MultiselectAction(Action):
         self.on_trigger(checked)
 
     def on_trigger(self, checked: bool) -> None:
+        def trig_action(act: Action) -> None:
+            act.on_trigger(checked)
+
         if self.thread_triggers:
-            self._pool.map_async(lambda a: a.on_trigger(checked), self.actions)
+            self._pool.map_async(trig_action, self.actions)
         else:
             for act in self.actions:
                 act.on_trigger(checked)
@@ -133,7 +136,7 @@ class NewChat(Action):
             parent  = parent,
             text    = "&New chat",
             tooltip = "Create/join a chat room",
-            icon    = "new_chat.png",
+            icon    = "new_chat",
         )
         acts = [a(parent, for_user_id)
                 for a in (DirectChat, CreateRoom, JoinRoom)]
@@ -146,7 +149,7 @@ class DirectChat(Action):
             parent   = parent,
             text     = "&Direct chat",
             tooltip  = "Start a direct chat with another user",
-            icon     = "direct_chat.png",
+            icon     = "direct_chat",
             shortcut = "Ctrl+Shift+D" if not for_user_id else "",
         )
         self.for_user_id = for_user_id
@@ -157,12 +160,12 @@ class CreateRoom(Action):
             parent   = parent,
             text     = "&Create room",
             tooltip  = "Create a new chat room",
-            icon     = "create_room.png",
+            icon     = "create_room",
             shortcut = "Ctrl+Shift+C" if not for_user_id else "",
         )
         self.for_user_id = for_user_id
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         dialogs.CreateRoom(self.for_user_id).open_modeless()
 
 class JoinRoom(Action):
@@ -171,7 +174,7 @@ class JoinRoom(Action):
             parent   = parent,
             text     = "&Join room",
             tooltip  = "Join an existing chat room",
-            icon     = "join_room.png",
+            icon     = "join_room",
             shortcut = "Ctrl+Shift+J" if not for_user_id else "",
         )
         self.for_user_id = for_user_id
@@ -182,7 +185,7 @@ class InviteToRoom(Action):
         super().__init__(
             parent              = parent,
             text                = "&Invite to room",
-            icon                = "invite.png",
+            icon                = "invite",
             tooltip             = tooltip,
             multiselect_text    = "&Invite to selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms")
@@ -190,7 +193,7 @@ class InviteToRoom(Action):
         self.room    = room
         self.as_user = as_user
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         dialogs.InviteToRoom(self.room, self.as_user).open_modeless()
 
 class LeaveRoom(Action):
@@ -200,7 +203,7 @@ class LeaveRoom(Action):
         super().__init__(
             parent              = parent,
             text                = "&Leave room",
-            icon                = "leave.png",
+            icon                = "leave",
             tooltip             = tooltip,
             multiselect_text    = "&Leave selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
@@ -209,7 +212,7 @@ class LeaveRoom(Action):
         )
         self.room = room
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         try:
             self.room.leave()
         except KeyError:  # matrix_client bug
@@ -222,7 +225,7 @@ class AcceptInvite(Action):
         super().__init__(
             parent              = parent,
             text                = "&Accept invitation",
-            icon                = "accept_small.png",
+            icon                = "accept_small",
             tooltip             = tooltip,
             multiselect_text    = "&Accept invitations for selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
@@ -231,7 +234,7 @@ class AcceptInvite(Action):
         )
         self.room = room
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         try:
             self.room.client.join_room(self.room.room_id)
         except MatrixRequestError as err:
@@ -246,7 +249,7 @@ class DeclineInvite(Action):
         super().__init__(
             parent              = parent,
             text                = "&Decline invitation",
-            icon                = "cancel_small.png",
+            icon                = "cancel_small",
             tooltip             = tooltip,
             multiselect_text    = "&Decline invitations for selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
@@ -255,7 +258,9 @@ class DeclineInvite(Action):
         )
         self.room           = room
         self._leave         = LeaveRoom(parent, room, immediate_func)
-        self.on_trigger     = self._leave.on_trigger
+
+    def on_trigger(self, checked: bool) -> None:
+        self._leave.on_trigger(checked)
 
 
 # Status
@@ -266,7 +271,7 @@ class SetStatus(Action):
             parent   = parent,
             text     = "&Status",
             tooltip  = "Change status for all accounts",
-            icon     = "status_set.png",
+            icon     = "status_set",
         )
         acts = [a(parent) for a in (Online, Away, Invisible, Offline)]
         self.setMenu(menu.Menu(parent, acts))
@@ -278,7 +283,7 @@ class StatusAction(Action):
             parent   = parent,
             text     = text or f"&{name}",
             tooltip  = f"Change status for all accounts to {name.lower()}",
-            icon     = f"status_{name.lower()}.png",
+            icon     = f"status_{name.lower()}",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
             thread_triggers = True,
         )
@@ -305,7 +310,7 @@ class AddAccount(Action):
             parent   = parent,
             text     = "Add &account",
             tooltip  = "Add a new account to Harmony",
-            icon     = "account_add.png",
+            icon     = "account_add",
         )
         acts = [a(parent) for a in (Login, Register)]
         self.setMenu(menu.Menu(parent, acts))
@@ -317,7 +322,7 @@ class DelAccount(Action):
                    "be added again later"
         super().__init__(
             parent              = parent,
-            icon                = "account_del.png",
+            icon                = "account_del",
             text                = "Remove &account",
             tooltip             = tooltip,
             multiselect_text    = "&Remove selected accounts",
@@ -325,7 +330,7 @@ class DelAccount(Action):
         )
         self.user_id = user_id
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         main_window().accounts.remove(self.user_id)
 
 class Login(Action):
@@ -334,11 +339,11 @@ class Login(Action):
             parent   = parent,
             text     = "&Login",
             tooltip  = "Login to an existing Matrix account",
-            icon     = "login.png",
+            icon     = "login",
             shortcut = "Ctrl+Shift+L",
         )
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         dialogs.Login().open_modeless()
 
 
@@ -348,12 +353,12 @@ class Register(Action):
             parent   = parent,
             text     = "&Register",
             tooltip  = "Register a new Matrix account",
-            icon     = "register.png",
+            icon     = "register",
             shortcut = "Ctrl+Shift+R",
         )
 
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         webbrowser.open_new_tab("https://riot.im/app")
 
 
@@ -366,11 +371,11 @@ class ToggleTitleBars(Action):
             text     = "&Toggle title bars",
             tooltip  = "Toggle showing dock title bars\n" \
                        "In hidden mode, hold Alt to temporarily show them",
-            icon     = "ui_view.png",
+            icon     = "ui_view",
             shortcut = "Ctrl+Shift+T",
         )
 
-    def on_trigger(self, _) -> None:
+    def on_trigger(self, checked: bool) -> None:
         main_window().show_dock_title_bars()
 
 
@@ -382,6 +387,6 @@ class Preferences(Action):
             parent   = parent,
             text     = "&Preferences",
             tooltip  = "Change preferences",
-            icon     = "preferences.png",
+            icon     = "preferences",
             shortcut = "Ctrl+Shift+P",
         )

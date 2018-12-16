@@ -141,7 +141,7 @@ class CreateRoom(base.GridDialog):
         self._pool.apply_async(create, error_callback=self.on_error)
 
 
-    def on_error(self, err: Exception) -> None:
+    def on_error(self, err: BaseException) -> None:
         # Without this handler, exceptions will be silently ignored
         if isinstance(err, MatrixRequestError):
             data = json.loads(err.content)

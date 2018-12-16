@@ -58,18 +58,18 @@ class Menu(QMenu):
 
 
         # Remove left duplicates: action without multiselect_text
-        seen_once: Set[Tuple[str, str]] = set()
-        to_add2:   Dict[str, Action]    = OrderedDict()
+        seen_once2: Set[Tuple[str, str]]          = set()
+        to_add2:    Dict[Tuple[str, str], Action] = OrderedDict()
 
         for act in to_add:
-            ident = (type(act).__name__, act.text)
+            ident: Tuple[str, str] = (type(act).__name__, act.text)
 
             if ident in seen_once:
                 to_add2.pop(ident, None)
                 continue
 
             to_add2[ident] = act
-            seen_once.add(ident)
+            seen_once2.add(ident)
 
         if to_add2:
             self.is_empty = False

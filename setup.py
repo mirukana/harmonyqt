@@ -28,8 +28,9 @@ setup(
     python_requires  = ">=3.6, <4",
     install_requires = [
         "atomicfile",
+        "dataclasses;python_version<'3.7'",
         "markdown2",
-        "pygments",  # markdown2 fenced code blocks coloring
+        "pygments",  # for markdown2 fenced code blocks coloring
         "setuptools",
         "PyQt5",
     ],
@@ -40,10 +41,12 @@ setup(
 
     include_package_data = True,
     packages             = find_packages(),
-    package_data         = {__about__.__pkg_name__: ["*.qss", "icons/**/*"]},
+    package_data         = {
+        __about__.__pkg_name__: ["themes/**/*", "icons/**/*"],
+    },
     entry_points    = {
         "console_scripts": [
-            f"{__about__.__pkg_name__}={__about__.__pkg_name__}:run"
+            f"{__about__.__pkg_name__}={__about__.__pkg_name__}:run",
         ]
     },
 

@@ -37,7 +37,7 @@ class AccountManager(UserDict):
               user_id:        str,
               password:       str,
               remember:       bool = False,
-              error_callback: Optional[Callable[[Exception], None]] = None
+              error_callback: Optional[Callable[[BaseException], None]] = None
              ) -> str:
 
         user_id = user_id.strip()
@@ -65,7 +65,7 @@ class AccountManager(UserDict):
 
             return client
 
-        def on_error(err: Exception) -> None:
+        def on_error(err: BaseException) -> None:
             # Without this handler, exceptions will be silently ignored
             raise err
 
@@ -116,7 +116,11 @@ class AccountManager(UserDict):
 
     def login_using_config(self, path: str = "") -> None:
         for acc in self.config_read(path):
-            self.login(**acc)
+            self.login(
+                server_url = acc["server_url"],
+                user_id    = acc["user_id"],
+                password   = acc["password"],
+            )
 
 
     def config_add(self, server_url: str, user_id: str, password: str,

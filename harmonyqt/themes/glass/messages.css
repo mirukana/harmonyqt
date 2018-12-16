@@ -1,0 +1,32 @@
+/* All messages */
+
+.name {
+    color: rgb(210, 35, 110);
+}
+
+.date {
+    color:     gray;
+    font-size: small;
+}
+
+.content p:first-child {
+    margin: 0;
+}
+
+.content p {
+    margin: 16px 0 0 0;
+}
+
+
+/* Specific to our own messages */
+
+.own-message .name {
+    color: rgb(0, 165, 220);
+}
+
+
+/* General text elements */
+
+a {
+    color: rgb(40, 180, 110);
+}

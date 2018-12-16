@@ -28,6 +28,7 @@
   - Join room & direct chat dialogs
   - View button should show the open/close docks menu
   - Gray out dialog accept button if creator/sender combo box has no value
+  - Multiline fields: modifier+enter = accept dialog
 
 - Chat
   - Instant message display when sending one without waiting for server

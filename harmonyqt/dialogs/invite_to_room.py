@@ -4,6 +4,7 @@
 import json
 import time
 from multiprocessing.pool import ThreadPool
+from typing import Set
 
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
@@ -108,7 +109,7 @@ class InviteToRoom(base.GridDialog):
             self.info_line.set_err("Selected sender not connected")
             return
 
-        sent = set()
+        sent: Set[str] = set()
 
         def send(to_user_id: str) -> None:
             # If user gets an error, edit the invitees and click "Send" again:
@@ -125,7 +126,7 @@ class InviteToRoom(base.GridDialog):
                              callback=done, error_callback=self.on_error)
 
 
-    def on_error(self, err: Exception) -> None:
+    def on_error(self, err: BaseException) -> None:
         # Without this handler, exceptions will be silently ignored
         if isinstance(err, MatrixRequestError):
             data = json.loads(err.content)

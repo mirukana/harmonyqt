@@ -9,8 +9,8 @@ from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (QDesktopWidget, QDockWidget, QLabel, QMainWindow,
                              QTabWidget, QWidget)
 
-from . import (STYLESHEET, __about__, accounts, chat, events, homepage,
-               messages, toolbar, usertree)
+from . import (__about__, accounts, chat, events, homepage, messages, theming,
+               toolbar, usertree)
 
 
 class DockTitleBar(QLabel):
@@ -26,8 +26,8 @@ class Dock(QDockWidget):
     def __init__(self, title: str, parent: QWidget, title_bar: bool = False
                 ) -> None:
         super().__init__(title, parent)
-        self.title_bar       = DockTitleBar(title, self)
-        self.title_bar_shown = None
+        self.title_bar:       DockTitleBar   = DockTitleBar(title, self)
+        self.title_bar_shown: Optional[bool] = None
         self.show_title_bar(title_bar)
 
 
@@ -47,10 +47,27 @@ class HarmonyQt(QMainWindow):
 
 
     def construct(self) -> None:
+        # pylint: disable=attribute-defined-outside-init
         # Can't define all that __init__ instead.
         # The UI elements need _MAIN_WINDOW to be set, see run() in __init__.
 
-        # pylint: disable=attribute-defined-outside-init
+
+        # Setup appearance:
+        self.setWindowTitle("Harmony")
+        screen = QDesktopWidget().screenGeometry()
+        self.resize(min(screen.width(), 800), min(screen.height(), 600))
+
+        # self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowOpacity(0.9)
+
+        self.theme = theming.Theme("glass")
+        self.icons = theming.Icons("flat_white")
+
+        self.setStyleSheet(self.theme.style("interface"))
+
+
+        # Setup main classes and event listeners:
+
         self.accounts = accounts.AccountManager()
         self.events   = events.EventManager()
         self.messages = messages.MessageProcessor()
@@ -60,12 +77,8 @@ class HarmonyQt(QMainWindow):
         # Triggered by room renames that happen when account changes
         # self.events.signal.account_change.connect(self.rename_chat_dock)
 
-        self.setWindowTitle("Harmony")
-        screen = QDesktopWidget().screenGeometry()
-        self.resize(min(screen.width(), 800), min(screen.height(), 600))
-        # self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setWindowOpacity(0.9)
-        self.setStyleSheet(STYLESHEET)
+
+        # Setup docks:
 
         self.setDockNestingEnabled(True)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
@@ -87,6 +100,9 @@ class HarmonyQt(QMainWindow):
         self.addDockWidget(
             Qt.LeftDockWidgetArea, self.actions_dock, Qt.Vertical
         )
+
+
+        # Run:
 
         self.show()
 
@@ -144,7 +160,7 @@ class HarmonyQt(QMainWindow):
         dock.setWindowTitle(self.get_dock_title(user_id, room_id))
 
 
-    def get_dock_title(self, user_id: str, room_id: str) -> None:
+    def get_dock_title(self, user_id: str, room_id: str) -> str:
         client = self.accounts[user_id]
         return ": ".join((
             client.h_user.get_display_name(),

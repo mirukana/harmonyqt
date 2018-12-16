@@ -2,123 +2,134 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import json
-import time
+from collections import UserDict
 from multiprocessing.pool import ThreadPool
 from queue import PriorityQueue
+from typing import Dict
 
+from dataclasses import dataclass, field
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime
 
 from . import main_window
+from .chat import markdown
+
+DATE_FORMAT = "HH:mm:ss"
 
 
-class MessageProcessor:
+class MessageProcessor(UserDict):
     def __init__(self) -> None:
-        # Dicts structure: {user_id: {room_id: Queue}}
-        self.new = {}
-        # For .old queues, messages come from newest to oldest unlike .new
-        self.old = {}
-        self._pool = ThreadPool(8)
+        super().__init__()
+        # Dicts structure: {receiver_id: {room_id: Queue}} - FIXME: mypy crash
+        self.data:  Dict[str, Dict[str, PriorityQueue]] = {}  # type: ignore
+        self._pool: ThreadPool                          = ThreadPool(8)
 
-        ev_sig = main_window().events.signal
-        ev_sig.new_account.connect(self.on_new_account)
-        ev_sig.new_room.connect(self.on_new_room)
-
-        ev_sig.new_message.connect(self.on_new_message)
-        ev_sig.old_message.connect(
-            lambda uid, rid, ev:
-            self.on_new_message(uid, rid, ev, is_from_past=True)
-        )
+        main_window().events.signal.new_message.connect(self.on_new_message)
 
 
-    def on_new_account(self, user_id: str) -> None:
-        self.old[user_id] = {}
-        self.new[user_id] = {}
-
-    def on_new_room(self, user_id: str, room_id: str) -> None:
-        self.old[user_id][room_id] = PriorityQueue()
-        self.new[user_id][room_id] = PriorityQueue()
-
-    def on_new_message(self, user_id: str, room_id: str, event: dict,
-                       is_from_past: bool = False) -> None:
-        self._pool.apply_async(
-            self.treat_message,
-            (user_id, room_id, event, is_from_past),
-            error_callback = self.on_treat_error
-        )
+    def on_new_message(self, receiver_id: str, event: dict) -> None:
+        self._pool.apply_async(self.queue_event, (receiver_id, event),
+                               error_callback = self.on_queue_event_error)
 
 
-    def treat_message(self, user_id: str, room_id: str, event: dict,
-                      is_from_past: bool = False) -> None:
+    def queue_event(self, receiver_id: str, event: dict) -> None:
+        ev = event
         try:
-            if event["content"]["msgtype"] != "m.text":
+            if ev["content"]["msgtype"] != "m.text":
                 raise RuntimeError
         except Exception:
-            print("\nUnsupported msg event:\n", json.dumps(event, indent=4))
+            print("\nUnsupported msg event:\n", json.dumps(ev, indent=4))
             return
 
-        sp = "&nbsp;"
-        br = "<br>"
-
-        if event["content"].get("format") == "org.matrix.custom.html":
-            body = event["content"]["formatted_body"]
+        if ev["content"].get("format") == "org.matrix.custom.html":
+            content = ev["content"]["formatted_body"]
         else:
-            body = event["content"]["body"].replace(" ", sp).replace("\n", br)
+            content = markdown.MARKDOWN.convert(ev["content"]["body"])
 
-        if not body:
-            return
+        timestamp = int(ev["origin_server_ts"])
+        msg       = Message(ev["sender"], receiver_id, ev["room_id"],
+                            content, timestamp)
 
-        name  = self.get_user_displayname(room_id, event["sender"])
-        color = "#00a5dc" if user_id == event["sender"] else "#d2236e"
+        if receiver_id not in self.data:
+            self.data[receiver_id] = {}
 
-        date = QDateTime.fromMSecsSinceEpoch(event["origin_server_ts"]).\
-               toString("HH:mm:ss")
+        if ev["room_id"] not in self.data[receiver_id]:
+            self.data[receiver_id][ev["room_id"]] = PriorityQueue()
 
-        msg = (f"<font color='{color}'>{name}</font>{sp}{sp}"
-               f"<font color=gray><small>{date}</small></font>{br}"
-               f"{body}")
-
-        event["display"] = {"name": name, "date": time, "msg": msg,
-                            "is_from_past": is_from_past}
-
-        while True:
-            try:
-                if is_from_past:
-                    queue = self.old[user_id][room_id]
-                else:
-                    queue = self.new[user_id][room_id]
-                break
-            except KeyError:
-                time.sleep(0.1)
-
-        timestamp = event["origin_server_ts"]
-        try:
-            # -timestamp = queue.get() will return from newest to oldest
-            queue.put((-timestamp if is_from_past else timestamp, event))
-        except TypeError:
-            print(event, sep="\n")
-            raise
+        queue = self.data[receiver_id][ev["room_id"]]
+        queue.put((-timestamp, msg))
 
 
     @staticmethod
-    def on_treat_error(err: Exception) -> None:
+    def on_queue_event_error(err: BaseException) -> None:
         raise err
 
 
-    @staticmethod
-    def get_user_displayname(room_id: str, user_id: str) -> str:
+@dataclass
+class Message:
+    sender_id:   str = ""
+    receiver_id: str = ""
+    room_id:     str = ""
+    content:     str = ""
+    # If 0, timestamp = now
+    ms_since_epoch: int = 0
+    # If empty, use the default avatar icon
+    avatar_url: str = ""
+
+    html_avatar:  str = field(init=False, default="")
+    html_info:    str = field(init=False, default="")
+    html_content: str = field(init=False, default="")
+
+
+    def __post_init__(self) -> None:
+        assert bool(self.sender_id and self.receiver_id and self.room_id and
+                    self.content)
+
+
+        cl = " message"
+        cl = f" {cl} own-message" if self.sender_id == self.receiver_id else cl
+
+        self.html_content = f"<p class='content{cl}'>{self.content}</p>"
+
+        self.html_avatar = "<p class='avatar%s'><img src='%s'></p>" % (
+            cl,
+            self.avatar_url or main_window().icons.path("default_avatar_small")
+        )
+
+        if not self.ms_since_epoch:
+            self.ms_since_epoch = \
+                    QDateTime.currentDateTime().toMSecsSinceEpoch()
+
+        date = QDateTime.fromMSecsSinceEpoch(self.ms_since_epoch)\
+               .toString(DATE_FORMAT)
+
+
+        self.html_info = (
+            f"<p class='info{cl}'>"
+            f"<span class='name'>{self.user_display_name}</span>&nbsp;"
+            f"<span class='date'>{date}</span>"
+            f"</p>"
+        )
+
+
+    def was_created_before(self, ms_since_epoch: int) -> bool:
+        return self.ms_since_epoch < ms_since_epoch
+
+
+    @property
+    def user_display_name(self) -> str:
         try:
-            room = main_window().accounts[user_id].rooms[room_id]
+            room = main_window().accounts[self.sender_id].rooms[self.room_id]
         except KeyError:
             pass
         else:
-            name = room.members_displaynames.get(user_id)
+            name = room.members_displaynames.get(self.sender_id)
             if name:
                 return name
 
         for client in main_window().accounts.values():
-            user = client.users.get(user_id)
+            user = client.users.get(self.sender_id)
             if user:
                 return user.get_display_name()
 
-        return user_id
+        return self.sender_id

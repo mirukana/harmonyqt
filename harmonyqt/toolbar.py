@@ -5,7 +5,7 @@
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QSizePolicy, QToolBar, QToolButton, QWidget
 
-from . import main_window, __about__, actions, get_icon
+from . import main_window, __about__, actions
 
 
 class ActionsBar(QToolBar):
@@ -14,7 +14,9 @@ class ActionsBar(QToolBar):
 
         self.setIconSize(QSize(24, 24))
 
-        self.children()[1].setIcon(get_icon("toolbar_expand.png"))
+        self.children()[1].setIcon(
+            main_window().icons.icon("toolbar_expand")
+        )
 
         acts = [actions.SetStatus, actions.AddAccount, actions.NewChat,
                 actions.ToggleTitleBars, actions.Preferences]
