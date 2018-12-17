@@ -16,6 +16,8 @@ from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
 
+# pylint: disable=invalid-name
+
 
 class UserTree(QTreeWidget):
     def __init__(self) -> None:
@@ -81,7 +83,7 @@ class UserTree(QTreeWidget):
         for row in self.accounts.values():
             index = root.indexOfChild(row)
             if index > 0:
-                blank = BlankRow()  # Don't define a parent here!
+                blank = BlankRow()
                 root.insertChild(index, blank)
                 self.blank_rows.append(blank)
 
@@ -148,7 +150,6 @@ class UserTree(QTreeWidget):
         self.setCurrentItem(None)
 
 
-    # pylint: disable=invalid-name
     def keyPressEvent(self, event: QKeyEvent) -> None:
         super().keyPressEvent(event)
 
@@ -186,7 +187,10 @@ class UserTree(QTreeWidget):
 
 
 class BlankRow(QTreeWidgetItem):
-    pass
+    def __init__(self) -> None:
+        # Don't take a parent or sorting won't work correctly`
+        super().__init__()
+        self.setFlags(Qt.NoItemFlags | Qt.ItemNeverHasChildren)
 
 
 class AccountRow(QTreeWidgetItem):
@@ -252,6 +256,8 @@ class RoomRow(QTreeWidgetItem):
                  invite_by: str = "", display_name: str = "",
                  name:      str = "", alias:        str = "") -> None:
         super().__init__(parent)
+        self.setFlags(self.flags() | Qt.ItemNeverHasChildren)
+
         self.account_row: AccountRow = parent
         self.invite_by:   str        = invite_by
 

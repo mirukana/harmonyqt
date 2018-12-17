@@ -59,6 +59,7 @@
     - Send, upload and other buttons
 
 - Accounts
+  - Retry on connect failure
   - Confirmation dialogs for leave/decline/remove account entries
   - Del key
   - Show error box when accepting invite for a gone room 
@@ -66,5 +67,5 @@
   - Don't expand rows if user collapsed manually
   - Drag and drop to reorder
 
-  - Fix the small freeze when logging in,
+  - Fix the small freeze when logging in/big freeze in connection not working,
     thread everywhere where cache info retrieval is needed

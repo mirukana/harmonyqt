@@ -56,10 +56,10 @@ ActionsBar QToolButton::menu-indicator {
 }
 
 
-/* Accounts */
+/* Accounts / Room */
 
 /* branch, item = arrow, columns parts of a row*/
-QTreeView::branch:hover, QTreeView::item:hover {
+QTreeView::item:enabled:hover {
     background: rgb(40, 40, 40)
 }
 
