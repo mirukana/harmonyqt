@@ -7,8 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import (
-    QApplication, QDesktopWidget, QMainWindow, QSizePolicy, QTabWidget,
-    QWidget
+    QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
 )
 
 from . import (
@@ -94,7 +93,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         # {(user_id, room_id): dock}
-        self.chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
+        self.visible_chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
 
 
         # Run:
@@ -112,7 +111,7 @@ class MainWindow(QMainWindow):
             show = not self.title_bars_shown
 
         docks = (self.tree_dock, self.actions_dock, self.home_dock,
-                 *self.chat_docks.values())
+                 *self.visible_chat_docks.values())
 
         for dock in docks:
             dock.show_title_bar(show)
@@ -123,18 +122,40 @@ class MainWindow(QMainWindow):
     def new_chat_dock(self,
                       user_id: str,
                       room_id: str,
-                      in_new: str = "",
+                      in_new:  str = "",
                       split_orientation:  Qt.Orientation = Qt.Horizontal,
                       previously_focused: Optional[chat.ChatDock]  = None
                      ) -> chat.ChatDock:
         assert in_new in (None, "", "tab", "split")
 
+        print(self.tabifiedDockWidgets(previously_focused))
+        prev_is_in_tab = bool(self.tabifiedDockWidgets(previously_focused))
         dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
 
-        if in_new == "split":
-            self.addDockWidget(Qt.RightDockWidgetArea, dock, split_orientation)
+        print("ref", previously_focused.title_bar.text())
+
+        if not previously_focused.isVisible():
+            self.addDockWidget(
+                previously_focused.current_area or Qt.RightDockWidgetArea,
+                dock,
+                split_orientation
+            )
+
+        if in_new == "split" and prev_is_in_tab:
+            print("PREV IN TAB - in new split -", in_new)
+            area = None if previously_focused.isFloating() else \
+                   previously_focused.current_area
+            area = area or Qt.RightDockWidgetArea
+
+            self.addDockWidget(area, dock, split_orientation)
+
+        elif in_new == "split":
+            print("in new split -", in_new)
+            self.splitDockWidget(previously_focused, dock, split_orientation)
+
         else:
-            self.tabifyDockWidget(previously_focused or self.home_dock, dock)
+            print("in new ... -", in_new)
+            self.tabifyDockWidget(previously_focused, dock)
 
         return dock
 
@@ -142,37 +163,43 @@ class MainWindow(QMainWindow):
     def go_to_chat_dock(self, user_id: str, room_id: str, in_new: str = "",
                         split_orientation: Qt.Orientation = Qt.Horizontal
                        ) -> None:
-        dock = self.chat_docks.get((user_id, room_id))
+        print(in_new, split_orientation)
+
+        dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
+            print("focusing")
             dock.focus()
             return
 
-        dock = app().focused_chat_dock or self.home_dock
+        dock = app().focused_chat_dock
+        if not dock or not dock.isVisible():
+            dock = self.home_dock
+        print("focused", dock.title_bar.text())
 
         if in_new:
             dock = self.new_chat_dock(user_id, room_id, in_new,
                                       split_orientation, dock)
         elif isinstance(dock, chat.ChatDock):
-            self.chat_docks.pop((dock.user_id, dock.room_id), None)
+            print("is dock")
             dock.change_room(user_id, room_id)
         else:
+            print("not dock")
             self.home_dock.hide()
             dock = self.new_chat_dock(user_id, room_id, in_new,
                                       split_orientation, dock)
 
-        self.chat_docks[(user_id, room_id)] = dock
         dock.focus()
+        print("done\n")
 
 
     def remove_chat_dock(self, user_id: str, room_id: str) -> None:
-        dock = self.chat_docks.get((user_id, room_id))
+        dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
             dock.hide()
-            del self.chat_docks[(user_id, room_id)]
 
 
     def update_chat_dock_name(self, user_id: str, room_id: str) -> None:
-        dock = self.chat_docks.get((user_id, room_id))
+        dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
             dock.update_title()
 

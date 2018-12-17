@@ -10,6 +10,7 @@ class HomePage(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setAttribute(Qt.WA_StyledBackground)  # Make CSS background work
+        self.setMinimumWidth(10)
 
         label = QLabel("Placeholder home page")
         self.vbox = QVBoxLayout(self)

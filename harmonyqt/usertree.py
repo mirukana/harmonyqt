@@ -336,7 +336,7 @@ class RoomRow(QTreeWidgetItem):
         orient = Qt.Horizontal
         if middle_click and kb_modifiers == Qt.ShiftModifier:
             in_new = "split"
-        elif middle_click and kb_modifiers == Qt.ShiftModifier:
+        elif middle_click and kb_modifiers == Qt.ControlModifier:
             in_new = "split"
             orient = Qt.Vertical
         elif middle_click:

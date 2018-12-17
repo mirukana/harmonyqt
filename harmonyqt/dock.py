@@ -13,6 +13,8 @@ class Dock(QDockWidget):
     def __init__(self, title: str, parent: QWidget, title_bar: bool = False
                 ) -> None:
         super().__init__(title, parent)
+        self.current_area: Optional[Qt.DockWidgetArea] = None
+
         self.title_bar:       TitleBar   = TitleBar(title, self)
         self.title_bar_shown: Optional[bool] = None
         self.show_title_bar(title_bar)
@@ -40,7 +42,8 @@ class Dock(QDockWidget):
             self.focus()
 
 
-    def on_location_change(self, _: Qt.AllDockWidgetAreas) -> None:
+    def on_location_change(self, new_area: Qt.DockWidgetArea) -> None:
+        self.current_area = new_area
         self.focus()
 
 

@@ -1,5 +1,5 @@
 # Copyright 2018 miruka
-# This file is part of harmonyqt, licensed under GPLv3.
+# This file is part of harmonyqt, licensed under GPLv2.
 
 from cachetools import LFUCache
 from kids.cache import cache
@@ -19,6 +19,7 @@ class ChatDock(dock.Dock):
         super().__init__(self.title, parent, title_bar)
         self.change_room(self.user_id, self.room_id)
 
+        self.visibilityChanged.connect(self.on_visibility_change)
         self.dockLocationChanged.connect(self.on_location_change)
 
 
@@ -36,10 +37,15 @@ class ChatDock(dock.Dock):
 
 
     def change_room(self, to_user_id: str, to_room_id: str) -> None:
-        self.chat = Chat(to_user_id, to_room_id)
+        main_window().visible_chat_docks.pop((self.user_id, self.room_id),
+                                             None)
+
         self.user_id, self.room_id = to_user_id, to_room_id
+        self.chat = Chat(self.user_id, self.room_id)
         self.setWidget(self.chat)
         self.update_title()
+
+        main_window().visible_chat_docks[(self.user_id, self.room_id)] = self
 
 
     def focus(self) -> None:
@@ -47,8 +53,15 @@ class ChatDock(dock.Dock):
         self.chat.send_area.box.setFocus()
 
 
-    def on_location_change(self, new_area: Qt.AllDockWidgetAreas) -> None:
-        super().on_location_change(new_area)
+    def on_visibility_change(self, visible: bool) -> None:
+        ids = (self.user_id, self.room_id)
+        if visible:
+            main_window().visible_chat_docks[ids] = self
+        else:
+            main_window().visible_chat_docks.pop(ids, None)
+
+
+    def on_location_change(self, _: Qt.AllDockWidgetAreas) -> None:
         # Needed for situations where user drags a dock then opens a new
         # chat, since the location of that new chat dock is dependent on
         # the last focused dock.
