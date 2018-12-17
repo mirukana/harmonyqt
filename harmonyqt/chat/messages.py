@@ -148,7 +148,8 @@ class MessageList(QTextBrowser):
 
             elif current <= sb.minimum():
                 self.load_one_history_chunk()
-                time.sleep(0.25)
+
+            time.sleep(0.1)
 
 
     def load_one_history_chunk(self, msgs: int = 100) -> None:

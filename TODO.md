@@ -4,7 +4,8 @@
   - 0.7: Status, presence, receipts
 
 - General
-  - Middle click for new tabs
+  - Splits at right position
+  - Splits equalize
   - Move stuff to App instead of MainWindow when it makes sense
   - Don't show title bars when holding alt if other keys are held
   - Rename project to Harmony, forget about old harmony
