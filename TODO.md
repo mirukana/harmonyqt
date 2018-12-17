@@ -4,17 +4,17 @@
   - 0.7: Status, presence, receipts
 
 - General
-  - Splits at right position
-  - Splits equalize
-  - Move stuff to App instead of MainWindow when it makes sense
+  - Floated docks: make alt work correctly
   - Don't show title bars when holding alt if other keys are held
+  - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
   - Handle errors, avoid crashes
   - Properly log off accounts when closing the client
   - QMainWindow Storing State
   - Tabs middle click to close
-  - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication)
+  - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication),
+   [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
 - Appearance
   - Hover and disabled

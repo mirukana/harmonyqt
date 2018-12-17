@@ -206,13 +206,22 @@ class MainWindow(QMainWindow):
 
     # pylint: disable=invalid-name
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if not self.title_bars_shown and not self.alt_title_bars_toggled and \
-           event.key() == Qt.Key_Alt:
+        if not self.title_bars_shown       and \
+           not self.alt_title_bars_toggled and \
+           event.key() == Qt.Key_Alt       and \
+           app().keyboardModifiers() == Qt.NoModifier:
+
             self.show_dock_title_bars(True)
             self.alt_title_bars_toggled = True
 
+        elif self.alt_title_bars_toggled:
+            self.show_dock_title_bars(False)
+            self.alt_title_bars_toggled = False
+
+
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
-        if self.alt_title_bars_toggled and event.key() == Qt.Key_Alt:
+        if self.alt_title_bars_toggled and \
+           (event.key() & Qt.Key_Alt or event.modifiers() & Qt.AltModifier):
             self.show_dock_title_bars(False)
             self.alt_title_bars_toggled = False
