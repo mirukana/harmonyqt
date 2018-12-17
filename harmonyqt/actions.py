@@ -3,7 +3,6 @@
 
 import json
 import webbrowser
-from multiprocessing.pool import ThreadPool
 from typing import Callable, Dict, Optional, Sequence
 
 from matrix_client.errors import MatrixRequestError
@@ -52,8 +51,7 @@ class Action(QAction):
                  shortcut:            str           = "",
                  multiselect_text:    str           = "",
                  multiselect_tooltip: str           = "",
-                 immediate_func:      ImmediateFunc = None,
-                 thread_triggers:     bool          = False) -> None:
+                 immediate_func:      ImmediateFunc = None) -> None:
         super().__init__(parent)
         self.parent              = parent
         self.text                = text
@@ -63,8 +61,6 @@ class Action(QAction):
         self.multiselect_text    = multiselect_text
         self.multiselect_tooltip = multiselect_tooltip
         self.immediate_func      = immediate_func
-        self.thread_triggers     = thread_triggers
-        self._pool               = ThreadPool(8)
 
         self.setText(self.text)
 
@@ -89,10 +85,7 @@ class Action(QAction):
         if self.immediate_func:
             self.immediate_func()
 
-        if self.thread_triggers:
-            self._pool.apply_async(self.on_trigger, (checked,))
-        else:
-            self.on_trigger(checked)
+        self.on_trigger(checked)
 
     def on_trigger(self, checked: bool) -> None:
         pass
@@ -106,10 +99,8 @@ class MultiselectAction(Action):
             tooltip  = actions[0].multiselect_tooltip or actions[0].tooltip,
             icon     = actions[0].icon_str,
             shortcut = actions[0].shortcut_str,
-            thread_triggers = actions[0].thread_triggers,
         )
         self.actions         = actions
-        self._pool           = ThreadPool(8)
         self.immediate_funcs = [a.immediate_func for a in actions
                                 if a.immediate_func]
 
@@ -119,14 +110,8 @@ class MultiselectAction(Action):
         self.on_trigger(checked)
 
     def on_trigger(self, checked: bool) -> None:
-        def trig_action(act: Action) -> None:
+        for act in self.actions:
             act.on_trigger(checked)
-
-        if self.thread_triggers:
-            self._pool.map_async(trig_action, self.actions)
-        else:
-            for act in self.actions:
-                act.on_trigger(checked)
 
 # Rooms
 
@@ -208,7 +193,6 @@ class LeaveRoom(Action):
             multiselect_text    = "&Leave selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
             immediate_func      = immediate_func,
-            thread_triggers     = True,
         )
         self.room = room
 
@@ -230,7 +214,6 @@ class AcceptInvite(Action):
             multiselect_text    = "&Accept invitations for selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
             immediate_func      = immediate_func,
-            thread_triggers     = True,
         )
         self.room = room
 
@@ -254,7 +237,6 @@ class DeclineInvite(Action):
             multiselect_text    = "&Decline invitations for selected rooms",
             multiselect_tooltip = tooltip.replace("room", "rooms"),
             immediate_func      = immediate_func,
-            thread_triggers     = True,
         )
         self.room           = room
         self._leave         = LeaveRoom(parent, room, immediate_func)
@@ -285,7 +267,6 @@ class StatusAction(Action):
             tooltip  = f"Change status for all accounts to {name.lower()}",
             icon     = f"status_{name.lower()}",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
-            thread_triggers = True,
         )
 
 class Online(StatusAction):

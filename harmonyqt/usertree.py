@@ -45,9 +45,9 @@ class UserTree(QTreeWidget):
         ev_sig.account_gone.connect(self.del_account)
         ev_sig.new_room.connect(self.on_add_room)
         ev_sig.new_invite.connect(self.on_add_room)
-        ev_sig.room_rename.connect(self.on_rename_room)
-        ev_sig.left_room.connect(self.on_left_room)
-        ev_sig.account_change.connect(self.on_account_change)
+        # ev_sig.room_rename.connect(self.on_rename_room)
+        # ev_sig.left_room.connect(self.on_left_room)
+        # ev_sig.account_change.connect(self.on_account_change)
 
         self.actions: List[QAction] = []
         self.init_actions()
@@ -265,8 +265,8 @@ class RoomRow(QTreeWidgetItem):
         self.setTextAlignment(1, Qt.AlignRight)  # msg unread/invite indicator
         self.update_ui(display_name)
 
-        self.actions_invite:  List[QAction] = []
-        self.actions_normal:  List[QAction] = []
+        self.actions_invite: List[QAction] = []
+        self.actions_normal: List[QAction] = []
         self.init_actions()
 
 

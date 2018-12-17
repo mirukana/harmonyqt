@@ -79,7 +79,6 @@ class MainWindow(QMainWindow):
 
         self.setDockNestingEnabled(True)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
-        # self.setTabShape(QTabWidget.Triangular)
 
         self.tree_dock = Dock("Accounts", self)
         self.tree_dock.setWidget(usertree.UserTree())
