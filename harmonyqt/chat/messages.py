@@ -12,7 +12,7 @@ from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
     QFontMetrics, QTextCursor, QTextLength, QTextTableFormat
 )
-from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtWidgets import QSizePolicy, QTextBrowser
 
 from . import Chat
 from .. import main_window

@@ -27,9 +27,9 @@ Chat SendBox {
     margin:     0px;
 }
 
-QMainWindow {  /* Affects line between MessageList and SendArea in Chat */
-    background: rgb(10, 10, 10);
-}
+/*QMainWindow {  [> Affects line between MessageList and SendArea in Chat <]*/
+    /*background: rgb(10, 10, 10);*/
+/*}*/
 
 HomePage, HomePage QLabel, Chat MessageList {
     background: rgb(10, 10, 10);

@@ -17,6 +17,10 @@ class Dock(QDockWidget):
         self.title_bar_shown: Optional[bool] = None
         self.show_title_bar(title_bar)
 
+        # When e.g. user select the tab for this dock
+        self.visibilityChanged.connect(self.on_visibility_change)
+        self.dockLocationChanged.connect(self.on_location_change)
+
 
     def show_title_bar(self, show: Optional[bool] = None) -> None:
         if show is None:
@@ -29,6 +33,15 @@ class Dock(QDockWidget):
     def focus(self) -> None:
         self.show()
         self.raise_()
+
+
+    def on_visibility_change(self, visible: bool) -> None:
+        if visible:
+            self.focus()
+
+
+    def on_location_change(self, _: Qt.AllDockWidgetAreas) -> None:
+        self.focus()
 
 
 class TitleBar(QLabel):

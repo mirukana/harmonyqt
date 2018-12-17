@@ -7,7 +7,8 @@ from typing import Dict, List, Optional, Tuple
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import (
-    QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
+    QApplication, QDesktopWidget, QMainWindow, QSizePolicy, QTabWidget,
+    QWidget
 )
 
 from . import (
@@ -75,14 +76,18 @@ class MainWindow(QMainWindow):
         # self.events.signal.account_change.connect(self.update_chat_dock_name)
 
 
-        # Setup docks:
+        # Setup main UI parts:
 
         self.setDockNestingEnabled(True)
         self.setTabPosition(Qt.AllDockWidgetAreas, QTabWidget.North)
 
-        self.tree_dock = Dock("Accounts", self)
+        self.tree_dock = Dock("Accounts / Rooms", self)
         self.tree_dock.setWidget(usertree.UserTree())
         self.addDockWidget(Qt.LeftDockWidgetArea, self.tree_dock)
+
+        self.actions_dock = Dock("Actions", self)
+        self.actions_dock.setWidget(toolbar.ActionsBar())
+        self.splitDockWidget(self.tree_dock, self.actions_dock, Qt.Vertical)
 
         self.home_dock = Dock("Home", self)
         self.home_dock.setWidget(homepage.HomePage())
@@ -90,12 +95,6 @@ class MainWindow(QMainWindow):
 
         # {(user_id, room_id): dock}
         self.chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
-
-        self.actions_dock = Dock("Actions", self)
-        self.actions_dock.setWidget(toolbar.ActionsBar())
-        self.addDockWidget(
-            Qt.LeftDockWidgetArea, self.actions_dock, Qt.Vertical
-        )
 
 
         # Run:

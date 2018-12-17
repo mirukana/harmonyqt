@@ -4,7 +4,7 @@
 from cachetools import LFUCache
 from kids.cache import cache
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFocusEvent
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
@@ -19,8 +19,6 @@ class ChatDock(dock.Dock):
         super().__init__(self.title, parent, title_bar)
         self.change_room(self.user_id, self.room_id)
 
-        # When e.g. user select the tab for this dock
-        self.visibilityChanged.connect(self.on_visibility_change)
         self.dockLocationChanged.connect(self.on_location_change)
 
 
@@ -49,12 +47,11 @@ class ChatDock(dock.Dock):
         self.chat.send_area.box.setFocus()
 
 
-    def on_visibility_change(self, visible: bool) -> None:
-        if visible:
-            self.focus()
-
-
-    def on_location_change(self, _: Qt.AllDockWidgetAreas) -> None:
+    def on_location_change(self, new_area: Qt.AllDockWidgetAreas) -> None:
+        super().on_location_change(new_area)
+        # Needed for situations where user drags a dock then opens a new
+        # chat, since the location of that new chat dock is dependent on
+        # the last focused dock.
         self.focus()
 
 
@@ -62,13 +59,13 @@ class ChatDock(dock.Dock):
 class Chat(QWidget):
     def __init__(self, user_id: str, room_id: str) -> None:
         super().__init__()
+
         self.client = main_window().accounts[user_id]
         self.room   = self.client.rooms[room_id]
 
         self.vbox = QVBoxLayout(self)
-
-        # layout_old_margin = self.vbox.contentsMargins()
         self.vbox.setContentsMargins(0, 0, 0, 0)
+        self.vbox.setSpacing(0)
 
         from . import messages, send_area
         self.messages  = messages.MessageList(self)
