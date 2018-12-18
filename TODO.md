@@ -16,9 +16,7 @@
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
 - Appearance
-  - Hover, clicked, disabled
   - Remove row selected blue rectangle
-  - Remove toolbar edge spacers
   - Dialog box icons to replace ugly system ones
   - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
