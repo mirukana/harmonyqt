@@ -37,7 +37,6 @@
   - Multiline fields: modifier+enter = accept dialog
 
 - Chat
-  - Fix duplicate System Alerts greeting message
   - Scroll bindings, auto-focus sendbox back
   - Max message width when window is bigger than x px
   - Keep x most recent messages loaded, pop out oldests unless user is

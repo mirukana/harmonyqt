@@ -5,7 +5,7 @@ import json
 from collections import UserDict
 from multiprocessing.pool import ThreadPool
 from queue import PriorityQueue
-from typing import Dict
+from typing import Dict, Set
 
 from dataclasses import dataclass, field
 # pylint: disable=no-name-in-module
@@ -24,16 +24,23 @@ class MessageProcessor(UserDict):
         self.data:  Dict[str, Dict[str, PriorityQueue]] = {}  # type: ignore
         self._pool: ThreadPool                          = ThreadPool(8)
 
+        self.received_event_ids: Set[str] = set()
+
         main_window().events.signal.new_message.connect(self.on_new_message)
 
 
     def on_new_message(self, receiver_id: str, event: dict) -> None:
-        self._pool.apply_async(self.queue_event, (receiver_id, event),
+        if event["event_id"] in self.received_event_ids:
+            return
+
+        self._pool.apply_async(self._queue_event, (receiver_id, event),
                                error_callback = self.on_queue_event_error)
+        self.received_event_ids.add(event["event_id"])
 
 
-    def queue_event(self, receiver_id: str, event: dict) -> None:
+    def _queue_event(self, receiver_id: str, event: dict) -> None:
         ev = event
+
         try:
             if ev["content"]["msgtype"] != "m.text":
                 raise RuntimeError

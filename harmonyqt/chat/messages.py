@@ -91,6 +91,11 @@ class MessageList(QTextBrowser):
         while True:
             item: Tuple[int, Message] = self.queue.get()  # (timestamp, msg)
 
+            ev = item[1]
+            # if "@server" in ev.sender_id:
+                # main_window().events._log("red", ev.receiver_id, ev.ms_since_epoch, force=True)
+
+
             lecho_val = (self.chat.client.user_id, item[1].html_content)
             try:
                 index = self.local_echoed.index(lecho_val)
