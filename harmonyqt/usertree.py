@@ -47,9 +47,9 @@ class UserTree(QTreeWidget):
         ev_sig.account_gone.connect(self.del_account)
         ev_sig.new_room.connect(self.on_add_room)
         ev_sig.new_invite.connect(self.on_add_room)
-        # ev_sig.room_rename.connect(self.on_rename_room)
-        # ev_sig.left_room.connect(self.on_left_room)
-        # ev_sig.account_change.connect(self.on_account_change)
+        ev_sig.room_rename.connect(self.on_rename_room)
+        ev_sig.left_room.connect(self.on_left_room)
+        ev_sig.account_change.connect(self.on_account_change)
 
         self.actions: List[QAction] = []
         self.init_actions()
@@ -126,11 +126,13 @@ class UserTree(QTreeWidget):
     def on_add_room(self, user_id: str, room_id: str,
                     invite_by: str = "", display_name: str = "",
                     name:      str = "", alias:        str = "") -> None:
+        print("add", locals())
         self.accounts[user_id].add_room(room_id,
                                         invite_by, display_name, name, alias)
 
 
     def on_rename_room(self, user_id: str, room_id: str) -> None:
+        print("rename", locals())
         rooms = self.accounts[user_id].rooms
         if room_id in rooms:
             rooms[room_id].update_ui()
@@ -142,6 +144,7 @@ class UserTree(QTreeWidget):
 
     def on_account_change(self, user_id: str, _: str,
                           new_display_name: str, new_avatar_url: str) -> None:
+        print("accchange", locals())
         self.accounts[user_id].update_ui(new_display_name, new_avatar_url)
 
 
