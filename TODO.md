@@ -49,6 +49,7 @@
   - Rooms topic
   - Invite to current room action binding
   - Check for Matrix max mesage size
+  - Linkify mail and IP addresses
 
   - Send Area
     - Max height, half of the window

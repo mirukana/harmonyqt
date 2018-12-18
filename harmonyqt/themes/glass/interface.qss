@@ -65,6 +65,12 @@ QCheckBox::indicator:unchecked {  /* TODO: improve */
 /* Accounts / Room */
 
 /* branch, item = arrow, columns parts of a row*/
+
+QTreeView {
+    /* annoying ugly blue rectangle */
+    selection-background-color: transparent;
+}
+
 QTreeView::item:enabled:hover {
     background: rgb(40, 40, 40)
 }
