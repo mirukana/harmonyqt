@@ -45,7 +45,7 @@ def safe_bind(action: QAction, key: str) -> str:
 class Action(QAction):
     def __init__(self,
                  parent:              QWidget,
-                 text:                str,
+                 text:                str           = "",
                  tooltip:             str           = "",
                  icon:                str           = "",
                  shortcut:            str           = "",
@@ -138,6 +138,7 @@ class DirectChat(Action):
             shortcut = "Ctrl+Shift+D" if not for_user_id else "",
         )
         self.for_user_id = for_user_id
+        self.setDisabled(True)
 
 class CreateRoom(Action):
     def __init__(self, parent: QWidget, for_user_id: str = "") -> None:
@@ -368,6 +369,7 @@ class Preferences(Action):
             parent   = parent,
             text     = "&Preferences",
             tooltip  = "Change preferences",
-            icon     = "preferences",
+            icon     = "preferences_tmp_disabled",
             shortcut = "Ctrl+Shift+P",
         )
+        self.setDisabled(True)

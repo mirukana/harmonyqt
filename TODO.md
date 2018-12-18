@@ -5,7 +5,6 @@
 
 - General
   - Floated docks: make alt work correctly
-  - Don't show title bars when holding alt if other keys are held
   - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
@@ -17,7 +16,10 @@
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
 - Appearance
-  - Hover and disabled
+  - Hover, clicked, disabled
+  - Remove row selected blue rectangle
+  - Remove toolbar edge spacers
+  - Dialog box icons to replace ugly system ones
   - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
   - [Application font](https://stackoverflow.com/a/48242138)

@@ -3,22 +3,36 @@
 
 /* General style */
 
-QWidget, QMessageBox, QMainWindow::separator {
+QWidget, QMessageBox{
     background-color: black;
     color:            rgb(200, 200, 200);
     font-size:        16px;
 }
 
+QMainWindow::separator {
+    background: rgba(0, 0, 0, 0);
+    width:      4px;
+    height:     4px
 
-/* To organize */
+}
 
-QMainWindow::separator:hover {
+/* :selected acts like :hover for QMenu */
+QMainWindow::separator:hover, QMenu::item:selected, QToolButton:hover,
+QPushButton:hover {
     background: rgb(40, 40, 40);
 }
 
-QToolBar, QToolBar QWidget {
-    padding: 3px;
-    margin:  0px;
+QPushButton:disabled, QMenu::item:disabled {
+    color: rgb(100, 100, 100);
+}
+
+
+/* To organize */
+
+
+QPushButton {
+    border:  0;
+    padding: 4px;
 }
 
 Chat SendBox {
@@ -26,10 +40,6 @@ Chat SendBox {
     padding:    11px;
     margin:     0px;
 }
-
-/*QMainWindow {  [> Affects line between MessageList and SendArea in Chat <]*/
-    /*background: rgb(10, 10, 10);*/
-/*}*/
 
 HomePage, HomePage QLabel, Chat MessageList {
     background: rgb(10, 10, 10);
@@ -43,16 +53,8 @@ QLineEdit, QPlainTextEdit, QTextEdit, QComboBox {
     background: rgb(20, 20, 20);
 }
 
-QPushButton:disabled {
-    color: rgb(100, 100, 100);
-}
-
 QCheckBox::indicator:unchecked {  /* TODO: improve */
     border: 1px solid rgb(80, 80, 80);
-}
-
-ActionsBar QToolButton::menu-indicator {
-    image: none;
 }
 
 
@@ -71,6 +73,26 @@ QTreeView::branch:selected, QTreeView::item:selected {
 QTreeView::item:has-children {
     color: rgb(0, 165, 220);
 }
+
+
+/* Actions bar */
+
+QToolButton {
+    min-height: 16px;
+    max-height: 32px;
+    padding:    4px;
+    border:     0;
+    margin:     0;
+}
+
+QToolButton[is-expand-button=true] {
+    padding: 2px;
+}
+
+ActionsBar QToolButton::menu-indicator {
+    image: none;
+}
+
 
 /* Dialogs */
 

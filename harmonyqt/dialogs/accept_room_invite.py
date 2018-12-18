@@ -12,6 +12,7 @@ class AcceptRoomInvite(QMessageBox):
                 ) -> None:
         super().__init__(parent)
         self.setStyleSheet(main_window().theme.style("interface"))
+        self.setWindowOpacity(0.9)
         self.setWindowTitle("Harmony - Accept room invitation")
 
         user_id = room.client.user_id
