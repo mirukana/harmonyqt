@@ -164,6 +164,7 @@ class JoinRoom(Action):
             shortcut = "Ctrl+Shift+J" if not for_user_id else "",
         )
         self.for_user_id = for_user_id
+        self.setDisabled(True)
 
 class InviteToRoom(Action):
     def __init__(self, parent: QWidget, room: Room, as_user: str = "") -> None:
@@ -254,10 +255,11 @@ class SetStatus(Action):
             parent   = parent,
             text     = "&Status",
             tooltip  = "Change status for all accounts",
-            icon     = "status_set",
+            icon     = "status_set_tmp_disabled",
         )
         acts = [a(parent) for a in (Online, Away, Invisible, Offline)]
         self.setMenu(menu.Menu(parent, acts))
+        self.setDisabled(True)
 
 class StatusAction(Action):
     def __init__(self, parent, text = None, shortcut = None) -> None:
@@ -269,6 +271,7 @@ class StatusAction(Action):
             icon     = f"status_{name.lower()}",
             shortcut = shortcut or f"Ctrl+Alt+{name[0].upper()}",
         )
+        self.setDisabled(True)
 
 class Online(StatusAction):
     pass
