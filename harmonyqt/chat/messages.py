@@ -1,11 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import re
 import time
 from queue import PriorityQueue
 from threading import Thread
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
@@ -17,11 +16,6 @@ from PyQt5.QtWidgets import QTextBrowser
 from . import Chat
 from .. import main_window
 from ..messages import Message
-
-MESSAGE_FILTERS: Dict[str, str] = {
-    # Qt only knows <s> for striketrough
-    r"(</?)\s*(del|strike)>": r"\1s>",
-}
 
 
 class MessageList(QTextBrowser):
@@ -91,11 +85,6 @@ class MessageList(QTextBrowser):
         while True:
             item: Tuple[int, Message] = self.queue.get()  # (timestamp, msg)
 
-            ev = item[1]
-            # if "@server" in ev.sender_id:
-                # main_window().events._log("red", ev.receiver_id, ev.ms_since_epoch, force=True)
-
-
             lecho_val = (self.chat.client.user_id, item[1].html_content)
             try:
                 index = self.local_echoed.index(lecho_val)
@@ -126,7 +115,7 @@ class MessageList(QTextBrowser):
         cursor.insertTable(2, 1, self.inner_info_content_table_format)
         cursor.insertHtml(msg.html_info)
         cursor.movePosition(QTextCursor.NextBlock)
-        cursor.insertHtml(self.filter_msg_content(msg.html_content))
+        cursor.insertHtml(msg.html_content)
 
         cursor.endEditBlock()
 
@@ -177,10 +166,3 @@ class MessageList(QTextBrowser):
             if event["type"] == "m.room.message":
                 main_window().messages.on_new_message(self.chat.client.user_id,
                                                       event)
-
-
-    @staticmethod
-    def filter_msg_content(content: str) -> str:  # content: HTML
-        for regex, repl in MESSAGE_FILTERS.items():
-            content = re.sub(regex, repl, content, re.IGNORECASE, re.MULTILINE)
-        return content

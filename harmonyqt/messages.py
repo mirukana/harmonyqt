@@ -2,6 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import json
+import re
 from collections import UserDict
 from multiprocessing.pool import ThreadPool
 from queue import PriorityQueue
@@ -15,6 +16,11 @@ from . import main_window
 from .chat import markdown
 
 DATE_FORMAT = "HH:mm:ss"
+
+MESSAGE_FILTERS: Dict[str, str] = {
+    # Qt only knows <s> for striketrough
+    r"(</?)\s*(del|strike)>": r"\1s>",
+}
 
 
 class MessageProcessor(UserDict):
@@ -91,7 +97,8 @@ class Message:
     def __post_init__(self) -> None:
         assert bool(self.sender_id and self.receiver_id and self.room_id and
                     self.content)
-
+        self.filter_content()
+        self.content_linkify_in_html()
 
         cl = " message"
         cl = f" {cl} own-message" if self.sender_id == self.receiver_id else cl
@@ -140,3 +147,45 @@ class Message:
                 return user.get_display_name()
 
         return self.sender_id
+
+
+    def filter_content(self) -> None:  # content: HTML
+        content = self.content
+        for regex, repl in MESSAGE_FILTERS.items():
+            content = re.sub(regex, repl, content, re.IGNORECASE, re.MULTILINE)
+        self.content = content
+
+
+    def content_linkify_in_html(self) -> None:
+        content = self.content
+
+        def repl(match) -> str:
+            url: str = match.group()
+
+            href = re.sub(r"(^<|<$|^>|>$|^\(|\)$)", "", url)
+            href = f"http://{url}" if "://" not in href else href
+
+            for already_linkified in a_tags:
+                if href in already_linkified:
+                    return url
+
+            link = f"<a href='{href}'>{url}</a>"
+
+            # Make <links> work properly, sanitize < >
+            link = re.sub(rf"^(<a href='.+'>)<(.+)", r"&lt;\1\2", link)
+            link = re.sub(rf"^(<a href='.+'>)>(.+)", r"&gt;\1\2", link)
+            link = re.sub(rf"<</a>$",                r"</a>&lt;", link)
+            link = re.sub(rf"></a>$",                r"</a>&gt;", link)
+            return link
+
+        # List of <a> tags and anything inside them: `<a …> … <a/ …>`
+        a_tags = re.findall(r"<\s*?a(?:\s+\S+)?>[^<]*<\s*/?\s*a(?:\s+\S+)?>",
+                            content)
+
+        # List of URLs found in content like `https://thing` or `example.com`
+        self.content = re.sub(
+            r"<?\(?([A-Za-z]+:///?[^\s<]+|"                    # scheme://…
+            r"[\w\d\._-]+\.[A-Za-z]{2,9}(?:/[^\s<]+)?)>?\)?",  # ….tld ….tld/…
+
+            repl, content
+        )

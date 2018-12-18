@@ -56,7 +56,7 @@ DISABLED_EXTRAS = [
 
 LINK_PATTERNS = [
     # Make any plain URL get parsed without special markdown syntax:
-    (re.compile(r"([A-Za-z]+://[^\s]+)"), r"\1"),
+    (re.compile(r"([A-Za-z]+:///?[^\s]+)"), r"\1"),
 ]
 
 

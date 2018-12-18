@@ -88,6 +88,7 @@ class SendBox(QPlainTextEdit):
 
 
     def _send_markdown(self, text: str) -> None:
+        text = text.replace("<", "&lt;").replace(">", "&gt;")
         html = markdown.MARKDOWN.convert(text)
         self.area.chat.messages.local_echo(html)
         self.area.chat.room.send_html(html)
