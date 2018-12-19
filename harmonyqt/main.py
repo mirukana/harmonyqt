@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Harmony")
         screen = QDesktopWidget().screenGeometry()
-        self.resize(min(screen.width(), 800), min(screen.height(), 600))
+        self.resize(min(screen.width(), 1024), min(screen.height(), 768))
 
         # self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(0.9)
