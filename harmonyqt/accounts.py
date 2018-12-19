@@ -4,6 +4,7 @@
 import base64
 import json
 import os
+import platform
 import threading
 from collections import UserDict
 from multiprocessing.pool import ThreadPool
@@ -37,7 +38,8 @@ class AccountManager(UserDict):
 
     def login_using_config(self, path: str = "") -> None:
         def log(acc: Dict[str, str]) -> None:
-            self.login(acc["server_url"], acc["user_id"], acc["password"])
+            self.login(acc["server_url"], acc["user_id"], acc["password"],
+                       acc["device_name"])
 
         def err_c(err: BaseException) -> None:
             raise err
@@ -49,6 +51,7 @@ class AccountManager(UserDict):
               server_url:    str,
               user_id:       str,
               password:      str  = "",
+              device_name:   str  = "",
               add_to_config: bool = False) -> None:
 
         user_id = user_id.strip()
@@ -79,8 +82,15 @@ class AccountManager(UserDict):
         self.data[user_id] = client
         self.signal.login.emit(client)
 
+        system = f" on {platform.system()}".rstrip()
+        system = f"{system} {platform.release()}".rstrip() \
+                 if system != " on" else ""
+
+        client.api.update_device_info(client.device_id,
+                                      device_name or f"Harmony{system}")
+
         if add_to_config:
-            self.config_add(server_url, user_id, password)
+            self.config_add(server_url, user_id, password, device_name)
 
 
     def remove(self, user_id: str) -> None:
@@ -145,19 +155,19 @@ class AccountManager(UserDict):
 
 
     def config_add(self, server_url: str, user_id: str, password: str,
-                   path: str = "") -> None:
+                   device_name: str = "", path: str = "") -> None:
         with self._lock:
             path     = path or self.standard_accounts_config_path
             accounts = self.config_read(path)
-            params   = {"server_url": server_url, "user_id": user_id,
-                        "password": password}
+            params   = {"server_url": server_url, "user_id":     user_id,
+                        "password":   password,   "device_name": device_name,}
 
             for i, acc in enumerate(accounts):
                 if acc["user_id"] == user_id:
-                    if acc["password"] == password:
+                    if acc == params:
                         return
 
-                    accounts[i]["password"] = password
+                    accounts[i] = params
                     break
             else:
                 accounts.append(params)
