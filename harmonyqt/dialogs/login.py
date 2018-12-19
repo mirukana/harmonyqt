@@ -1,18 +1,24 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from matrix_client.errors import (MatrixError, MatrixHttpLibError,
-                                  MatrixRequestError)
+from multiprocessing.pool import ThreadPool
+
+from matrix_client.errors import (
+    MatrixError, MatrixHttpLibError, MatrixRequestError
+)
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from . import base
 from .. import main_window
 
 
 class Login(base.GridDialog):
+    login_done_signal = pyqtSignal()
+
     def __init__(self) -> None:
         super().__init__("Login")
+        self._pool = ThreadPool(1)
 
         self.info_line = base.InfoLine(self)
         self.server    = base.Field(
@@ -54,31 +60,30 @@ class Login(base.GridDialog):
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 144)
 
-
-        self.expected_login_user_id: str = ""
-        main_window().events.signal.new_account.connect(self.on_login)
+        self.login_done_signal.connect(self.on_login)
 
 
     def validate(self, _) -> None:
         self.info_line.set_info("Logging in...")
 
-        server   = self.server.get_text()
-        user     = self.username.get_text()
-        pw       = self.password.get_text()
-        remember = self.remember.isChecked()
-
-        self.expected_login_user_id = main_window().accounts.login(
-            server, user, pw, remember, self.on_error
+        self._pool.apply_async(
+            func = main_window().accounts.login,
+            kwds = {
+                "server_url":    self.server.get_text(),
+                "user_id":       self.username.get_text(),
+                "password":      self.password.get_text(),
+                "add_to_config": self.remember.isChecked(),
+            },
+            callback       = lambda *_: self.login_done_signal.emit(),
+            error_callback = self.on_error,
         )
 
 
-    def on_login(self, user_id: str) -> None:
-        expected = self.expected_login_user_id
-        if expected and user_id == expected:
-            self.done(0)
+    def on_login(self) -> None:
+        self.done(0)
 
 
-    def on_error(self, err: Exception) -> None:
+    def on_error(self, err: BaseException) -> None:
         if isinstance(err, MatrixRequestError):
             self.info_line.set_err("Invalid username or password")
 
