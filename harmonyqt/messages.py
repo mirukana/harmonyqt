@@ -30,18 +30,21 @@ class MessageProcessor(UserDict):
         self.data:  Dict[str, Dict[str, PriorityQueue]] = {}  # type: ignore
         self._pool: ThreadPool                          = ThreadPool(8)
 
-        self.received_event_ids: Set[str] = set()
+        # {receiver_id: {event_id...}}
+        self.received_event_ids: Dict[str, Set[str]] = {}
 
         main_window().events.signal.new_message.connect(self.on_new_message)
 
 
     def on_new_message(self, receiver_id: str, event: dict) -> None:
-        if event["event_id"] in self.received_event_ids:
+        received = self.received_event_ids.setdefault(receiver_id, set())
+
+        if event["event_id"] in received:
             return
 
+        received.add(event["event_id"])
         self._pool.apply_async(self._queue_event, (receiver_id, event),
                                error_callback = self.on_queue_event_error)
-        self.received_event_ids.add(event["event_id"])
 
 
     def _queue_event(self, receiver_id: str, event: dict) -> None:
