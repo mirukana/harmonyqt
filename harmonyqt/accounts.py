@@ -2,6 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import base64
+import hashlib
 import json
 import os
 import platform
@@ -12,6 +13,7 @@ from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 from atomicfile import AtomicFile
+from kids.cache import cache
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 
@@ -65,7 +67,7 @@ class AccountManager(UserDict):
         if user_id in self.data:
             return
 
-        db_path, db_filename = os.path.split(self.crypto_db_path)
+        db_path, db_filename = os.path.split(self.get_crypt_db_path(user_id))
 
         client = HMatrixClient(
             server_url,
@@ -78,6 +80,7 @@ class AccountManager(UserDict):
         )
 
         client.login(user_id, password, sync=False)
+        client.olm_device.upload_identity_keys()
 
         self.data[user_id] = client
         self.signal.login.emit(client)
@@ -116,8 +119,8 @@ class AccountManager(UserDict):
             return path
 
         base_dir = QStandardPaths.writableLocation(kind)
-        os.makedirs(base_dir, exist_ok=True)
-        path = f"{base_dir}{os.sep}{relative_path}"
+        path     = f"{base_dir}{os.sep}{relative_path}"
+        os.makedirs(os.path.split(path)[0], exist_ok=True)
 
         if initial_content is not None:
             with AtomicFile(path, "w") as new:
@@ -133,10 +136,10 @@ class AccountManager(UserDict):
         )
 
 
-    @property
-    def crypto_db_path(self) -> str:
+    def get_crypt_db_path(self, user_id: str) -> str:
+        safe_filename = hashlib.md5(user_id.encode("utf-8")).hexdigest()
         return self._get_standard_path(
-            QStandardPaths.AppDataLocation, "encryption.db"
+            QStandardPaths.AppDataLocation, f"encryption/{safe_filename}.db"
         )
 
 

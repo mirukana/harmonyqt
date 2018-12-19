@@ -4,6 +4,8 @@
   - 0.7: Status, presence, receipts
 
 - General
+  - Click on tree arrow
+  - Fix what happens when alt is released while dragging a dock
   - Floated docks: make alt work correctly
   - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
