@@ -3,6 +3,7 @@
 
 import json
 import os
+import threading
 from collections import UserDict
 from multiprocessing.pool import ThreadPool
 from typing import Callable, Dict, List, Optional
@@ -12,7 +13,6 @@ from atomicfile import AtomicFile
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 
-from .__about__ import __pkg_name__
 from .matrix import HMatrixClient
 
 LOAD_NUM_EVENTS_ON_START = 20
@@ -26,10 +26,20 @@ class _SignalObject(QObject):
 
 
 class AccountManager(UserDict):
-    def __init__(self, initialdata: Optional[dict] = None) -> None:
-        super().__init__(initialdata)
+    def __init__(self) -> None:
+        super().__init__(initialdata=None)
         self.signal = _SignalObject()
         self._pool  = ThreadPool(8)
+
+    # Login/logout
+
+    def login_using_config(self, path: str = "") -> None:
+        for acc in self.config_read(path):
+            self.login(
+                server_url = acc["server_url"],
+                user_id    = acc["user_id"],
+                password   = acc["password"],
+            )
 
 
     def login(self,
@@ -51,9 +61,22 @@ class AccountManager(UserDict):
         if user_id in self.data:
             return user_id
 
+        lock = threading.Lock()
+
+        db_path, db_filename = os.path.split(self.crypto_db_path)
+
         def get_client() -> HMatrixClient:
             client = HMatrixClient(
-                server_url, sync_filter_limit=LOAD_NUM_EVENTS_ON_START
+                server_url,
+                sync_filter_limit = LOAD_NUM_EVENTS_ON_START,
+                encryption        = True,
+                restore_device_id = True,
+                encryption_conf   = {
+                    "store_conf": {
+                        "db_path": db_path,
+                        "db_name": db_filename,
+                    }
+                }
             )
             client.login(user_id, password, sync=False)
 
@@ -61,7 +84,8 @@ class AccountManager(UserDict):
             self.signal.login.emit(client)
 
             if remember:
-                self.config_add(server_url, user_id, password)
+                with lock:
+                    self.config_add(server_url, user_id, password)
 
             return client
 
@@ -84,49 +108,56 @@ class AccountManager(UserDict):
         self.config_del(user_id)
 
 
+    # Standard file paths
+
     @staticmethod
-    def get_config_path(path: str = "") -> str:
-        path_suffix = f"{__pkg_name__}{os.sep}accounts.json"
-        loc         = QStandardPaths.ConfigLocation
+    def _get_standard_path(kind:            QStandardPaths.StandardLocation,
+                           file:            str,
+                           initial_content: Optional[str] = None) -> str:
+        relative_path = file.replace("/", os.sep)
 
-        path = path or QStandardPaths.locate(loc, path_suffix)
-
+        path = QStandardPaths.locate(kind, relative_path)
         if path:
+            print("ex", path)
             return path
 
-        base_dir = QStandardPaths.writableLocation(loc)
-
-        if not base_dir:
-            raise OSError("Cannot determine writable configuration dir.")
-
+        base_dir = QStandardPaths.writableLocation(kind)
         os.makedirs(base_dir, exist_ok=True)
-        path = f"{base_dir}{os.sep}{path_suffix}"
+        path = f"{base_dir}{os.sep}{relative_path}"
 
-        with AtomicFile(path, "w") as new:
-            new.write("[]")
+        if initial_content is not None:
+            with AtomicFile(path, "w") as new:
+                new.write(initial_content)
 
+        print(path)
         return path
 
 
+    @property
+    def standard_accounts_config_path(self) -> str:
+        return self._get_standard_path(
+            QStandardPaths.AppConfigLocation, "accounts.json", "[]"
+        )
+
+
+    @property
+    def crypto_db_path(self) -> str:
+        return self._get_standard_path(
+            QStandardPaths.AppDataLocation, "encryption.db"
+        )
+
+
+    # Config file operations
+
     def config_read(self, path: str = "") -> List[Dict[str, str]]:
-        with open(self.get_config_path(path), "r") as file:
-            content = file.read().strip()
-            return json.loads(content) or []
-
-
-    def login_using_config(self, path: str = "") -> None:
-        for acc in self.config_read(path):
-            self.login(
-                server_url = acc["server_url"],
-                user_id    = acc["user_id"],
-                password   = acc["password"],
-            )
+        with open(path or self.standard_accounts_config_path, "r") as file:
+            return json.loads(file.read().strip()) or []
 
 
     def config_add(self, server_url: str, user_id: str, password: str,
                    path: str = "") -> None:
 
-        path     = self.get_config_path(path)
+        path     = path or self.standard_accounts_config_path
         accounts = self.config_read(path)
         params   = {"server_url": server_url, "user_id": user_id,
                     "password":   password}
@@ -142,7 +173,7 @@ class AccountManager(UserDict):
 
 
     def config_del(self, user_id: str, path: str = "") -> None:
-        path     = self.get_config_path(path)
+        path     = path or self.standard_accounts_config_path
         accounts = self.config_read(path)
         accounts = [a for a in accounts if a["user_id"] != user_id]
 
