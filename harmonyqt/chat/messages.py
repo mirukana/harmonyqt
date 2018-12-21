@@ -2,9 +2,8 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import time
-from queue import PriorityQueue
 from threading import Thread
-from typing import List, Optional, Tuple
+from typing import Deque, List, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
@@ -55,58 +54,46 @@ class MessageList(QTextBrowser):
         # [(user_id, html content)] - Can't use a set, we need "duplicates"
         self.local_echoed: List[Tuple[str, str]] = []
 
-        self._queue: Optional[PriorityQueue] = None
-        self.new_message_to_add_signal.connect(self.add_message)
+        self.added_msgs_dates: Deque[int] = Deque()
 
-        self._ignored_events:     int  = 0
         self.reached_history_end: bool = False
         self.history_token:       str  = ""
 
-        Thread(target=self.process_queue,    daemon=True).start()
+        # main_window().messages.signal.new_message.connect(self.add_message)
         Thread(target=self.autoload_history, daemon=True).start()
 
 
-    @property
-    def queue(self) -> Optional[PriorityQueue]:
-        if not self._queue:
-            uid, rid = self.chat.client.user_id, self.chat.room.room_id
-            try:
-                self._queue = main_window().messages[uid][rid]
-            except KeyError:
-                return None
-
-        return self._queue
-
-
-    def process_queue(self) -> None:
-        while not self.queue:
-            time.sleep(0.05)
-
-        while True:
-            item: Tuple[int, Message] = self.queue.get()  # (timestamp, msg)
-
-            lecho_val = (self.chat.client.user_id, item[1].html_content)
-            try:
-                index = self.local_echoed.index(lecho_val)
-            except ValueError:
-                pass
-            else:
-                del self.local_echoed[index]
-                continue
-
-            self.new_message_to_add_signal.emit(item[1])
-
-
     def add_message(self, msg: Message) -> None:
+        uid = self.chat.client.user_id
+        try:
+            index = self.local_echoed.index((uid, msg.html_content))
+        except ValueError:
+            pass
+        else:
+            del self.local_echoed[index]
+            return
+
         sb                   = self.verticalScrollBar()
         distance_from_bottom = sb.maximum() - sb.value()
-
-        to_top = msg.was_created_before(self.start_ms_since_epoch)
 
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
 
-        cursor.movePosition(QTextCursor.Start if to_top else QTextCursor.End)
+        to_top = msg.was_created_before(self.start_ms_since_epoch)
+        if to_top:
+            cursor.movePosition(QTextCursor.Start)
+
+            i = 0
+            for i, date in enumerate(self.added_msgs_dates, i):
+                if msg.ms_since_epoch < date:
+                    self.added_msgs_dates.insert(i, msg.ms_since_epoch)
+                    cursor.movePosition(QTextCursor.Down, n=i)
+                    break
+            else:
+                self.added_msgs_dates.append(msg.ms_since_epoch)
+                cursor.movePosition(QTextCursor.End)
+        else:
+            cursor.movePosition(QTextCursor.End)
 
         cursor.insertTable(1, 2, self.msg_table_format)
         cursor.insertHtml(msg.html_avatar)
@@ -119,15 +106,22 @@ class MessageList(QTextBrowser):
 
         cursor.endEditBlock()
 
-        if to_top or distance_from_bottom == 0:
+        if to_top:
             sb.setValue(sb.maximum() - distance_from_bottom)
+        elif distance_from_bottom <= 10:
+            sb.setValue(sb.maximum())
 
 
     def local_echo(self, text: str) -> None:
         uid = self.chat.client.user_id
-        msg = Message(uid, uid, self.chat.room.room_id, text)
+        msg = Message(
+            sender_id   = uid,
+            receiver_id = uid,
+            room_id     = self.chat.room.room_id,
+            content     = text,
+        )
         self.local_echoed.append((uid, msg.html_content))
-        self.new_message_to_add_signal.emit(msg)
+        self.add_message(msg)
 
 
     def autoload_history(self) -> None:
@@ -138,7 +132,7 @@ class MessageList(QTextBrowser):
             current = sb.value()
 
             if sb.maximum() <= sb.pageStep():
-                self.load_one_history_chunk(msgs=20)
+                self.load_one_history_chunk(msgs=25)
 
             elif current <= sb.minimum():
                 self.load_one_history_chunk()
@@ -147,7 +141,7 @@ class MessageList(QTextBrowser):
 
 
     def load_one_history_chunk(self, msgs: int = 100) -> None:
-        assert msgs <= 100  # matrix limit
+        assert 1 <= msgs <= 100  # matrix limit
 
         result = self.chat.client.api.get_room_messages(
             room_id   = self.chat.room.room_id,
@@ -164,5 +158,6 @@ class MessageList(QTextBrowser):
 
         for event in result["chunk"]:
             if event["type"] == "m.room.message":
-                main_window().messages.on_new_message(self.chat.client.user_id,
-                                                      event)
+                main_window().messages.emit_msg_from_event(
+                    self.chat.client.user_id, event
+                )

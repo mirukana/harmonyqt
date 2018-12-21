@@ -3,14 +3,12 @@
 
 import json
 import re
-from collections import UserDict
 from multiprocessing.pool import ThreadPool
-from queue import PriorityQueue
 from typing import Dict, Set
 
 from dataclasses import dataclass, field
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QDateTime
+from PyQt5.QtCore import QDateTime, QObject, pyqtSignal
 
 from . import main_window
 from .chat import markdown
@@ -21,64 +19,6 @@ MESSAGE_FILTERS: Dict[str, str] = {
     # Qt only knows <s> for striketrough
     r"(</?)\s*(del|strike)>": r"\1s>",
 }
-
-
-class MessageProcessor(UserDict):
-    def __init__(self) -> None:
-        super().__init__()
-        # Dicts structure: {receiver_id: {room_id: Queue}} - FIXME: mypy crash
-        self.data:  Dict[str, Dict[str, PriorityQueue]] = {}  # type: ignore
-        self._pool: ThreadPool                          = ThreadPool(8)
-
-        # {receiver_id: {event_id...}}
-        self.received_event_ids: Dict[str, Set[str]] = {}
-
-        main_window().events.signal.new_message.connect(self.on_new_message)
-
-
-    def on_new_message(self, receiver_id: str, event: dict) -> None:
-        received = self.received_event_ids.setdefault(receiver_id, set())
-
-        if event["event_id"] in received:
-            return
-
-        received.add(event["event_id"])
-        self._pool.apply_async(self._queue_event, (receiver_id, event),
-                               error_callback = self.on_queue_event_error)
-
-
-    def _queue_event(self, receiver_id: str, event: dict) -> None:
-        ev = event
-
-        try:
-            if ev["content"]["msgtype"] != "m.text":
-                raise RuntimeError
-        except Exception:
-            print("\nUnsupported msg event:\n", json.dumps(ev, indent=4))
-            return
-
-        if ev["content"].get("format") == "org.matrix.custom.html":
-            content = ev["content"]["formatted_body"]
-        else:
-            content = markdown.MARKDOWN.convert(ev["content"]["body"])
-
-        timestamp = int(ev["origin_server_ts"])
-        msg       = Message(ev["sender"], receiver_id, ev["room_id"],
-                            content, timestamp)
-
-        if receiver_id not in self.data:
-            self.data[receiver_id] = {}
-
-        if ev["room_id"] not in self.data[receiver_id]:
-            self.data[receiver_id][ev["room_id"]] = PriorityQueue()
-
-        queue = self.data[receiver_id][ev["room_id"]]
-        queue.put((-timestamp, msg))
-
-
-    @staticmethod
-    def on_queue_event_error(err: BaseException) -> None:
-        raise err
 
 
 @dataclass
@@ -192,3 +132,61 @@ class Message:
 
             repl, content
         )
+
+
+class _SignalObject(QObject):
+    new_message = pyqtSignal(Message)
+
+
+class MessageProcessor:
+    def __init__(self) -> None:
+        self.signal            = _SignalObject()
+        self._pool: ThreadPool = ThreadPool(1)
+
+        # {receiver_id: {event_id...}}
+        self.received_event_ids: Dict[str, Set[str]] = {}
+
+        ev_sig = main_window().events.signal
+        ev_sig.new_message.connect(self.emit_msg_from_event)
+
+
+    def emit_msg_from_event(self, receiver_id: str, event: dict) -> None:
+        self._pool.apply_async(
+            func           = self._emit_msg_from_event,
+            args           = (receiver_id, event),
+            error_callback = self._on_emit_msg_from_event_error
+        )
+
+
+    def _emit_msg_from_event(self, receiver_id: str, event: dict) -> None:
+        ev = event
+
+        received = self.received_event_ids.setdefault(receiver_id, set())
+        if ev["event_id"] in received:
+            return
+        received.add(ev["event_id"])
+
+        try:
+            if ev["content"]["msgtype"] != "m.text":
+                raise RuntimeError
+        except Exception:
+            print("\nUnsupported msg event:\n", json.dumps(ev, indent=4))
+            return
+
+        if ev["content"].get("format") == "org.matrix.custom.html":
+            content = ev["content"]["formatted_body"]
+        else:
+            content = markdown.MARKDOWN.convert(ev["content"]["body"])
+
+        self.signal.new_message.emit(Message(
+            sender_id      = ev["sender"],
+            receiver_id    = receiver_id,
+            room_id        = ev["room_id"],
+            content        = content,
+            ms_since_epoch = int(ev["origin_server_ts"]),
+        ))
+
+
+    @staticmethod
+    def _on_emit_msg_from_event_error(err: BaseException) -> None:
+        raise err

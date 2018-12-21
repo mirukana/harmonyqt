@@ -7,7 +7,8 @@ from kids.cache import cache
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
-from .. import dock, main_window
+from .. import dock, main_window, register_startup_function
+from ..messages import Message
 
 
 class ChatDock(dock.Dock):
@@ -67,7 +68,7 @@ class ChatDock(dock.Dock):
         self.focus()
 
 
-@cache(use=LFUCache(maxsize=12))
+@cache(use=LFUCache(maxsize=64))
 class Chat(QWidget):
     def __init__(self, user_id: str, room_id: str) -> None:
         super().__init__()
@@ -85,3 +86,13 @@ class Chat(QWidget):
 
         self.vbox.addWidget(self.messages)
         self.vbox.addWidget(self.send_area)
+
+
+def redirect_message(msg: Message) -> None:
+    chat = Chat(msg.receiver_id, msg.room_id)  # cache
+    chat.messages.add_message(msg)
+
+
+register_startup_function(
+    lambda _, win: win.messages.signal.new_message.connect(redirect_message)
+)

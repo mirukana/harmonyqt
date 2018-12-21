@@ -13,13 +13,12 @@ from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 from atomicfile import AtomicFile
-from kids.cache import cache
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 
 from .matrix import HMatrixClient
 
-LOAD_NUM_EVENTS_ON_START = 20
+LOAD_NUM_EVENTS_ON_START = 10
 
 
 class _SignalObject(QObject):
