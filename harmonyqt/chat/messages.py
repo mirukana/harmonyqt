@@ -39,7 +39,8 @@ class MessageList(QTextBrowser):
             QFontMetrics(doc.defaultFont()).height()
         )
         self.msg_table_format.setColumnWidthConstraints([
-            QTextLength(QTextLength.FixedLength,    48),  # avatar
+            # QTextLength(QTextLength.FixedLength,    48),  # avatar
+            QTextLength(QTextLength.FixedLength,    0),
             QTextLength(QTextLength.VariableLength, 0),   # info/content
         ])
 
@@ -96,7 +97,7 @@ class MessageList(QTextBrowser):
             cursor.movePosition(QTextCursor.End)
 
         cursor.insertTable(1, 2, self.msg_table_format)
-        cursor.insertHtml(msg.html_avatar)
+        # cursor.insertHtml(msg.html_avatar)
         cursor.movePosition(QTextCursor.NextBlock)
 
         cursor.insertTable(2, 1, self.inner_info_content_table_format)
