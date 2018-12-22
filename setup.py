@@ -30,8 +30,8 @@ setup(
         "PyQt5",
         "atomicfile",
         "dataclasses;python_version<'3.7'",
+        "matrix_client==0.4.0-dev",
         "setuptools",
-        "tinydb",
 
         "markdown2",
         "pygments",  # for markdown2 fenced code blocks coloring
@@ -40,7 +40,8 @@ setup(
         "kids.cache",
     ],
     dependency_links=[
-        "http://github.com/mirukan/matrix-python-sdk/tarball/master",
+        "https://github.com/mirukan/matrix-python-sdk/tarball/"
+        "master#egg=matrix_client-0.4.0-dev",
     ],
 
 
