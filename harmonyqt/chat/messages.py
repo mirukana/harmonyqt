@@ -157,7 +157,4 @@ class MessageList(QTextBrowser):
         self.history_token = result["end"]
 
         for event in result["chunk"]:
-            if event["type"] == "m.room.message":
-                main_window().messages.emit_msg_from_event(
-                    self.chat.client.user_id, event
-                )
+            main_window().events.process_event(self.chat.client.user_id, event)

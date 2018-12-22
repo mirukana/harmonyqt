@@ -5,15 +5,18 @@ from threading import Lock
 from typing import Dict
 
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QDateTime, QObject, pyqtSignal
 
 from . import main_window
 from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
-    # Receiver user ID, message event dict
-    new_message = pyqtSignal(str, dict)
+    # Receiver user ID, message event dict, if it is from history
+    new_message = pyqtSignal(str, dict, bool)
+
+    # User ID, event
+    new_event = pyqtSignal(str, dict)
 
     # User ID
     new_account  = pyqtSignal(str)
@@ -31,6 +34,9 @@ class _SignalObject(QObject):
 
 class EventManager:
     def __init__(self) -> None:
+        self.start_ms_since_epoch: int = \
+            QDateTime.currentDateTime().toMSecsSinceEpoch()
+
         self.signal = _SignalObject()
         # {user_id: {room_id: added_timestamp}}
         self._added_rooms: Dict[str, Dict[str, int]] = {}
@@ -45,7 +51,7 @@ class EventManager:
         "Setup event listeners for client. Called from AccountManager.login()."
         user_id = client.user_id
 
-        client.add_listener(lambda ev, u=user_id: self.on_event(u, ev))
+        client.add_listener(lambda ev, u=user_id: self.process_event(u, ev))
 
         client.add_presence_listener(
             lambda ev, u=user_id: self.on_presence_event(u, ev))
@@ -68,11 +74,18 @@ class EventManager:
         self.signal.account_gone.emit(user_id)
 
 
-    def on_event(self, user_id: str, event: dict) -> None:
+    def is_old_event(self, event: dict) -> bool:
+        return event["origin_server_ts"] < self.start_ms_since_epoch
+
+
+    def process_event(self, user_id: str, event: dict) -> None:
+        self.signal.new_event.emit(user_id, event)
+
         ev        = event
         etype     = event["type"]
         room_id   = event["room_id"]
-        timestamp = int(event["origin_server_ts"])
+        timestamp = event["origin_server_ts"]
+        old       = self.is_old_event(event)
 
         with self._lock:
             if user_id not in self._added_rooms:
@@ -81,6 +94,12 @@ class EventManager:
             if room_id not in self._added_rooms[user_id]:
                 self._added_rooms[user_id][room_id] = timestamp
                 self.signal.new_room.emit(user_id, room_id)
+
+        if etype == "m.room.message":
+            self.signal.new_message.emit(user_id, ev, old)
+
+        if old:
+            return
 
         if etype == "m.room.member" and ev.get("membership") == "join":
             if ev.get("state_key") in main_window().accounts:
@@ -99,14 +118,7 @@ class EventManager:
                         dispname, new["avatar_url"] or ""
                     )
 
-        elif etype == "m.room.message":
-            self.signal.new_message.emit(user_id, ev)
-
-        else:
-            self._log("blue", user_id, ev, force=False)
-
-        if etype in ("m.room.name", "m.room.canonical_alias",
-                     "m.room.member"):
+        if etype in ("m.room.name", "m.room.canonical_alias", "m.room.member"):
             self.signal.room_rename.emit(user_id, room_id)
 
 

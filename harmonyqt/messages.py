@@ -150,7 +150,7 @@ class MessageProcessor:
         ev_sig.new_message.connect(self.emit_msg_from_event)
 
 
-    def emit_msg_from_event(self, receiver_id: str, event: dict) -> None:
+    def emit_msg_from_event(self, receiver_id: str, event: dict, _) -> None:
         self._pool.apply_async(
             func           = self._emit_msg_from_event,
             args           = (receiver_id, event),
@@ -183,7 +183,7 @@ class MessageProcessor:
             receiver_id    = receiver_id,
             room_id        = ev["room_id"],
             content        = content,
-            ms_since_epoch = int(ev["origin_server_ts"]),
+            ms_since_epoch = ev["origin_server_ts"],
         ))
 
 

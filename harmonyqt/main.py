@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import (
 )
 
 from . import (
-    __about__, accounts, app, chat, events, homepage, messages, theming,
-    toolbar, usertree
+    __about__, accounts, app, chat, event_logger, events, homepage, messages,
+    theming, toolbar, usertree
 )
 from .dock import Dock
 
@@ -65,9 +65,12 @@ class MainWindow(QMainWindow):
 
         # Setup main classes and event listeners:
 
-        self.accounts = accounts.AccountManager()
-        self.events   = events.EventManager()
-        self.messages = messages.MessageProcessor()
+        self.event_logger = event_logger.EventLogger()
+        self.accounts     = accounts.AccountManager()
+        self.events       = events.EventManager()
+        self.messages     = messages.MessageProcessor()
+
+        self.event_logger.start()
 
         self.events.signal.left_room.connect(self.remove_chat_dock)
         self.events.signal.room_rename.connect(self.update_chat_dock_name)
@@ -120,11 +123,11 @@ class MainWindow(QMainWindow):
 
 
     def new_chat_dock(self,
-                      user_id: str,
-                      room_id: str,
-                      in_new:  str = "",
+                      user_id:            str,
+                      room_id:            str,
+                      previously_focused: chat.ChatDock,
+                      in_new:             str            = "",
                       split_orientation:  Qt.Orientation = Qt.Horizontal,
-                      previously_focused: Optional[chat.ChatDock]  = None
                      ) -> chat.ChatDock:
         assert in_new in (None, "", "tab", "split")
 
@@ -168,14 +171,14 @@ class MainWindow(QMainWindow):
             dock = self.home_dock
 
         if in_new:
-            dock = self.new_chat_dock(user_id, room_id, in_new,
-                                      split_orientation, dock)
+            dock = self.new_chat_dock(user_id, room_id, dock, in_new,
+                                      split_orientation)
         elif isinstance(dock, chat.ChatDock):
             dock.change_room(user_id, room_id)
         else:
             self.home_dock.hide()
-            dock = self.new_chat_dock(user_id, room_id, in_new,
-                                      split_orientation, dock)
+            dock = self.new_chat_dock(user_id, room_id, dock, in_new,
+                                      split_orientation)
 
         dock.focus()
 

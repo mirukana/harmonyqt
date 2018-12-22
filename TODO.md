@@ -4,6 +4,7 @@
   - 0.7: Status, presence, receipts
 
 - General
+  - Use os.PathLike
   - Click on tree arrow
   - Fix what happens when alt is released while dragging a dock
   - Floated docks: make alt work correctly

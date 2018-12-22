@@ -31,6 +31,7 @@ setup(
         "atomicfile",
         "dataclasses;python_version<'3.7'",
         "setuptools",
+        "tinydb",
 
         "markdown2",
         "pygments",  # for markdown2 fenced code blocks coloring
