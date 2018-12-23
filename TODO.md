@@ -19,7 +19,6 @@
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
 - Appearance
-  - On dock/window resize, scroll chats to bottom if necessary
   - Dialog box icons to replace ugly system ones
   - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet

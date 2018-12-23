@@ -8,7 +8,7 @@ from typing import Deque, List, Tuple
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
-    QFontMetrics, QTextCursor, QTextLength, QTextTableFormat
+    QFontMetrics, QResizeEvent, QTextCursor, QTextLength, QTextTableFormat
 )
 from PyQt5.QtWidgets import QTextBrowser
 
@@ -159,3 +159,15 @@ class MessageList(QTextBrowser):
 
         for event in result["chunk"]:
             main_window().events.process_event(self.chat.client.user_id, event)
+
+
+    # pylint: disable=invalid-name
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        sb = self.verticalScrollBar()
+
+        if event.oldSize().height() < 0:
+            return
+
+        height_diff = event.oldSize().height() - event.size().height()
+        sb.setValue(sb.value() + height_diff)
