@@ -30,6 +30,10 @@ QPushButton:disabled, QMenu::item:disabled {
     color: rgb(100, 100, 100);
 }
 
+TitleBar {
+    padding: 4px;
+}
+
 
 /* To organize */
 
