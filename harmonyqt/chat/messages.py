@@ -130,13 +130,14 @@ class MessageList(QTextBrowser):
         sb = self.verticalScrollBar()
 
         while not self.reached_history_end:
-            current = sb.value()
+            if self.isVisible():
+                current = sb.value()
 
-            if sb.maximum() <= sb.pageStep():
-                self.load_one_history_chunk(msgs=25)
+                if sb.maximum() <= sb.pageStep():
+                    self.load_one_history_chunk(msgs=25)
 
-            elif current <= sb.minimum():
-                self.load_one_history_chunk()
+                elif current <= sb.minimum():
+                    self.load_one_history_chunk()
 
             time.sleep(0.1)
 
