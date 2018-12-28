@@ -9,7 +9,8 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFontMetrics, QKeyEvent
 from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
 
-from . import Chat, markdown
+from . import Chat
+from .. import commands
 
 
 class SendBox(QPlainTextEdit):
@@ -68,30 +69,7 @@ class SendBox(QPlainTextEdit):
             return
 
         self.clear()
-
-        # command escape
-        if text.startswith("//") or text.startswith(r"\/"):
-            self._pool.apply_async(self._send_markdown, (text[1:],))
-
-        elif text in ("/d",  "/debug"):
-            import pdb
-            from PyQt5.QtCore import pyqtRemoveInputHook
-            pyqtRemoveInputHook()
-            pdb.set_trace()  # pylint: disable=no-member
-
-        elif text in ("/q", "/quit"):
-            self.area.chat.parent().hide()
-
-        else:
-            self._pool.apply_async(self._send_markdown, (text,),
-                                   error_callback=self.on_error)
-
-
-    def _send_markdown(self, text: str) -> None:
-        text = text.replace("<", "&lt;").replace(">", "&gt;")
-        html = markdown.MARKDOWN.convert(text)
-        self.area.chat.messages.local_echo(html)
-        self.area.chat.room.send_html(html)
+        commands.REGISTERED_COMMANDS["parse"](self.area.chat, text)
 
 
     @staticmethod

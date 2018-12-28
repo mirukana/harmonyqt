@@ -1,0 +1,109 @@
+# Copyright 2018 miruka
+# This file is part of harmonyqt, licensed under GPLv3.
+
+r'''Registered functions represent commands.
+A command will be started in its own thread to not block the client, unless
+`@register_command(run_in_thread=False)` is used.
+
+Functions will receive a `harmonyqt.chat.Chat` object as first argument,
+representing the chat from which the user typed the command.
+Other arguments will be strings corresponding to what the user typed after
+the `/function_name `.
+
+Unless the wanted type for an argument *is* `str`, it must be manually
+converted to its appropriate types.  The type should preferably be:
+- An integer number (convert with `int(arg)`);
+- A decimal number (`float(arg)`);
+- A boolean (use `str_arg_to_bool(arg)` from harmonyqt.commands.utils);
+- A list of integer, decimal, string or boolean values
+  (use `str_arg_to_list` from harmonyqt.commands.utils).
+
+When taking user ID arguments, use `expand_user(user)` from
+`harmonyqt.commands.utils` for each ID.
+This provides features like expanding a single `@` to the ID of the user that
+typed the command.
+
+A function should have a docstring. The first line will be shown in `/help`,
+and the full docstring will be shown with `/help <function name>`.
+The docstring can include markdown formatting, except images.
+
+This example command:
+```python3
+    from harmonyqt.chat import Chat
+    from harmonyqt.commands.utils import str_arg_to_list
+
+    @register
+    def nudge(chat: Chat, users: str, times: str = "1") -> None:
+        """Send an alert to users X times."""
+        users_list = [expand_user(u) for u in str_arg_to_list(users)]
+        times_int  = int(times)
+        ...
+```
+
+May be used in the following ways from a chat:
+
+    /nudge @alice:matrix.org
+    /nudge @alice:matrix.org,@marisa:matrix.org 3
+    /nudge @alice:matrix.org,"value,with,comma or space" times=1
+    /nudge times="1" users=@alice:matrix.org,"value,with,comma or space"
+    ...
+
+Any value containing spaces (and commas (`,`) for list values) must be put
+inside quotes, or the character must be escaped using a
+backslash (`\`) before it.'''
+
+import functools
+import shlex
+import traceback
+from threading import Thread
+from typing import Callable, Dict, List, Optional
+
+from . import utils
+from ..chat import Chat
+
+FUNC_TYPE = Callable[..., None]
+
+REGISTERED_COMMANDS: Dict[str, FUNC_TYPE] = {}
+
+
+def register(func: Optional[FUNC_TYPE] = None, run_in_thread: bool = True):
+    # func will be None if called without parentheses.
+
+    def decorator(func: FUNC_TYPE):
+        def executor(*args, **kwargs) -> None:
+            show_traceback = kwargs.pop("_show_traceback", False)
+            try:
+                func(*args, **kwargs)
+            except Exception as err:
+                utils.print_err(
+                    args[0],
+                    traceback.format_exc() if show_traceback else
+                    f"`{func.__name__}`: {type(err).__name__} - {err!s}"
+                )
+
+        @functools.wraps(func)
+        def wrapper(chat: Chat, *args, _show_traceback: bool = False, **kwargs
+                   ) -> None:
+            args_                     = [chat] + list(args)
+            kwargs["_show_traceback"] = _show_traceback
+
+            if not run_in_thread:
+                executor(*args_, **kwargs)
+            else:
+                Thread(target=executor, args=args_, kwargs=kwargs, daemon=True
+                      ).start()
+
+        REGISTERED_COMMANDS[func.__name__] = wrapper
+        return wrapper
+
+    # Allow decorator to be called with or without parentheses:
+    if callable(func):
+        return decorator(func)
+    return decorator
+
+
+# pylint: disable=wrong-import-position,redefined-builtin
+# Standard core commands, cannot be disabled
+from . import parse, say, help
+# Other commands
+from . import pdb, nick

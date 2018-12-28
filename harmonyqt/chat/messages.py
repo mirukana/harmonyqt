@@ -8,17 +8,21 @@ from typing import Deque, List, Tuple
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
-    QFontMetrics, QResizeEvent, QTextCursor, QTextLength, QTextTableFormat
+    QFontMetrics, QResizeEvent, QTextCursor, QTextFrameFormat, QTextLength,
+    QTextTableFormat
 )
 from PyQt5.QtWidgets import QTextBrowser
 
-from . import Chat
+from . import Chat, markdown
 from .. import main_window
 from ..messages import Message
 
 
 class MessageList(QTextBrowser):
-    new_message_to_add_signal = pyqtSignal(Message)
+    # Those signals are useful for anything in a thread that wants to show text
+    add_message_request  = pyqtSignal(Message)
+    local_echo_request   = pyqtSignal(str)
+    system_print_request = pyqtSignal(str, str)
 
 
     def __init__(self, chat: Chat) -> None:
@@ -33,11 +37,10 @@ class MessageList(QTextBrowser):
         # self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.setOpenExternalLinks(True)
 
+        top_margin = QFontMetrics(doc.defaultFont()).height()
         self.msg_table_format = QTextTableFormat()
         self.msg_table_format.setBorder(0)
-        self.msg_table_format.setTopMargin(
-            QFontMetrics(doc.defaultFont()).height()
-        )
+        self.msg_table_format.setTopMargin(top_margin)
         self.msg_table_format.setColumnWidthConstraints([
             # QTextLength(QTextLength.FixedLength,    48),  # avatar
             QTextLength(QTextLength.FixedLength,    0),
@@ -46,6 +49,10 @@ class MessageList(QTextBrowser):
 
         self.inner_info_content_table_format = QTextTableFormat()
         self.inner_info_content_table_format.setBorder(0)
+
+        self.system_print_frame_format = QTextFrameFormat()
+        self.system_print_frame_format.setBorder(0)
+        self.system_print_frame_format.setTopMargin(top_margin)
 
         self.start_ms_since_epoch: int = \
             QDateTime.currentDateTime().toMSecsSinceEpoch()
@@ -62,6 +69,10 @@ class MessageList(QTextBrowser):
 
         # main_window().messages.signal.new_message.connect(self.add_message)
         Thread(target=self.autoload_history, daemon=True).start()
+
+        self.add_message_request.connect(self.add_message)
+        self.local_echo_request.connect(self.local_echo)
+        self.system_print_request.connect(self.system_print)
 
 
     def add_message(self, msg: Message) -> None:
@@ -113,16 +124,35 @@ class MessageList(QTextBrowser):
             sb.setValue(sb.maximum())
 
 
-    def local_echo(self, text: str) -> None:
+    def local_echo(self, markdown_text: str) -> None:
         uid = self.chat.client.user_id
         msg = Message(
             sender_id   = uid,
             receiver_id = uid,
             room_id     = self.chat.room.room_id,
-            content     = text,
+            content     = markdown_text,
         )
         self.local_echoed.append((uid, msg.html_content))
         self.add_message(msg)
+
+
+    def system_print(self, markdown_text: str, level: str = "info") -> None:
+        assert level in ("info", "warning", "error")
+        sb                   = self.verticalScrollBar()
+        distance_from_bottom = sb.maximum() - sb.value()
+
+        html = markdown.MARKDOWN.convert(markdown_text)
+        html = f"<div class='system {level}'>{html}</div>"
+
+        cursor = QTextCursor(self.document())
+        cursor.beginEditBlock()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertFrame(self.system_print_frame_format)
+        cursor.insertHtml(html)
+        cursor.endEditBlock()
+
+        if distance_from_bottom <= 10:
+            sb.setValue(sb.maximum())
 
 
     def autoload_history(self) -> None:

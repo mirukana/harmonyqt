@@ -4,10 +4,10 @@
   - 0.7: Status, presence, receipts
 
 - General
+  - E2E device verification and icons
   - Use os.PathLike
-  - Click on tree arrow
-  - Fix what happens when alt is released while dragging a dock
-  - Floated docks: make alt work correctly
+  - Fix click on tree arrow
+  - Remove alt titlebar mess
   - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
@@ -19,6 +19,7 @@
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
 - Appearance
+  - MessageList left-right padding
   - Dialog box icons to replace ugly system ones
   - Background and alignment for chat bubbles
   - Use [Sass](https://pyscss.readthedocs.io/en/latest/) for stylesheet
@@ -51,7 +52,7 @@
   - Rooms topic
   - Invite to current room action binding
   - Check for Matrix max mesage size
-  - Linkify mail and IP addresses
+  - Linkify emails, IPs and Matrix user IDs
 
   - Send Area
     - Max height, half of the window
