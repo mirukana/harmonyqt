@@ -70,6 +70,16 @@ class MessageList(QTextBrowser):
         self._add_message_request.connect(self._add_message)
         self.system_print_request.connect(self.system_print)
 
+        self._set_previous_resize_vbar()
+        self.verticalScrollBar().valueChanged.connect(
+            lambda _: self._set_previous_resize_vbar()
+        )
+
+
+    def _set_previous_resize_vbar(self) -> None:
+        vb                         = self.verticalScrollBar()
+        self._previous_resize_vbar = (vb.minimum(), vb.value(), vb.maximum())
+
 
     def on_receive_local_echo(self, msg: Message) -> None:
         if msg.room_id != self.chat.room.room_id:
@@ -91,7 +101,7 @@ class MessageList(QTextBrowser):
     def _add_message(self, msg: Message) -> None:
         hbar                 = self.horizontalScrollBar()
         vbar                 = self.verticalScrollBar()
-        distance_from_right  = hbar.maximum() - hbar.value()
+        distance_from_left   = hbar.value()
         distance_from_bottom = vbar.maximum() - vbar.value()
 
         cursor = QTextCursor(self.document())
@@ -124,11 +134,8 @@ class MessageList(QTextBrowser):
 
         cursor.endEditBlock()
 
-        if hbar.maximum() == 0 or vbar.maximum() == 0:
-            return
-
         if to_top:
-            hbar.setValue(hbar.maximum() - distance_from_right)
+            hbar.setValue(distance_from_left)
             vbar.setValue(vbar.maximum() - distance_from_bottom)
         elif distance_from_bottom <= 10:
             hbar.setValue(hbar.minimum())
@@ -140,8 +147,9 @@ class MessageList(QTextBrowser):
                      level:   str  = "info",
                      is_html: bool = False) -> None:
         assert level in ("info", "warning", "error")
-        sb                   = self.verticalScrollBar()
-        distance_from_bottom = sb.maximum() - sb.value()
+        hbar                 = self.horizontalScrollBar()
+        vbar                 = self.verticalScrollBar()
+        distance_from_bottom = vbar.maximum() - vbar.value()
 
         html = text if is_html else markdown.to_html(text)
         html = f"<div class='system {level}'>{html}</div>"
@@ -154,21 +162,22 @@ class MessageList(QTextBrowser):
         cursor.endEditBlock()
 
         if distance_from_bottom <= 10:
-            sb.setValue(sb.maximum())
+            hbar.setValue(hbar.minimum())
+            vbar.setValue(vbar.maximum())
 
 
     def autoload_history(self) -> None:
         time.sleep(0.25)  # Give time for initial events/msgs to be shown
-        sb = self.verticalScrollBar()
+        vbar = self.verticalScrollBar()
 
         while not self.reached_history_end:
             if self.isVisible():
-                current = sb.value()
+                current = vbar.value()
 
-                if sb.maximum() <= sb.pageStep():
+                if vbar.maximum() <= vbar.pageStep():
                     self.load_one_history_chunk(msgs=25)
 
-                elif current <= sb.minimum():
+                elif current <= vbar.minimum():
                     self.load_one_history_chunk()
 
             time.sleep(0.1)
@@ -197,10 +206,9 @@ class MessageList(QTextBrowser):
     # pylint: disable=invalid-name
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
-        sb = self.verticalScrollBar()
-
         if event.oldSize().height() < 0:
             return
 
-        height_diff = event.oldSize().height() - event.size().height()
-        sb.setValue(sb.value() + height_diff)
+        _, old_vbar_val, old_vbar_max = self._previous_resize_vbar
+        vbar                          = self.verticalScrollBar()
+        vbar.setValue(vbar.maximum() - (old_vbar_max - old_vbar_val))

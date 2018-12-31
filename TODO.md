@@ -5,7 +5,6 @@
 
 - General
   - Don't parse links in code blocks
-  - Scroll when sendbox height reduces
   - E2E device verification and icons
   - Use os.PathLike
   - Fix click on tree arrow
