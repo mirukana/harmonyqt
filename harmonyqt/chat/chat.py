@@ -8,13 +8,29 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 from .. import main_window, message, register_startup_function
 
 
+class UserNotLoggedInError(Exception):
+    def __init__(self, user_id: str) -> None:
+        super().__init__(f"Not logged in to account {user_id!r}.")
+
+class RoomNotJoinedError(Exception):
+    def __init__(self, user_id: str, room_id: str) -> None:
+        super().__init__(f"{user_id!r} is not part of the room {room_id!r}.")
+
+
 @cache(use=LFUCache(maxsize=64))
 class Chat(QWidget):
     def __init__(self, user_id: str, room_id: str) -> None:
         super().__init__()
 
-        self.client = main_window().accounts[user_id]
-        self.room   = self.client.rooms[room_id]
+        try:
+            self.client = main_window().accounts[user_id]
+        except KeyError:
+            raise UserNotLoggedInError(user_id)
+
+        try:
+            self.room = self.client.rooms[room_id]
+        except KeyError:
+            raise RoomNotJoinedError(user_id, room_id)
 
         self.vbox = QVBoxLayout(self)
         self.vbox.setContentsMargins(0, 0, 0, 0)

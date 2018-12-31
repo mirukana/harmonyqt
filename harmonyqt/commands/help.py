@@ -74,7 +74,8 @@ class HelpParseError(Exception):
 
 
 def format_doc(doc: str, full: bool = False) -> str:
-    doc = re.sub(r"^(.+:)$",  # Title:
+    print(doc)
+    doc = re.sub(r"^(?!\s)(.+:)$",  # ^Title:
                  r"<span class='title command-section'>\1</span>",
                  doc,
                  flags=re.MULTILINE)
@@ -101,16 +102,11 @@ def format_doc(doc: str, full: bool = False) -> str:
     except ValueError:
         raise HelpParseError(doc)
 
-    usage = "<div class='title command'>%s</div>" % re.sub(
+    usage = "<code class='title command'>%s</code>" % re.sub(
         r"^(?:<.+>)*usage:(?:<.+>)*\s*",
         "",
         usage,
         flags = re.IGNORECASE | re.MULTILINE
-    )
-    usage = re.sub(  # ARGUMENTS
-        r"(?:^|(?<=[^A-Z\d_]))([A-Z\d_]{2,})(?=$|[^A-Z\d_])",
-        r"<code class=argument>\1</code>",
-        usage
     )
 
     desc = f"<div class=description>{desc}</div>"

@@ -7,10 +7,6 @@ from typing import Callable, Optional
 from ..chat import Chat
 
 
-def expand_user(chat: Chat, user: str) -> str:
-    return chat.client.user_id if user == "@" else user
-
-
 def print_info(chat: Chat, text: str, is_html: bool = False) -> None:
     chat.messages.system_print_request.emit(text, "info", is_html)
 
