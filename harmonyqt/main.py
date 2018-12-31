@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import (
     QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
 )
@@ -40,8 +39,7 @@ class App(QApplication):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.title_bars_shown       = False
-        self.alt_title_bars_toggled = False
+        self.title_bars_shown = False
 
 
     def construct(self) -> None:
@@ -97,6 +95,8 @@ class MainWindow(QMainWindow):
         # {(user_id, room_id): dock}
         self.visible_chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
 
+        self.show_dock_title_bars(False)
+
 
         # Run:
 
@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
         assert in_new in (None, "", "tab", "split")
 
         prev_is_in_tab = bool(self.tabifiedDockWidgets(previously_focused))
-        dock = chat.ChatDock(user_id, room_id, self, self.title_bars_shown)
+        dock = chat.ChatDock(user_id, room_id, self)
 
         if not previously_focused.isVisible():
             self.addDockWidget(
@@ -192,26 +192,3 @@ class MainWindow(QMainWindow):
         dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
             dock.update_title()
-
-
-    # pylint: disable=invalid-name
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        if not self.title_bars_shown       and \
-           not self.alt_title_bars_toggled and \
-           event.key() == Qt.Key_Alt       and \
-           app().keyboardModifiers() == Qt.NoModifier:
-
-            self.show_dock_title_bars(True)
-            self.alt_title_bars_toggled = True
-
-        elif self.alt_title_bars_toggled:
-            self.show_dock_title_bars(False)
-            self.alt_title_bars_toggled = False
-
-
-
-    def keyReleaseEvent(self, event: QKeyEvent) -> None:
-        if self.alt_title_bars_toggled and \
-           (event.key() & Qt.Key_Alt or event.modifiers() & Qt.AltModifier):
-            self.show_dock_title_bars(False)
-            self.alt_title_bars_toggled = False

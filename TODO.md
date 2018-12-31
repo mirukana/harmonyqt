@@ -8,7 +8,6 @@
   - E2E device verification and icons
   - Use os.PathLike
   - Fix click on tree arrow
-  - Remove alt titlebar mess
   - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
@@ -53,7 +52,7 @@
   - Rooms topic
   - Invite to current room action binding
   - Check for Matrix max mesage size
-  - Linkify emails, IPs and Matrix user IDs
+  - Linkify Matrix user IDs
 
   - Send Area
     - Bindings: ctrl-w/a/e, alt-shift-i/a

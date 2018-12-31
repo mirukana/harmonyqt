@@ -12,11 +12,10 @@ from ..message import Message
 
 
 class ChatDock(dock.Dock):
-    def __init__(self, user_id: str, room_id: str, parent: QWidget,
-                 title_bar: bool = False) -> None:
+    def __init__(self, user_id: str, room_id: str, parent: QWidget) -> None:
         self.user_id: str = user_id
         self.room_id: str = room_id
-        super().__init__(self.title, parent, title_bar)
+        super().__init__(self.title, parent, can_hide_title_bar=False)
         self.change_room(self.user_id, self.room_id)
 
         self.visibilityChanged.connect(self.on_visibility_change)
