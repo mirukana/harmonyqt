@@ -7,8 +7,8 @@ from typing import Deque, Tuple
 
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
-    QFontMetrics, QResizeEvent, QTextCursor, QTextFrameFormat, QTextLength,
-    QTextTableFormat
+    QFontMetrics, QKeyEvent, QResizeEvent, QTextCursor, QTextFrameFormat,
+    QTextLength, QTextTableFormat
 )
 from PyQt5.QtWidgets import QTextBrowser
 
@@ -206,3 +206,12 @@ class MessageDisplay(QTextBrowser):
         _, old_vbar_val, old_vbar_max = self._previous_resize_vbar
         scr = self.scroller
         scr.vset(scr.vmax - (old_vbar_max - old_vbar_val))
+
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.modifiers() in (Qt.NoModifier, Qt.ShiftModifier):
+            self.chat.send_area.box.setFocus()
+            self.chat.send_area.box.keyPressEvent(event)
+            return
+
+        super().keyPressEvent(event)
