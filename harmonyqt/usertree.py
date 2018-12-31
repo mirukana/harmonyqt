@@ -30,6 +30,7 @@ class UserTree(QTreeWidget):
         self.setHeaderHidden(True)  # TODO: customizable cols
         self.setSelectionMode(QTreeWidget.ExtendedSelection)
         self.setExpandsOnDoubleClick(False)  # Handled by signals/events
+        self.setIndentation(12)
 
         self.header().setMinimumSectionSize(1)
         self.header().setStretchLastSection(False)

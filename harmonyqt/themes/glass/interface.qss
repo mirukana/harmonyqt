@@ -31,7 +31,7 @@ QPushButton:disabled, QMenu::item:disabled {
 }
 
 TitleBar {
-    padding: 4px;
+    padding: 2px 4px;
 }
 
 
@@ -71,8 +71,12 @@ QCheckBox::indicator:unchecked {  /* TODO: improve */
 /* branch, item = arrow, columns parts of a row*/
 
 QTreeView {
-    /* annoying ugly blue rectangle */
+    /* the annoying blue rectangle */
     selection-background-color: transparent;
+}
+
+QTreeView::item {
+    padding: 2px 4px;
 }
 
 QTreeView::item:enabled:hover {
