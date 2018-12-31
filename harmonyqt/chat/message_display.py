@@ -17,7 +17,7 @@ from .. import main_window, markdown
 from ..message import Message
 
 
-class MessageList(QTextBrowser):
+class MessageDisplay(QTextBrowser):
     _add_message_request = pyqtSignal(Message)
     # Useful for anything in a thread that wants to show text
     system_print_request = pyqtSignal(str, str, bool)  # text, level, is_html

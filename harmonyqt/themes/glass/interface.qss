@@ -49,7 +49,7 @@ Chat SendBox {
     margin:     0px;
 }
 
-HomePage, HomePage QLabel, Chat MessageList {
+HomePage, HomePage QLabel, Chat MessageDisplay {
     background: rgb(10, 10, 10);
 }
 

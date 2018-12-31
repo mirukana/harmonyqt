@@ -12,7 +12,7 @@ from . import (
     __about__, accounts, app, event_logger, events, homepage, theming,
     toolbar, usertree
 )
-from .chat.dock import ChatDock
+from .chat import ChatDock
 from .dock import Dock
 
 
