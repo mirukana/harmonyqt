@@ -5,7 +5,7 @@ from typing import Optional
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFontMetrics, QKeyEvent
+from PyQt5.QtGui import QFontMetrics, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
 
 from . import Chat
@@ -33,12 +33,14 @@ class SendBox(QPlainTextEdit):
         document_margin = self.document().documentMargin()
         font_height     = QFontMetrics(self.document().defaultFont()).height()
 
-        return (widget_margin.top()    +
-                widget_margin.bottom() +
-                document_margin * 2    +
-                # Extra pixel prevents wordwrap-scroll-box-grows from hiding
-                # the first line
-                font_height * lines + 1)
+        height = (widget_margin.top()    +
+                  widget_margin.bottom() +
+                  document_margin * 2    +
+                  # Extra pixel prevents wordwrap-scroll-box-grows from hiding
+                  # the first line
+                  font_height * lines + 1)
+
+        return min(height, self.area.chat.height() // 2)
 
     # pylint: disable=invalid-name
 
@@ -47,6 +49,11 @@ class SendBox(QPlainTextEdit):
 
     def minimumSizeHint(self) -> QSize:
         return QSize(1, self.get_box_height(lines=1))
+
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self.updateGeometry()  # on main window resize, adjust max height
 
 
     def keyPressEvent(self, event: QKeyEvent) -> None:

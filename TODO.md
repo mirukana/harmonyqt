@@ -56,7 +56,6 @@
   - Linkify emails, IPs and Matrix user IDs
 
   - Send Area
-    - Max height, half of the window
     - Bindings: ctrl-w/a/e, alt-shift-i/a
     - Spell check?
     - Send, upload and other buttons
