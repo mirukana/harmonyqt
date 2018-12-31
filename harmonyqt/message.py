@@ -8,8 +8,7 @@ from typing import Callable, ClassVar, Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from PyQt5.QtCore import QDateTime
 
-from . import main_window
-from .chat import markdown
+from . import main_window, markdown
 
 DATE_FORMAT = "HH:mm:ss"
 

@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import (
 )
 
 from . import (
-    __about__, accounts, app, chat, event_logger, events, homepage,
-    theming, toolbar, usertree
+    __about__, accounts, app, event_logger, events, homepage, theming,
+    toolbar, usertree
 )
+from .chat.dock import ChatDock
 from .dock import Dock
 
 
@@ -22,12 +23,12 @@ class App(QApplication):
             # self.
             # pass
 
-        self.focused_chat_dock: Optional[chat.ChatDock] = None
+        self.focused_chat_dock: Optional[ChatDock] = None
         self.focusChanged.connect(self.on_focus_change)
 
 
     def on_focus_change(self, _: QWidget, new: QWidget) -> None:
-        while not isinstance(new, chat.ChatDock):
+        while not isinstance(new, ChatDock):
             if new is None:
                 return
             new = new.parent()
@@ -92,7 +93,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.home_dock)
 
         # {(user_id, room_id): dock}
-        self.visible_chat_docks: Dict[Tuple[str, str], chat.ChatDock] = {}
+        self.visible_chat_docks: Dict[Tuple[str, str], ChatDock] = {}
 
         self.show_dock_title_bars(False)
 
@@ -123,14 +124,14 @@ class MainWindow(QMainWindow):
     def new_chat_dock(self,
                       user_id:            str,
                       room_id:            str,
-                      previously_focused: chat.ChatDock,
+                      previously_focused: ChatDock,
                       in_new:             str            = "",
                       split_orientation:  Qt.Orientation = Qt.Horizontal,
-                     ) -> chat.ChatDock:
+                     ) -> ChatDock:
         assert in_new in (None, "", "tab", "split")
 
         prev_is_in_tab = bool(self.tabifiedDockWidgets(previously_focused))
-        dock = chat.ChatDock(user_id, room_id, self)
+        dock = ChatDock(user_id, room_id, self)
 
         if not previously_focused.isVisible():
             self.addDockWidget(
@@ -171,7 +172,7 @@ class MainWindow(QMainWindow):
         if in_new:
             dock = self.new_chat_dock(user_id, room_id, dock, in_new,
                                       split_orientation)
-        elif isinstance(dock, chat.ChatDock):
+        elif isinstance(dock, ChatDock):
             dock.change_room(user_id, room_id)
         else:
             self.home_dock.hide()

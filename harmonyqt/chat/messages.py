@@ -12,8 +12,8 @@ from PyQt5.QtGui import (
 )
 from PyQt5.QtWidgets import QTextBrowser
 
-from . import Chat, markdown
-from .. import main_window
+from . import Chat
+from .. import main_window, markdown
 from ..message import Message
 
 
