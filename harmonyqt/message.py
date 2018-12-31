@@ -168,7 +168,6 @@ class Message:
         html = self.html
 
         def replacer(match) -> str:
-            print(match.groups())
             url = [g for g in match.groups() if g is not None][0]
 
             re_localhost = r"(?:127\.0\.0\.1|localhost)(?::\d+)?"

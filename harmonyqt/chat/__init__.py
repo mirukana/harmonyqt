@@ -89,8 +89,6 @@ class Chat(QWidget):
 
 
 def redirect_message(msg: Message) -> None:
-    print("REDIRECT", msg.receiver_id, msg.room_id)
-
     if msg.receiver_id is None:  # local echo
         return
 

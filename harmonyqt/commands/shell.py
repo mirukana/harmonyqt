@@ -49,9 +49,6 @@ def shell(chat: Chat, args: dict) -> None:
         /shell "neofetch || screenfetch && echo 'It works!'"
     ```"""
 
-
-    print(locals())
-
     shell_f(
         chat          = chat,
         command       = args["COMMAND"],

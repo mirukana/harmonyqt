@@ -89,8 +89,10 @@ class MessageList(QTextBrowser):
 
 
     def _add_message(self, msg: Message) -> None:
-        sb                   = self.verticalScrollBar()
-        distance_from_bottom = sb.maximum() - sb.value()
+        hbar                 = self.horizontalScrollBar()
+        vbar                 = self.verticalScrollBar()
+        distance_from_right  = hbar.maximum() - hbar.value()
+        distance_from_bottom = vbar.maximum() - vbar.value()
 
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
@@ -122,10 +124,15 @@ class MessageList(QTextBrowser):
 
         cursor.endEditBlock()
 
+        if hbar.maximum() == 0 or vbar.maximum() == 0:
+            return
+
         if to_top:
-            sb.setValue(sb.maximum() - distance_from_bottom)
+            hbar.setValue(hbar.maximum() - distance_from_right)
+            vbar.setValue(vbar.maximum() - distance_from_bottom)
         elif distance_from_bottom <= 10:
-            sb.setValue(sb.maximum())
+            hbar.setValue(hbar.minimum())
+            vbar.setValue(vbar.maximum())
 
 
     def system_print(self,

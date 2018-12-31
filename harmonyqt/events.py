@@ -136,7 +136,6 @@ class EventManager:
 
     def on_new_message(self, receiver_id: str, event: dict) -> None:
         ev = event
-        print(ev)
 
         try:
             if ev["content"]["msgtype"] != "m.text":

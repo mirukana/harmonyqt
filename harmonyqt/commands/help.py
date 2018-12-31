@@ -61,7 +61,6 @@ def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
 
         ("<br><br>" if full else "<br>").join(cmd_helps),
     )
-    print(text)
     utils.print_info(chat, text, is_html=True)
 
 
