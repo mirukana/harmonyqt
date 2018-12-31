@@ -4,7 +4,6 @@
 from typing import Dict, List
 
 from matrix_client.room import Room
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
@@ -15,8 +14,6 @@ from . import __about__, actions, app, main_window
 from .dialogs import AcceptRoomInvite
 from .matrix import HMatrixClient
 from .menu import Menu
-
-# pylint: disable=invalid-name
 
 
 class UserTree(QTreeWidget):

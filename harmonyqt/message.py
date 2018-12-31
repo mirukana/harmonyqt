@@ -6,7 +6,6 @@ from copy import copy
 from typing import Callable, ClassVar, Dict, List, Optional, Tuple
 
 from dataclasses import dataclass
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime
 
 from . import main_window

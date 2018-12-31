@@ -3,7 +3,6 @@
 
 from typing import Optional
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFontMetrics, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
@@ -42,7 +41,6 @@ class SendBox(QPlainTextEdit):
 
         return min(height, self.area.chat.height() // 2)
 
-    # pylint: disable=invalid-name
 
     def sizeHint(self) -> QSize:
         return QSize(1, self.get_box_height())

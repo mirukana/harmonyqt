@@ -5,7 +5,6 @@ import pdb as actual_pdb
 import shlex
 
 import docopt
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import pyqtRemoveInputHook
 
 from . import REGISTERED_COMMANDS, register, say, utils

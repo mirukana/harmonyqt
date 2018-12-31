@@ -59,21 +59,20 @@ import traceback
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Union
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import pyqtRemoveInputHook
 
 from . import utils
 from ..chat import Chat
 
-FUNC_TYPE = Callable[..., None]
+FuncType = Callable[..., None]
 
-REGISTERED_COMMANDS: Dict[str, FUNC_TYPE] = {}
+REGISTERED_COMMANDS: Dict[str, FuncType] = {}
 
 
-def register(func: Optional[FUNC_TYPE] = None, run_in_thread: bool = True):
+def register(func: Optional[FuncType] = None, run_in_thread: bool = True):
     # func will be None if called without parentheses.
 
-    def decorator(func: FUNC_TYPE):
+    def decorator(func: FuncType):
         def executor(*args, _pdb_level: int = 0, **kwargs) -> None:
             try:
                 if _pdb_level == 2:

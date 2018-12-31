@@ -4,7 +4,6 @@
 from collections import OrderedDict
 from typing import Dict, List, Sequence, Set, Tuple
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QAction, QMenu, QWidget
 

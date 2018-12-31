@@ -3,7 +3,6 @@
 
 from typing import Optional
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QMouseEvent
 from PyQt5.QtWidgets import QDockWidget, QLabel, QWidget
@@ -55,7 +54,6 @@ class Dock(QDockWidget):
 
 
 class TitleBar(QLabel):
-    # pylint: disable=invalid-name
     def mousePressEvent(self, event: QMouseEvent) -> None:
         super().mousePressEvent(event)
 

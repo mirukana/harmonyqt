@@ -3,7 +3,6 @@
 
 from typing import Dict, List, Optional, Tuple
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget

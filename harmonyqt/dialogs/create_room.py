@@ -5,7 +5,6 @@ import json
 from multiprocessing.pool import ThreadPool
 
 from matrix_client.errors import MatrixRequestError
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QLabel
 

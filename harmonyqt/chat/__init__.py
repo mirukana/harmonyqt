@@ -3,7 +3,6 @@
 
 from cachetools import LFUCache
 from kids.cache import cache
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 

@@ -4,7 +4,6 @@ dist
 *.egg-info
 *.pyc
 
-.pylintrc
 .mypy_cache
 
 tmp-*

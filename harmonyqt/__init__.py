@@ -5,7 +5,6 @@ import sys
 from typing import Callable, List, Optional, Set
 
 from pkg_resources import resource_filename
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow
 
@@ -13,11 +12,11 @@ from . import __about__
 # pylint: disable=redefined-builtin
 from .__about__ import __doc__
 
-STARTUP_FUNC_TYPE = Callable[[QApplication, QMainWindow], None]
+StartupFuncType = Callable[[QApplication, QMainWindow], None]
 
 _APP:               Optional[QApplication] = None
 _MAIN_WINDOW:       Optional[QMainWindow]  = None
-_STARTUP_FUNCTIONS: Set[STARTUP_FUNC_TYPE] = set()
+_STARTUP_FUNCTIONS: Set[StartupFuncType] = set()
 
 
 def app() -> QApplication:
@@ -32,7 +31,7 @@ def main_window() -> QMainWindow:
     return _MAIN_WINDOW
 
 
-def register_startup_function(func: STARTUP_FUNC_TYPE) -> None:
+def register_startup_function(func: StartupFuncType) -> None:
     _STARTUP_FUNCTIONS.add(func)
 
 

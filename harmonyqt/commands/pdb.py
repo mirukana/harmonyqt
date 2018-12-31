@@ -3,7 +3,6 @@
 
 import pdb as actual_pdb
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import pyqtRemoveInputHook
 
 from . import register

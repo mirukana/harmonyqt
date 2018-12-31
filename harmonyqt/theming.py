@@ -6,11 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence, Tuple
 
 from pkg_resources import resource_filename
-# pylint: disable=no-name-in-module
 from PyQt5.QtGui import QIcon
 
 from . import __about__
-from .__about__ import __doc__
 
 _PKG = __about__.__name__
 

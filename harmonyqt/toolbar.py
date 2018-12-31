@@ -3,15 +3,12 @@
 
 from typing import List
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QSizePolicy, QToolBar, QToolButton, QWidget, QWidgetAction
 )
 
 from . import __about__, actions, main_window, menu
-
-# pylint: disable=invalid-name
 
 
 class ActionsBar(QToolBar):

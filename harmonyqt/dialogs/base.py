@@ -3,7 +3,6 @@
 
 from typing import Callable, Dict, Optional, Sequence
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtGui import QFontMetrics
 from PyQt5.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QGridLayout, QLabel, QLineEdit,

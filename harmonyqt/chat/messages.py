@@ -5,7 +5,6 @@ import time
 from threading import Thread
 from typing import Deque, Tuple
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
     QFontMetrics, QResizeEvent, QTextCursor, QTextFrameFormat, QTextLength,
@@ -203,7 +202,6 @@ class MessageList(QTextBrowser):
             main_window().events.process_event(self.chat.client.user_id, event)
 
 
-    # pylint: disable=invalid-name
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
         if event.oldSize().height() < 0:

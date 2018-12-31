@@ -7,7 +7,6 @@ from typing import Callable, Dict, Optional, Sequence
 
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QWidget

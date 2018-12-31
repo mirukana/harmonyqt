@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from atomicfile import AtomicFile
 from dataclasses import dataclass, field
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, QStandardPaths
 
 from . import main_window

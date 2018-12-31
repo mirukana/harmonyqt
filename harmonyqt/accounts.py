@@ -13,7 +13,6 @@ from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 from atomicfile import AtomicFile
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 
 from .matrix import HMatrixClient

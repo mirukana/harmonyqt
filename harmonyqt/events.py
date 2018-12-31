@@ -6,7 +6,6 @@ from multiprocessing.pool import ThreadPool
 from threading import Lock
 from typing import Dict, Set
 
-# pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, QObject, pyqtSignal
 
 from . import main_window, message
