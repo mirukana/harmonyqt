@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import (
 )
 
 from . import (
-    __about__, accounts, app, event_logger, events, homepage, theming,
-    toolbar, usertree
+    __about__, accounts, app, event_logger, events, homepage, shortcuts,
+    theming, toolbar, usertree
 )
 from .chat import ChatDock
 from .dock import Dock
@@ -96,6 +96,8 @@ class MainWindow(QMainWindow):
         self.visible_chat_docks: Dict[Tuple[str, str], ChatDock] = {}
 
         self.show_dock_title_bars(False)
+
+        self.shortcuts = list(shortcuts.get_shortcuts())
 
 
         # Run:
