@@ -1,7 +1,6 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from multiprocessing.pool import ThreadPool
 from typing import Optional
 
 # pylint: disable=no-name-in-module
@@ -10,14 +9,13 @@ from PyQt5.QtGui import QFontMetrics, QKeyEvent
 from PyQt5.QtWidgets import QGridLayout, QPlainTextEdit, QSizePolicy, QWidget
 
 from . import Chat
-from .. import commands
+from ..commands.eval import eval_f
 
 
 class SendBox(QPlainTextEdit):
     def __init__(self, area: "SendArea") -> None:
         super().__init__()
         self.area = area
-        self._pool  = ThreadPool(1)  # 1 to keep message sending order
 
         self.setPlaceholderText("Send a message…")
         self.setCenterOnScroll(False)
@@ -69,7 +67,7 @@ class SendBox(QPlainTextEdit):
             return
 
         self.clear()
-        commands.REGISTERED_COMMANDS["parse"](self.area.chat, text)
+        eval_f(self.area.chat, text)
 
 
     @staticmethod

@@ -3,7 +3,7 @@
 
 import time
 from threading import Thread
-from typing import Deque, List, Tuple
+from typing import Deque, Tuple
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
@@ -15,14 +15,13 @@ from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat, markdown
 from .. import main_window
-from ..messages import Message
+from ..message import Message
 
 
 class MessageList(QTextBrowser):
-    # Those signals are useful for anything in a thread that wants to show text
-    add_message_request  = pyqtSignal(Message)
-    local_echo_request   = pyqtSignal(str)
-    system_print_request = pyqtSignal(str, str)
+    _add_message_request = pyqtSignal(Message)
+    # Useful for anything in a thread that wants to show text
+    system_print_request = pyqtSignal(str, str, bool)  # text, level, is_html
 
 
     def __init__(self, chat: Chat) -> None:
@@ -57,34 +56,39 @@ class MessageList(QTextBrowser):
         self.start_ms_since_epoch: int = \
             QDateTime.currentDateTime().toMSecsSinceEpoch()
 
-        # Messages that have been already shown localy, without
-        # waiting for the server's response.
-        # [(user_id, html content)] - Can't use a set, we need "duplicates"
-        self.local_echoed: List[Tuple[str, str]] = []
-
         self.added_msgs_dates: Deque[int] = Deque()
+
+        # [(msg.sender_id, msg.markdown)]
+        self.received_by_local_echo: Deque[Tuple[str, str]] = Deque()
+        Message.local_echo_hooks.append(self.on_receive_local_echo)
 
         self.reached_history_end: bool = False
         self.history_token:       str  = ""
 
-        # main_window().messages.signal.new_message.connect(self.add_message)
         Thread(target=self.autoload_history, daemon=True).start()
 
-        self.add_message_request.connect(self.add_message)
-        self.local_echo_request.connect(self.local_echo)
+        self._add_message_request.connect(self._add_message)
         self.system_print_request.connect(self.system_print)
 
 
-    def add_message(self, msg: Message) -> None:
-        uid = self.chat.client.user_id
-        try:
-            index = self.local_echoed.index((uid, msg.html_content))
-        except ValueError:
-            pass
-        else:
-            del self.local_echoed[index]
+    def on_receive_local_echo(self, msg: Message) -> None:
+        if msg.room_id != self.chat.room.room_id:
             return
 
+        msg.receiver_id = self.chat.client.user_id
+        self.received_by_local_echo.append((msg.sender_id, msg.markdown))
+        self._add_message_request.emit(msg)
+
+
+    # Called from harmonyqt.chat.redirect_message()
+    def on_receive_from_server(self, msg: Message) -> None:
+        try:
+            self.received_by_local_echo.remove((msg.sender_id, msg.markdown))
+        except ValueError:  # not found in list/deque
+            self._add_message_request.emit(msg)
+
+
+    def _add_message(self, msg: Message) -> None:
         sb                   = self.verticalScrollBar()
         distance_from_bottom = sb.maximum() - sb.value()
 
@@ -124,24 +128,15 @@ class MessageList(QTextBrowser):
             sb.setValue(sb.maximum())
 
 
-    def local_echo(self, markdown_text: str) -> None:
-        uid = self.chat.client.user_id
-        msg = Message(
-            sender_id   = uid,
-            receiver_id = uid,
-            room_id     = self.chat.room.room_id,
-            content     = markdown_text,
-        )
-        self.local_echoed.append((uid, msg.html_content))
-        self.add_message(msg)
-
-
-    def system_print(self, markdown_text: str, level: str = "info") -> None:
+    def system_print(self,
+                     text:    str,
+                     level:   str  = "info",
+                     is_html: bool = False) -> None:
         assert level in ("info", "warning", "error")
         sb                   = self.verticalScrollBar()
         distance_from_bottom = sb.maximum() - sb.value()
 
-        html = markdown.MARKDOWN.convert(markdown_text)
+        html = text if is_html else markdown.to_html(text)
         html = f"<div class='system {level}'>{html}</div>"
 
         cursor = QTextCursor(self.document())

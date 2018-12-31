@@ -30,9 +30,11 @@ setup(
         "PyQt5",
         "atomicfile",
         "dataclasses;python_version<'3.7'",
+        "docopt",
         "matrix_client==0.4.0-dev",
         "setuptools",
 
+        "markdownify",
         "markdown2",
         "pygments",  # for markdown2 fenced code blocks coloring
 

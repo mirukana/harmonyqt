@@ -2,7 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import re
-from inspect import Parameter, cleandoc, signature
+from inspect import cleandoc
 from typing import List
 
 from . import REGISTERED_COMMANDS, register, utils
@@ -11,61 +11,115 @@ from ..chat import Chat
 
 # pylint: disable=redefined-builtin
 @register
-def help(chat: Chat, commands: str = "", full: str = "no") -> None:
-    """Show commands overview, or the full help of specified `commands`.
-    The full help for all commands can be requested with `full=yes`.
+def help(chat: Chat, args: dict) -> None:
+    """Usage: /help [COMMANDS]... [-f|--full]
+
+    Show commands overview, or the full help for COMMANDS.
+
+    Options:
+      -f, --full
+        Show full help for all commands if no COMMAND is specified.
 
     Examples:
+    ```
+      /help
+      /help say
+      /help say nick
+      /help -f
+    ```"""
 
-        /help
-        /help full=yes
-        /help say
-        /help say,nick
-    """
+    help_f(chat, commands=args["COMMANDS"], full=bool(args["--full"]))
+
+
+def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
     cmd_helps: List[str] = []
 
-    want_cmds = utils.str_arg_to_list(commands)
-    show_full = True if want_cmds else utils.str_arg_to_bool(full)
+    full     = bool(commands) or full
+    show_all = not commands
+    commands = [c.lstrip("/") for c in commands] or sorted(REGISTERED_COMMANDS)
 
-    for cmd in want_cmds:
-        if cmd not in REGISTERED_COMMANDS:
-            utils.print_err(chat, f"Command not found: `{cmd}`")
-            return
-
-    for name, func in sorted(REGISTERED_COMMANDS.items()):
-        if want_cmds and name not in want_cmds:
+    for name in commands:
+        try:
+            func = REGISTERED_COMMANDS[name]
+        except KeyError:
+            utils.print_err(chat, f"Command not found: `{name}`.")
             continue
 
-        args: List[str] = []
+        if not func.__doc__:
+            utils.print_err(chat, f"Missing help for `{name}`.")
+            continue
 
-        for aname, arg in list(signature(func).parameters.items())[1:]:
-            has_default   = arg.default is not Parameter.empty
-            default       = str(arg.default) if has_default else ""
-            quote_default = not default.strip() or re.findall(r"\s", default)
-            is_var_pos    = arg.kind == Parameter.VAR_POSITIONAL
-            is_var_kw     = arg.kind == Parameter.VAR_KEYWORD
+        try:
+            cmd_helps.append(format_doc(cleandoc(str(func.__doc__)), full))
+        except Exception as err:
+            utils.print_exception(chat, err, func)
+            continue
 
-            args.append("".join((
-                "["   if has_default or is_var_pos or is_var_kw else "",
-                "key" if is_var_kw                              else aname,
+    text = "<pre class=help>%s%s</pre>" % (
+        "<span class='title section'>Available commands:</span><br>"
+        if show_all else "",
 
-                ("={0}{1}{0}".format('"' if quote_default else '', default)
-                 if has_default and default and default != "@" else ""),
-
-                "=value" if is_var_kw                              else "",
-                "]"      if has_default or is_var_pos or is_var_kw else "",
-                "..."    if is_var_pos or is_var_kw                else "",
-            )))
-
-        desc = cleandoc(func.__doc__ or "").strip()
-        if not show_full and desc:
-            desc = desc.splitlines()[0]
-
-        cmd_helps.append(f"## `/{name} {' '.join(args)}`\n{desc}")
-
-    text = "\n".join((
-        "# Available commands" if not want_cmds else "",
-        "\n\n".join(cmd_helps),
-    ))
+        ("<br><br>" if full else "<br>").join(cmd_helps),
+    )
     print(text)
-    utils.print_info(chat, text)
+    utils.print_info(chat, text, is_html=True)
+
+
+class HelpParseError(Exception):
+    def __init__(self, docstring: str) -> None:
+        super().__init__(
+            "Docstring must have an usage, short description and optionally a "
+            "body (option details, etc); each separated by a blank line."
+        )
+        self.docstring = docstring
+
+
+def format_doc(doc: str, full: bool = False) -> str:
+    doc = re.sub(r"^(.+:)$",  # Title:
+                 r"<span class='title command-section'>\1</span>",
+                 doc,
+                 flags=re.MULTILINE)
+    doc = re.sub(r"(?:^|(?<=>))```\n((?:.|\n)+)\n```(?=$|<)",  # code fences
+                 r"<code>\1</code>",
+                 doc,
+                 flags=re.MULTILINE)
+    doc = re.sub(r"(?:^|(?<=[^`]))`([^`]+)`(?=$|[^`])", # `code`
+                 r"<code>\1</code>",
+                 doc)
+    doc = re.sub(  # -o, --options
+        r"(?:^|(?<=[^a-z\d-]))(-[a-z\d-]|--[a-z\d-]{2,})(?=$|[^a-z\d-])",
+        r"<code class=option>\1</code>",
+        doc
+    )
+    doc = re.sub(  # -o/--options ARGUMENTS
+        r"(<code class=option>.+?</code>\s*)([A-Z\d_]{2,})",
+        r"\1<code class=option-arg>\2</code>",
+        doc
+    )
+
+    try:
+        usage, desc, *rest = doc.strip().split("\n\n", maxsplit=2)
+    except ValueError:
+        raise HelpParseError(doc)
+
+    usage = "<div class='title command'>%s</div>" % re.sub(
+        r"^(?:<.+>)*usage:(?:<.+>)*\s*",
+        "",
+        usage,
+        flags = re.IGNORECASE | re.MULTILINE
+    )
+    usage = re.sub(  # ARGUMENTS
+        r"(?:^|(?<=[^A-Z\d_]))([A-Z\d_]{2,})(?=$|[^A-Z\d_])",
+        r"<code class=argument>\1</code>",
+        usage
+    )
+
+    desc = f"<div class=description>{desc}</div>"
+    body = f"<div class=body>{rest[0]}</div>" if rest else ""
+
+    elements = [usage, desc]
+    if full and body:
+        elements.append(body)
+
+    return "<div class=command-help>%s</div>" % \
+           ("<br>" if full else "").join(elements)

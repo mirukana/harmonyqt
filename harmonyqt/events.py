@@ -1,22 +1,24 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import json
+from multiprocessing.pool import ThreadPool
 from threading import Lock
-from typing import Dict
+from typing import Dict, Set
 
 # pylint: disable=no-name-in-module
 from PyQt5.QtCore import QDateTime, QObject, pyqtSignal
 
-from . import main_window
+from . import main_window, message
 from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
-    # Receiver user ID, message event dict, if it is from history
-    new_message = pyqtSignal(str, dict, bool)
-
     # User ID, event
-    new_event = pyqtSignal(str, dict)
+    new_event        = pyqtSignal(str, dict)
+    new_unique_event = pyqtSignal(str, dict)
+
+    new_message = pyqtSignal(message.Message)
 
     # User ID
     new_account  = pyqtSignal(str)
@@ -34,12 +36,15 @@ class _SignalObject(QObject):
 
 class EventManager:
     def __init__(self) -> None:
+        self._pool: ThreadPool = ThreadPool(1)
+
         self.start_ms_since_epoch: int = \
             QDateTime.currentDateTime().toMSecsSinceEpoch()
 
         self.signal = _SignalObject()
-        # {user_id: {room_id: added_timestamp}}
-        self._added_rooms: Dict[str, Dict[str, int]] = {}
+
+        self._added_rooms:   Dict[str, Set[str]] = {}  # {user_id: {room_id}}
+        self._got_event_ids: Dict[str, Set[str]] = {}  # {user_id: {event_id}}
 
         self._lock = Lock()
 
@@ -70,33 +75,40 @@ class EventManager:
         self.signal.new_account.emit(client.user_id)
 
 
-    def on_account_logout(self, user_id: str) -> None:
-        self.signal.account_gone.emit(user_id)
+    def on_account_logout(self, receiver_id: str) -> None:
+        self.signal.account_gone.emit(receiver_id)
 
 
     def is_old_event(self, event: dict) -> bool:
         return event["origin_server_ts"] < self.start_ms_since_epoch
 
 
-    def process_event(self, user_id: str, event: dict) -> None:
-        self.signal.new_event.emit(user_id, event)
+    def process_event(self, receiver_id: str, event: dict) -> None:
+        self.signal.new_event.emit(receiver_id, event)
 
         ev        = event
         etype     = event["type"]
         room_id   = event["room_id"]
-        timestamp = event["origin_server_ts"]
         old       = self.is_old_event(event)
 
         with self._lock:
-            if user_id not in self._added_rooms:
-                self._added_rooms[user_id] = {}
+            received = self._got_event_ids.setdefault(receiver_id, set())
+            if ev["event_id"] in received:
+                return
+            received.add(ev["event_id"])
 
-            if room_id not in self._added_rooms[user_id]:
-                self._added_rooms[user_id][room_id] = timestamp
-                self.signal.new_room.emit(user_id, room_id)
+            added_for_recv = self._added_rooms.setdefault(receiver_id, set())
+            if room_id not in added_for_recv:
+                added_for_recv.add(room_id)
+                self.signal.new_room.emit(receiver_id, room_id)
+
+        self.signal.new_unique_event.emit(receiver_id, event)
 
         if etype == "m.room.message":
-            self.signal.new_message.emit(user_id, ev, old)
+            self._pool.apply_async(
+                func = self.on_new_message,
+                args = (receiver_id, event), error_callback=self._on_emit_err,
+            )
 
         if old:
             return
@@ -119,18 +131,45 @@ class EventManager:
                     )
 
         if etype in ("m.room.name", "m.room.canonical_alias", "m.room.member"):
-            self.signal.room_rename.emit(user_id, room_id)
+            self.signal.room_rename.emit(receiver_id, room_id)
 
 
-    def on_presence_event(self, user_id: str, event: dict) -> None:
-        self._log("yellow", user_id, event)
+    def on_new_message(self, receiver_id: str, event: dict) -> None:
+        ev = event
+        print(ev)
+
+        try:
+            if ev["content"]["msgtype"] != "m.text":
+                raise RuntimeError
+        except Exception:
+            print("\nUnsupported msg event:\n", json.dumps(ev, indent=4))
+            return
+
+        msg = message.Message(
+            sender_id      = ev["sender"],
+            receiver_id    = receiver_id,
+            room_id        = ev["room_id"],
+            markdown       = ev["content"]["body"],
+            html           = ev["content"].get("formatted_body", ""),
+            ms_since_epoch = ev["origin_server_ts"],
+        )
+        self.signal.new_message.emit(msg)
 
 
-    def on_ephemeral_event(self, user_id: str, event: dict) -> None:
-        self._log("purple", user_id, event)
+    @staticmethod
+    def _on_emit_err(err: BaseException) -> None:
+        raise err
 
 
-    def on_invite_event(self, user_id: str, room_id: int, state: dict
+    def on_presence_event(self, receiver_id: str, event: dict) -> None:
+        self._log("yellow", receiver_id, event)
+
+
+    def on_ephemeral_event(self, receiver_id: str, event: dict) -> None:
+        self._log("purple", receiver_id, event)
+
+
+    def on_invite_event(self, receiver_id: str, room_id: int, state: dict
                        ) -> None:
         invite_by = state["events"][-1]["sender"]
 
@@ -138,13 +177,15 @@ class EventManager:
         members = []
 
         for ev in state["events"]:
-            if ev["type"] == "m.room.name":
+            etype = ev["type"]
+
+            if etype == "m.room.name":
                 name = ev["content"]["name"]
 
-            if ev["type"] == "m.room.canonical_alias":
+            if etype == "m.room.canonical_alias":
                 alias = ev["content"]["alias"]
 
-            if ev["type"] == "m.room.member" and ev["state_key"] != user_id:
+            if etype == "m.room.member" and ev["state_key"] != receiver_id:
                 members.append(ev["content"]["displayname"] or
                                ev["state_key"])
 
@@ -162,21 +203,20 @@ class EventManager:
                 dispname = f"{members[0]} and {len(members) - 1} others"
 
         self.signal.new_invite.emit(
-            user_id, room_id, invite_by, dispname, name, alias
+            receiver_id, room_id, invite_by, dispname, name, alias
         )
 
 
-    def on_leave_event(self, user_id: str, room_id: str) -> None:
+    def on_leave_event(self, receiver_id: str, room_id: str) -> None:
         with self._lock:
-            self._added_rooms[user_id].pop(room_id, None)
-            self.signal.left_room.emit(user_id, room_id)
+            self._added_rooms[receiver_id].discard(room_id)
+            self.signal.left_room.emit(receiver_id, room_id)
 
 
     def _log(self, color: str, *args, force: bool = False) -> None:
         if not force:
             return
 
-        import json
         jsons = [json.dumps(arg, indent=4, sort_keys=True) for arg in args]
         nums  = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
                  "purple": 5, "magenta": 5, "cyan": 6, "white": 7, "gray": 7}

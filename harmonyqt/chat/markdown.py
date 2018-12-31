@@ -1,11 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-import re
 import markdown2
+from markdownify import markdownify
 
-
-EXTRAS = [
+CONVERT_TO_MD_EXTRAS = [
     # Insert line break on \n instead of required two spaces at line end:
     "break-on-newline",
     # Disable _ and __ for italic/bold, only leave * and **:
@@ -14,8 +13,6 @@ EXTRAS = [
     "cuddled-lists",
     # Support GitHub ``` code blocks (needs pygments for syntax highlighting):
     "fenced-code-blocks",
-    # Turn text to links based on regexes:
-    "link-patterns",
     # Allow usinbg a `markdown="1"` attribute in block HTML tags to process the
     # text inside as markdown.
     # The Markdown cannot be on the same line as the block HTML element.
@@ -37,7 +34,7 @@ EXTRAS = [
     "wiki-tables",
 ]
 
-DISABLED_EXTRAS = [
+CONVERT_TO_MD_DISABLED_EXTRAS = [
     # Support foot notes, e.g. `Some text, see [^other-thing]`;
     # (bottom) `[^other-thing]: Description`:
     "footnotes",
@@ -53,11 +50,14 @@ DISABLED_EXTRAS = [
     "toc",
 ]
 
-
-LINK_PATTERNS = [
-    # Make any plain URL get parsed without special markdown syntax:
-    (re.compile(r"([A-Za-z]+:///?[^\s]+)"), r"\1"),
-]
+_TO_MARKDOWN = markdown2.Markdown(extras=CONVERT_TO_MD_EXTRAS)
 
 
-MARKDOWN = markdown2.Markdown(extras=EXTRAS, link_patterns=LINK_PATTERNS)
+def from_html(html: str) -> str:
+    return markdownify(html)
+
+
+def to_html(markdown: str) -> str:
+    # Prevent parsing anything as HTML tags
+    markdown = markdown.replace("<", "&lt;").replace(">", "&gt;")
+    return _TO_MARKDOWN.convert(markdown)

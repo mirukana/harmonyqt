@@ -46,7 +46,7 @@ class EventLogger:
     def start(self, autolog_funcs: Sequence[Callable[[dict], None]] = (),
              ) -> None:
         for func in autolog_funcs or (self.log_to_file,):
-            main_window().events.signal.new_event.connect(
+            main_window().events.signal.new_unique_event.connect(
                 lambda _, ev, f=func: self._pool.apply_async(
                     f, (ev,), error_callback=self.on_log_error,
                 )

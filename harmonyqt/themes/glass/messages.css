@@ -47,6 +47,26 @@
 }
 
 
+/* /help output */
+
+pre.help {
+    font-family: sans-serif;
+    color:       rgb(160, 160, 160);
+}
+
+.help .title {
+    color: rgb(130, 80, 200);
+}
+
+.help .title.section {
+    font-size: x-large;
+}
+
+.help .title.command {
+    font-size: large;
+}
+
+
 /* General text elements */
 
 h1, h2, h3, h4, h5, h6 {  /* titles */
@@ -58,6 +78,10 @@ h6 {  /* not small like h4-h5 by default for some reason */
 
 a {  /* links */
     color: rgb(40, 160, 110);
+}
+
+pre {  /* preformatted blocks, e.g. ```code blocks``` */
+    margin: 0;
 }
 
 code {

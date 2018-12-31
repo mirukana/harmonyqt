@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 )
 
 from . import (
-    __about__, accounts, app, chat, event_logger, events, homepage, messages,
+    __about__, accounts, app, chat, event_logger, events, homepage,
     theming, toolbar, usertree
 )
 from .dock import Dock
@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Harmony")
         screen = QDesktopWidget().screenGeometry()
-        self.resize(min(screen.width(), 1024), min(screen.height(), 768))
+        self.resize(min(screen.width(), 1152), min(screen.height(), 768))
 
         # self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(0.9)
@@ -68,7 +68,6 @@ class MainWindow(QMainWindow):
         self.event_logger = event_logger.EventLogger()
         self.accounts     = accounts.AccountManager()
         self.events       = events.EventManager()
-        self.messages     = messages.MessageProcessor()
 
         self.event_logger.start()
 

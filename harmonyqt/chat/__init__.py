@@ -8,7 +8,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget
 
 from .. import dock, main_window, register_startup_function
-from ..messages import Message
+from ..message import Message
 
 
 class ChatDock(dock.Dock):
@@ -89,10 +89,15 @@ class Chat(QWidget):
 
 
 def redirect_message(msg: Message) -> None:
+    print("REDIRECT", msg.receiver_id, msg.room_id)
+
+    if msg.receiver_id is None:  # local echo
+        return
+
     chat = Chat(msg.receiver_id, msg.room_id)  # cache
-    chat.messages.add_message(msg)
+    chat.messages.on_receive_from_server(msg)
 
 
 register_startup_function(
-    lambda _, win: win.messages.signal.new_message.connect(redirect_message)
+    lambda _, win: win.events.signal.new_message.connect(redirect_message)
 )

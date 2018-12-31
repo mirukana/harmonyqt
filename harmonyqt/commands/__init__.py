@@ -11,11 +11,11 @@ Other arguments will be strings corresponding to what the user typed after
 the `/function_name `.
 
 Unless the wanted type for an argument *is* `str`, it must be manually
-converted to its appropriate types.  The type should preferably be:
-- An integer number (convert with `int(arg)`);
-- A decimal number (`float(arg)`);
-- A boolean (use `str_arg_to_bool(arg)` from harmonyqt.commands.utils);
-- A list of integer, decimal, string or boolean values
+converted to its appropriate types.  Common types:
+- Integer number (convert with `int(arg)`)
+- Decimal number (`float(arg)`)
+- Boolean (use `str_arg_to_bool(arg)` from harmonyqt.commands.utils)
+- List of integer, decimal, string or boolean values
   (use `str_arg_to_list` from harmonyqt.commands.utils).
 
 When taking user ID arguments, use `expand_user(user)` from
@@ -49,14 +49,18 @@ May be used in the following ways from a chat:
     ...
 
 Any value containing spaces (and commas (`,`) for list values) must be put
-inside quotes, or the character must be escaped using a
+inside quotes, or the bad character must be escaped using a
 backslash (`\`) before it.'''
 
 import functools
 import shlex
+import pdb as actual_pdb
 import traceback
 from threading import Thread
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
+
+# pylint: disable=no-name-in-module
+from PyQt5.QtCore import pyqtRemoveInputHook
 
 from . import utils
 from ..chat import Chat
@@ -70,25 +74,22 @@ def register(func: Optional[FUNC_TYPE] = None, run_in_thread: bool = True):
     # func will be None if called without parentheses.
 
     def decorator(func: FUNC_TYPE):
-        def executor(*args, **kwargs) -> None:
-            show_traceback = kwargs.pop("_show_traceback", False)
+        def executor(*args, _pdb_level: int = 0, **kwargs) -> None:
             try:
+                if _pdb_level == 2:
+                    pyqtRemoveInputHook()
+                    actual_pdb.set_trace()  # pylint: disable=no-member
+
                 func(*args, **kwargs)
             except Exception as err:
-                utils.print_err(
-                    args[0],
-                    traceback.format_exc() if show_traceback else
-                    f"`{func.__name__}`: {type(err).__name__} - {err!s}"
-                )
+                utils.print_exception(chat=args[0], err=err, bad_func=func)
 
         @functools.wraps(func)
-        def wrapper(chat: Chat, *args, _show_traceback: bool = False, **kwargs
-                   ) -> None:
-            args_                     = [chat] + list(args)
-            kwargs["_show_traceback"] = _show_traceback
+        def wrapper(chat: Chat, *args, _pdb_level: int = 0,  **kwargs) -> None:
+            args_ = [chat] + list(args)
 
-            if not run_in_thread:
-                executor(*args_, **kwargs)
+            if _pdb_level > 0 or not run_in_thread:
+                executor(*args_, _pdb_level=_pdb_level, **kwargs)
             else:
                 Thread(target=executor, args=args_, kwargs=kwargs, daemon=True
                       ).start()
@@ -102,8 +103,8 @@ def register(func: Optional[FUNC_TYPE] = None, run_in_thread: bool = True):
     return decorator
 
 
-# pylint: disable=wrong-import-position,redefined-builtin
+# pylint: disable=wrong-import-position,redefined-builtin,reimported
 # Standard core commands, cannot be disabled
-from . import parse, say, help
+from . import eval, say, help
 # Other commands
-from . import pdb, nick
+from . import nick, pdb, shell
