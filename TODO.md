@@ -4,6 +4,7 @@
   - 0.7: Status, presence, receipts
 
 - General
+  - Update commands module docstring
   - Don't parse links in code blocks
   - E2E device verification and icons
   - Use os.PathLike
@@ -33,7 +34,7 @@
   - Fix floating docks opacity
 
 - Actions/dialogs
-  - Better user ID verifications (@ŧ...)
+  - Better user ID verifications (@ŧ...), same function for /eval, login, etc
   - Join room & direct chat dialogs
   - View button should show the open/close docks menu
   - Gray out dialog accept button if creator/sender combo box has no value
@@ -69,3 +70,8 @@
 
   - Fix the small freeze when logging in/big freeze in connection not working,
     thread everywhere where cache info retrieval is needed
+
+- Commands
+  - Room power levels, kick, ban, leave, join, set canon alias, set avatar,
+    "who can read history"
+  - Fingerprints/devices

@@ -1,7 +1,8 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-r'''Registered functions represent commands.
+r''' OUDATED
+Registered functions represent commands.
 A command will be started in its own thread to not block the client, unless
 `@register_command(run_in_thread=False)` is used.
 
@@ -106,4 +107,4 @@ def register(func: Optional[FuncType] = None, run_in_thread: bool = True):
 # Standard core commands, cannot be disabled
 from . import eval, say, help
 # Other commands
-from . import nick, pdb, shell
+from . import nick, pdb, shell, room_set

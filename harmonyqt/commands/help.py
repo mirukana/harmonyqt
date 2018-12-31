@@ -86,8 +86,9 @@ def format_doc(doc: str, full: bool = False) -> str:
     doc = re.sub(r"(?:^|(?<=[^`]))`([^`]+)`(?=$|[^`])", # `code`
                  r"<code>\1</code>",
                  doc)
+    op  = {"o": r"A-Za-z\d-"}
     doc = re.sub(  # -o, --options
-        r"(?:^|(?<=[^a-z\d-]))(-[a-z\d-]|--[a-z\d-]{2,})(?=$|[^a-z\d-])",
+        r"(?:^|(?<=[^%(o)s]))(-[%(o)s]|--[%(o)s]{2,})(?=$|[^%(o)s])" % op,
         r"<code class=option>\1</code>",
         doc
     )
