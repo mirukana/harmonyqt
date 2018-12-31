@@ -13,7 +13,7 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import QTextBrowser
 
 from . import Chat
-from .. import main_window, markdown
+from .. import main_window, markdown, scroller
 from ..message import Message
 
 
@@ -26,6 +26,8 @@ class MessageDisplay(QTextBrowser):
     def __init__(self, chat: Chat) -> None:
         super().__init__()
         self.chat = chat
+
+        self.scroller = scroller.Scroller(self)
 
         doc = self.document()
         doc.setDefaultStyleSheet(main_window().theme.style("messages"))
@@ -70,14 +72,14 @@ class MessageDisplay(QTextBrowser):
         self.system_print_request.connect(self.system_print)
 
         self._set_previous_resize_vbar()
-        self.verticalScrollBar().valueChanged.connect(
+        self.scroller.vbar.valueChanged.connect(
             lambda _: self._set_previous_resize_vbar()
         )
 
 
     def _set_previous_resize_vbar(self) -> None:
-        vb                         = self.verticalScrollBar()
-        self._previous_resize_vbar = (vb.minimum(), vb.value(), vb.maximum())
+        sc                         = self.scroller
+        self._previous_resize_vbar = (sc.vmin, sc.v, sc.vmax)
 
 
     def on_receive_local_echo(self, msg: Message) -> None:
@@ -98,10 +100,8 @@ class MessageDisplay(QTextBrowser):
 
 
     def _add_message(self, msg: Message) -> None:
-        hbar                 = self.horizontalScrollBar()
-        vbar                 = self.verticalScrollBar()
-        distance_from_left   = hbar.value()
-        distance_from_bottom = vbar.maximum() - vbar.value()
+        distance_from_left   = self.scroller.h
+        distance_from_bottom = self.scroller.vmax - self.scroller.v
 
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
@@ -134,11 +134,10 @@ class MessageDisplay(QTextBrowser):
         cursor.endEditBlock()
 
         if to_top:
-            hbar.setValue(distance_from_left)
-            vbar.setValue(vbar.maximum() - distance_from_bottom)
+            self.scroller.hset(distance_from_left)\
+                         .vset(self.scroller.vmax - distance_from_bottom)
         elif distance_from_bottom <= 10:
-            hbar.setValue(hbar.minimum())
-            vbar.setValue(vbar.maximum())
+            self.scroller.go_min_left().go_bottom()
 
 
     def system_print(self,
@@ -146,9 +145,7 @@ class MessageDisplay(QTextBrowser):
                      level:   str  = "info",
                      is_html: bool = False) -> None:
         assert level in ("info", "warning", "error")
-        hbar                 = self.horizontalScrollBar()
-        vbar                 = self.verticalScrollBar()
-        distance_from_bottom = vbar.maximum() - vbar.value()
+        distance_from_bottom = self.scroller.vmax - self.scroller.v
 
         html = text if is_html else markdown.to_html(text)
         html = f"<div class='system {level}'>{html}</div>"
@@ -161,22 +158,21 @@ class MessageDisplay(QTextBrowser):
         cursor.endEditBlock()
 
         if distance_from_bottom <= 10:
-            hbar.setValue(hbar.minimum())
-            vbar.setValue(vbar.maximum())
+            self.scroller.go_min_left().go_bottom()
 
 
     def autoload_history(self) -> None:
         time.sleep(0.25)  # Give time for initial events/msgs to be shown
-        vbar = self.verticalScrollBar()
+        scr = self.scroller
 
         while not self.reached_history_end:
             if self.isVisible():
-                current = vbar.value()
+                current = scr.v
 
-                if vbar.maximum() <= vbar.pageStep():
+                if scr.vmax <= scr.vstep_page:
                     self.load_one_history_chunk(msgs=25)
 
-                elif current <= vbar.minimum():
+                elif current <= scr.vmin:
                     self.load_one_history_chunk()
 
             time.sleep(0.1)
@@ -208,5 +204,5 @@ class MessageDisplay(QTextBrowser):
             return
 
         _, old_vbar_val, old_vbar_max = self._previous_resize_vbar
-        vbar                          = self.verticalScrollBar()
-        vbar.setValue(vbar.maximum() - (old_vbar_max - old_vbar_val))
+        scr = self.scroller
+        scr.vset(scr.vmax - (old_vbar_max - old_vbar_val))
