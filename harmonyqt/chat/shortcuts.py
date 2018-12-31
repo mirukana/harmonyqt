@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Generator, List
 from PyQt5.QtWidgets import QShortcut
 
 from . import Chat
+from .. import app
 
 SHORTCUTS: Dict[Callable[[Chat], Any], List[str]] = {
     # Alt+direction simple scroll
@@ -28,6 +29,12 @@ SHORTCUTS: Dict[Callable[[Chat], Any], List[str]] = {
 }
 
 
+def execute_if_focused(chat: Chat, func: Callable[[Chat], Any]) -> None:
+    focused = app().focused_chat_dock
+    if focused is not None and focused.chat is chat:
+        func(chat)
+
+
 def get_shortcuts(chat: Chat) -> Generator[None, None, QShortcut]:
     for func, binds in SHORTCUTS.items():
         for bind in binds:
@@ -36,5 +43,8 @@ def get_shortcuts(chat: Chat) -> Generator[None, None, QShortcut]:
                        .replace("S-", "Shift+")
 
             qs = QShortcut(bind, chat)
-            qs.activated.connect(lambda f=func, c=chat: f(c))
+            qs.activated.connect(lambda c=chat, f=func: f(c))
+            qs.activatedAmbiguously.connect(
+                lambda c=chat, f=func: execute_if_focused(c, f)
+            )
             yield qs
