@@ -40,7 +40,6 @@
   - Multiline fields: modifier+enter = accept dialog
 
 - Chat
-  - Scroll bindings, auto-focus sendbox back
   - Max message width when window is bigger than x px
   - Keep x most recent messages loaded, pop out oldests unless user is
     scrolled up enough

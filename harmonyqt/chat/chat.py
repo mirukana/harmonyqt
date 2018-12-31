@@ -29,6 +29,9 @@ class Chat(QWidget):
         self.vbox.addWidget(self.messages)
         self.vbox.addWidget(self.send_area)
 
+        from .shortcuts import get_shortcuts
+        self.shortcuts = list(get_shortcuts(self))
+
 
 def redirect_message(msg: message.Message) -> None:
     if msg.receiver_id is None:  # local echo
