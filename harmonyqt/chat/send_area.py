@@ -1,6 +1,7 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+from multiprocessing.pool import ThreadPool
 from typing import Optional
 
 from PyQt5.QtCore import QSize, Qt
@@ -14,7 +15,8 @@ from ..commands.eval import eval_f
 class SendBox(QPlainTextEdit):
     def __init__(self, area: "SendArea") -> None:
         super().__init__()
-        self.area = area
+        self.area  = area
+        self._pool = ThreadPool(1)
 
         self.setPlaceholderText("Send a message…")
         self.setCenterOnScroll(False)
@@ -72,7 +74,12 @@ class SendBox(QPlainTextEdit):
             return
 
         self.clear()
-        eval_f(self.area.chat, text)
+
+        self._pool.apply_async(
+            func           = eval_f,
+            args           = (self.area.chat, text),
+            error_callback = self.on_error
+        )
 
 
     @staticmethod
