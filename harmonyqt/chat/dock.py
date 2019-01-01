@@ -30,6 +30,7 @@ class ChatDock(dock.Dock):
 
     def update_title(self) -> None:
         self.setWindowTitle(self.title)
+        self.title_bar.setText(self.title)
 
 
     def change_room(self, to_user_id: str, to_room_id: str) -> None:
