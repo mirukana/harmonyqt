@@ -64,6 +64,9 @@ def alias(_: Chat, args: dict) -> None:
     For example, doing `/alias /h /help` will let you use `/h` as a command,
     just as if you typed `/help`.
 
+    Note that aliases defined with this command only persist until Harmony
+    is closed. To keep aliases across restarts, see `/help /autorun`.
+
     `ALIAS` doesn't have to start with a `/`.
 
     When using the created alias, arguments after it are appended as-is to

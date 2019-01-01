@@ -1,11 +1,15 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv2.
 
+from typing import Callable, Dict
+
 from cachetools import LFUCache
 from kids.cache import cache
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 from .. import main_window, message, register_startup_function
+
+CHAT_INIT_HOOKS: Dict[str, Callable[["Chat"], None]] = {}
 
 
 class UserNotLoggedInError(Exception):
@@ -47,6 +51,9 @@ class Chat(QWidget):
 
         from .shortcuts import get_shortcuts
         self.shortcuts = list(get_shortcuts(self))
+
+        for hook in CHAT_INIT_HOOKS.values():
+            hook(self)
 
 
 def redirect_message(msg: message.Message) -> None:
