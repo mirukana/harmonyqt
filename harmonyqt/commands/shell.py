@@ -3,7 +3,7 @@
 
 import re
 import subprocess as sp
-from typing import Optional, Union
+from typing import Union
 
 from . import register, say, utils
 from ..chat import Chat
@@ -13,7 +13,7 @@ from ..chat import Chat
 def shell(chat: Chat, args: dict) -> None:
     """
     Usage:
-      /shell COMMAND [-e|--echo -c|--no-cmd -b|--no-block -s PATH|--shell PATH]
+      /shell COMMAND [-e|--echo -c|--hide-cmd -b|--no-block]
 
     Run a `COMMAND` with the OS shell, send standard output.
 
@@ -28,24 +28,19 @@ def shell(chat: Chat, args: dict) -> None:
       -e, --echo
         Print standard output locally without sending it.
 
-      -c, --no-cmd
+      -c, --hide-cmd
         Do not print the command used before output.
 
       -b, --no-block
         Do not format the output as a monospace font code block.
 
-      -s PATH, --shell PATH
-        Path of the shell to run the command with.
-        The default on POSIX systems (GNU/Linux, OSX, …) is `/bin/sh`,
-        which may be a symbolic link to `/bin/bash` on some distributions.
-
     Examples (POSIX):
     ```
         /shell uptime
-        /shell date --no-cmd --no-block
+        /shell date --hide-cmd --no-block
         /shell 'echo "It is $(date '+%T') here"' -cb
         /shell "ls -l ~"
-        /shell "echo $SHELL" -s /bin/bash
+        /shell "echo $SHELL"
         /shell "neofetch || screenfetch && echo 'It works!'"
     ```"""
 
@@ -53,9 +48,8 @@ def shell(chat: Chat, args: dict) -> None:
         chat          = chat,
         command       = args["COMMAND"],
         echo          = args["--echo"],
-        no_command    = args["--no-cmd"],
+        no_command    = args["--hide-cmd"],
         no_code_block = args["--no-block"],
-        shell_path    = args["--shell"],
     )
 
 
@@ -63,12 +57,10 @@ def shell_f(chat:          Chat,
             command:       str,
             echo:          bool          = False,
             no_command:    bool          = False,
-            no_code_block: bool          = False,
-            shell_path:    Optional[str] = None) -> None:
+            no_code_block: bool          = False) -> None:
 
     process = sp.Popen(
         command, shell=True, stdout=sp.PIPE, stderr=sp.PIPE,
-        executable=shell_path or None
     )
     stdout, stderr = process.communicate()
     retcode        = process.returncode

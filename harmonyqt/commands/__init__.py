@@ -107,4 +107,4 @@ def register(func: Optional[FuncType] = None, run_in_thread: bool = True):
 # Standard core commands, cannot be disabled
 from . import eval, say, help
 # Other commands
-from . import nick, pdb, shell, room_set
+from . import alias, nick, pdb, shell, room_set

@@ -3,7 +3,7 @@
 
 import pdb as actual_pdb
 import shlex
-from typing import Optional
+from typing import Callable, Dict, Optional
 
 import docopt
 from PyQt5.QtCore import pyqtRemoveInputHook
@@ -11,6 +11,8 @@ from PyQt5.QtCore import pyqtRemoveInputHook
 from . import REGISTERED_COMMANDS, register, say, utils
 from .. import main_window
 from ..chat import Chat, RoomNotJoinedError, UserNotLoggedInError
+
+EVAL_PARSING_HOOKS: Dict[str, Callable[[Chat, str], str]] = {}
 
 
 @register
@@ -104,12 +106,17 @@ def eval_f(chat:      Chat,
             utils.print_err(chat, str(err))
             return
 
-    ignore_cmd = text.startswith("//") or text.startswith(r"\/")
+    force_say = text.startswith("//") or text.startswith(r"\/")
 
     if text.startswith("///") or text.startswith(r"\\/"):
         text = text[1:]
 
-    if ignore_cmd or not text.startswith("/"):
+    for hook in EVAL_PARSING_HOOKS.values():
+        text = hook(chat, text)
+        if not text:
+            return
+
+    if force_say or not text.startswith("/"):
         say.say_f(chat, text)
         return
 

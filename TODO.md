@@ -4,8 +4,6 @@
   - 0.7: Status, presence, receipts
 
 - General
-  - Update commands module docstring
-  - Don't parse links in code blocks
   - E2E device verification and icons
   - Use os.PathLike
   - Fix click on tree arrow
@@ -18,6 +16,14 @@
   - Tabs middle click to close
   - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication),
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
+
+- Commands
+  - Update commands module docstring
+  - Don't parse links in code blocks
+  - Support `--` option
+  - Room power levels, kick, ban, leave, join, set canon alias, set avatar,
+    set "who can read history"
+  - Fingerprints/devices
 
 - Appearance
   - MessageDisplay left-right padding
@@ -70,8 +76,3 @@
 
   - Fix the small freeze when logging in/big freeze in connection not working,
     thread everywhere where cache info retrieval is needed
-
-- Commands
-  - Room power levels, kick, ban, leave, join, set canon alias, set avatar,
-    "who can read history"
-  - Fingerprints/devices

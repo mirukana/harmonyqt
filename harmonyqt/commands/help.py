@@ -74,7 +74,9 @@ class HelpParseError(Exception):
 
 
 def format_doc(doc: str, full: bool = False) -> str:
-    print(doc)
+    # Prevent < > chars in doc from being processed as HTML
+    doc = doc.replace(">", "&gt;").replace("<", "&lt;")
+
     doc = re.sub(r"^(?!\s)(.+:)$",  # ^Title:
                  r"<span class='title command-section'>\1</span>",
                  doc,
