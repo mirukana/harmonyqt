@@ -61,7 +61,7 @@
   - Linkify Matrix user IDs
 
   - Send Area
-    - Bindings: ctrl-w/a/e, alt-shift-i/a
+    - More keybinds
     - Spell check?
     - Send, upload and other buttons
 

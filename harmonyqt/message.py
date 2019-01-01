@@ -24,7 +24,7 @@ class Message:
 
     Class variables:
         local_echo_hooks:
-            List of functions that will receive Message objects
+            Dict of `name: functions` that will receive Message objects
             to [locally echo](https://tinyurl.com/matrix-local-echo)
             when Message.send() is called.
 
@@ -55,7 +55,7 @@ class Message:
             HTTP(s) URL of the sender's avatar, if he has one."""
 
     # Can't define a pyqtSignal(this_class) here
-    local_echo_hooks: ClassVar[List[Callable[["Message"], None]]] = []
+    local_echo_hooks: ClassVar[Dict[str, Callable[["Message"], None]]] = {}
 
     room_id:     str           = ""
     sender_id:   str           = ""
@@ -217,6 +217,6 @@ class Message:
         "Send this message to the room specified by `self.room_id`."
 
         room = main_window().accounts[self.sender_id].rooms[self.room_id]
-        for func in self.local_echo_hooks:
+        for func in self.local_echo_hooks.values():
             func(copy(self))
         room.send_html(html=self.html, body=self.markdown)

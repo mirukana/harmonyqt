@@ -61,7 +61,7 @@ class MessageDisplay(QTextBrowser):
 
         # [(msg.sender_id, msg.markdown)]
         self.received_by_local_echo: Deque[Tuple[str, str]] = Deque()
-        Message.local_echo_hooks.append(self.on_receive_local_echo)
+        Message.local_echo_hooks["messageDisplay"] = self.on_receive_local_echo
 
         self.reached_history_end: bool = False
         self.history_token:       str  = ""
