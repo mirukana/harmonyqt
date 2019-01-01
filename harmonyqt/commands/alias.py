@@ -3,13 +3,15 @@
 
 import re
 import shlex
-from typing import List
+from typing import Dict, List
 
 from dataclasses import dataclass
 
 from . import eval as m_eval
-from . import register
+from . import register, utils
 from ..chat import Chat
+
+REGISTERED_ALIASES: Dict[str, "Alias"] = {}
 
 
 @dataclass
@@ -50,16 +52,26 @@ class Alias:
 
 
     def register(self) -> None:
+        REGISTERED_ALIASES[self.alias]                    = self
         m_eval.EVAL_PARSING_HOOKS[f"alias: {self.alias}"] = self.expand
+
+    def unregister(self) -> None:
+        del REGISTERED_ALIASES[self.alias]
+        del m_eval.EVAL_PARSING_HOOKS[f"alias: {self.alias}"]
 
 
 @register
-def alias(_: Chat, args: dict) -> None:
+def alias(chat: Chat, args: dict) -> None:
     r"""
     Usage:
-      /alias ALIAS EXPANDS_TO [-s|--single-arg|-g|--global|-G|--global-words]
+      /alias ALIAS
+      /alias ALIAS COMMAND [-s|--single-arg|-g|--global|-G|--global-words]
+      /alias ALIAS --remove
 
-    Define a shortcut for a command.
+    Inspect, define or remove a shortcut for a command.
+
+    If `COMMAND` is not specified and `ALIAS` is already defined,
+    the `COMMAND` it expands to will be shown, unless `--remove` is used.
 
     For example, doing `/alias /h /help` will let you use `/h` as a command,
     just as if you typed `/help`.
@@ -70,9 +82,9 @@ def alias(_: Chat, args: dict) -> None:
     `ALIAS` doesn't have to start with a `/`.
 
     When using the created alias, arguments after it are appended as-is to
-    `EXPANDS_TO`, unless `EXPANDS_TO` contains a `{}` placeholder.
+    `COMMAND`, unless `COMMAND` contains a `{}` placeholder.
     In that case, the `{}` will be replaced by the arguments.
-    To have a literal `{}` in `EXPANDS_TO`, use `{{}}` instead.
+    To have a literal `{}` in `COMMAND`, use `{{}}` instead.
 
     Options:
       -s, --single-arg
@@ -86,6 +98,9 @@ def alias(_: Chat, args: dict) -> None:
 
       -G, --global-words
         Like --global, but also allows usage in the middle of words.
+
+      --remove
+        Remove `ALIAS` if it is defined.
 
     Examples:
     ```
@@ -122,8 +137,23 @@ def alias(_: Chat, args: dict) -> None:
         Press the -> key
           Say "Press the → key" in the chat, -> is transformed to →
     ```"""
-    Alias(alias           = args["ALIAS"],
-          expands_to      = args["EXPANDS_TO"],
+
+    arglias = args["ALIAS"]
+
+    if not args["COMMAND"]:
+        got = REGISTERED_ALIASES.get(arglias)
+
+        if not got:
+            utils.print_err(chat, f"No `{arglias}` alias defined.")
+        elif args["--remove"]:
+            got.unregister()
+        else:
+            utils.print_info(chat, f"`{arglias}`: `{got.expands_to}`")
+
+        return
+
+    Alias(alias           = arglias,
+          expands_to      = args["COMMAND"],
           single_arg      = args["--single-arg"],
           is_global       = args["--global"],
           is_global_words = args["--global-words"]).register()

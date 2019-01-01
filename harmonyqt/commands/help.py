@@ -106,7 +106,7 @@ def format_doc(doc: str, full: bool = False) -> str:
         raise HelpParseError(doc)
 
     usage = "<code class='title command'>%s</code>" % re.sub(
-        r"^(?:<.+>)*usage:(?:<.+>)*\s*",
+        r"^(?:(?:<.+>)*usage:(?:<.+>)*)?\s*",
         "",
         usage,
         flags = re.IGNORECASE | re.MULTILINE
