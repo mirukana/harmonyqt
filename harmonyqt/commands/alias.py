@@ -3,7 +3,7 @@
 
 import re
 import shlex
-from typing import Dict, List
+from typing import Dict
 
 from dataclasses import dataclass
 
@@ -37,18 +37,21 @@ class Alias:
                           self.expands_to.replace("\\", "\\\\"),
                           typed_text)
 
-        args: List[str] = shlex.split(typed_text)
+        first_word, *rest = re.split(r"\s", typed_text, maxsplit=1)
 
-        if args[0] != self.alias:
+        if first_word != self.alias:
             return typed_text
+
+        if rest == []:
+            return self.expands_to
 
         text = self.expands_to
         text = text if "{}" in text else "%s {}" % text
 
         if self.single_arg:
-            return text.format(shlex.quote(" ".join(args[1:])))
+            return text.format(shlex.quote(rest[0]))
 
-        return text.format(" ".join((shlex.quote(a) for a in args[1:])))
+        return text.format(rest[0])
 
 
     def register(self) -> None:
