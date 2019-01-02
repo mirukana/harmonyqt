@@ -1,7 +1,7 @@
-- Major version goals:
-  - 0.5: E2E
-  - 0.6: Room members pane, avatars
-  - 0.7: Status, presence, receipts
+- Major goals:
+  - E2E
+  - Room members pane, avatars
+  - Status, presence, receipts
 
 - General
   - E2E device verification and icons

@@ -31,7 +31,7 @@ setup(
         "atomicfile",
         "dataclasses;python_version<'3.7'",
         "docopt",
-        "matrix_client==0.4.0-dev",
+        "matrix_client_harmonyqt[e2e]>=0.4.1-dev-1",
         "setuptools",
 
         "markdownify",
@@ -40,10 +40,6 @@ setup(
 
         "cachetools",
         "kids.cache",
-    ],
-    dependency_links=[
-        "https://github.com/mirukan/matrix-python-sdk/tarball/"
-        "master#egg=matrix_client-0.4.0-dev",
     ],
 
 
