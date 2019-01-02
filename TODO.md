@@ -2,6 +2,7 @@
   - E2E
   - Room members pane, avatars
   - Status, presence, receipts
+  - Widget tilling system
 
 - General
   - E2E device verification and icons
@@ -24,6 +25,7 @@
   - Room power levels, kick, ban, leave, join, set canon alias, set avatar,
     set "who can read history"
   - Fingerprints/devices
+  - autorun: error line number
 
 - Appearance
   - MessageDisplay left-right padding
