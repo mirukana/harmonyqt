@@ -4,7 +4,7 @@
 """Test Matrix client"""
 
 __pkg_name__ = "harmonyqt"
-__version__  = "0.5.0rc2-3"
+__version__  = "0.5.0rc2-4"
 __status__   = "Development"
 # __status__ = "Production"
 

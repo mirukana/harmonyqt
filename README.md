@@ -13,6 +13,6 @@ On Void Linux:
 
 ```sh
     sudo xpbs-install -S gcc python3-devel qt5 olm-devel
-    pip3 install --user harmonyqt
+    sudo pip3 install harmonyqt
     harmonyqt
 ```
