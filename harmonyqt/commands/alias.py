@@ -28,14 +28,22 @@ class Alias:
         assert sum((self.single_arg, self.is_global, self.is_global_words)) < 2
 
 
-    def expand(self, _: Chat, typed_text: str) -> str:
+    def expand(self, _: Chat, typed_text: str, force_say: bool = False) -> str:
+        re_alias = re.escape(self.alias)
+        re_exp   = self.expands_to.replace("\\", "\\\\")
+
         if self.is_global_words:
-            return typed_text.replace(self.alias, self.expands_to)
+            text = re.sub(rf"([^\\])({re_alias})", rf"\1{re_exp}", typed_text)
+            return re.sub(rf"\\({re_alias})",      r"\1",          text)
 
         if self.is_global:
-            return re.sub(rf"(?:^|(?<=\s))({self.alias})(?=$|\s)",
-                          self.expands_to.replace("\\", "\\\\"),
-                          typed_text)
+            text = re.sub(rf"(?:^|(?<=\s))({re_alias})(?=$|\s)",
+                          re_exp, typed_text)
+            return re.sub(rf"(?:^|(?<=\s))\\({re_alias})(?=$|\s)",
+                          rf"\1", text)
+
+        if force_say:
+            return typed_text
 
         first_word, *rest = re.split(r"\s", typed_text, maxsplit=1)
 
@@ -98,6 +106,8 @@ def alias(chat: Chat, args: dict) -> None:
         Allow the alias to be used anywhere in the middle of a message.
         Otherwise, the alias only works at the beginning, like normal commands.
         Global aliases do not take arguments.
+        They can be escaped with a `\`, e.g. if you have a `b` global alias
+        and want to say `a b c` literally, write `a \b c` instead.
 
       -G, --global-words
         Like --global, but also allows usage in the middle of words.

@@ -12,7 +12,7 @@ from . import REGISTERED_COMMANDS, register, say, utils
 from .. import main_window
 from ..chat import Chat, RoomNotJoinedError, UserNotLoggedInError
 
-EVAL_PARSING_HOOKS: Dict[str, Callable[[Chat, str], str]] = {}
+EVAL_PARSING_HOOKS: Dict[str, Callable[[Chat, str, bool], str]] = {}
 
 
 @register
@@ -106,13 +106,13 @@ def eval_f(chat:      Chat,
             utils.print_err(chat, str(err))
             return
 
-    force_say = text.startswith("//") or text.startswith(r"\/")
-
-    if text.startswith("///") or text.startswith(r"\\/"):
-        text = text[1:]
+    force_say = False
+    if text.startswith("//") or text.startswith(r"\/"):
+        force_say = True
+        text      = text[1:]
 
     for hook in EVAL_PARSING_HOOKS.values():
-        text = hook(chat, text)
+        text = hook(chat, text, force_say)
         if not text:
             return
 
