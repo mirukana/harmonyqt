@@ -97,10 +97,11 @@ class Message:
     def html_avatar(self) -> str:
         "HTML to be displayed by a widget for avatar."
 
-        return "<div class='avatar%s'><img src='%s'></div>" % (
-            self._html_class,
-            self.avatar_url or main_window().icons.path("default_avatar_small")
-        )
+        return ""
+        # return "<div class='avatar%s'><img src='%s'></div>" % (
+            # self._html_class,
+          # self.avatar_url or main_window().icons.path("default_avatar_small")
+        # )
 
     @property
     def html_info(self) -> str:

@@ -39,8 +39,8 @@ class MessageDisplay(QTextBrowser):
 
         font_height = QFontMetrics(doc.defaultFont()).height()
         constraints = [
-            QTextLength(QTextLength.FixedLength,    48),  # avatar
-            QTextLength(QTextLength.VariableLength, 0),   # info/content
+            QTextLength(QTextLength.FixedLength,    0),  # avatar
+            QTextLength(QTextLength.VariableLength, 0),  # info/content
         ]
 
         self.msg_format = QTextTableFormat()
@@ -50,8 +50,12 @@ class MessageDisplay(QTextBrowser):
 
         self.consecutive_msg_format = QTextTableFormat()
         self.consecutive_msg_format.setBorder(0)
-        self.consecutive_msg_format.setTopMargin(0)
         self.consecutive_msg_format.setColumnWidthConstraints(constraints)
+
+        self.msg_after_break_format = QTextTableFormat()
+        self.msg_after_break_format.setBorder(0)
+        self.msg_after_break_format.setTopMargin(font_height * 3)
+        self.msg_after_break_format.setColumnWidthConstraints(constraints)
 
         self.inner_info_content_format = QTextTableFormat()
         self.inner_info_content_format.setBorder(0)
@@ -107,13 +111,16 @@ class MessageDisplay(QTextBrowser):
             self._add_message_request.emit(msg)
 
 
+    @staticmethod
+    def break_between(msg1: Message, msg2: Message) -> bool:
+        # True if there's more than 5mn between the two messages:
+        return msg1.ms_since_epoch <= msg2.ms_since_epoch - 15 * 60 * 1000
+
+
     def are_consecutive(self, msg1: Message, msg2: Message) -> bool:
-        return (
-            self.last_table_is_message and
-            msg1.sender_id == msg2.sender_id and
-            # Not consecutive if over 5mn have passed since the msg1
-            msg1.ms_since_epoch >= msg2.ms_since_epoch - 5 * 60 * 1000
-        )
+        return (self.last_table_is_message and
+                msg1.sender_id == msg2.sender_id and
+                msg1.ms_since_epoch >= msg2.ms_since_epoch - 5 * 60 * 1000)
 
 
     def _add_message(self, msg: Message) -> None:
@@ -155,6 +162,7 @@ class MessageDisplay(QTextBrowser):
 
             msg_table = fixer.currentTable()
             if msg_table and msg_table.columns() > 1:
+                msg_table.setFormat(self.consecutive_msg_format)
                 fixer.select(QTextCursor.LineUnderCursor)
                 fixer.removeSelectedText()  # remove avatar
 
@@ -167,11 +175,25 @@ class MessageDisplay(QTextBrowser):
 
             fixer.endEditBlock()
 
+        if next_msg and self.break_between(msg, next_msg):
+            fixer = QTextCursor(cursor)
+            fixer.beginEditBlock()
+            fixer.movePosition(QTextCursor.Down)
+
+            msg_table = fixer.currentTable()
+            if msg_table:
+                msg_table.setFormat(self.msg_after_break_format)
+
+            fixer.endEditBlock()
+
         consecutive = previous_msg and self.are_consecutive(previous_msg, msg)
+        after_break = previous_msg and self.break_between(previous_msg, msg)
 
         cursor.insertTable(
             1, 2,  # rows, columns
-            self.consecutive_msg_format if consecutive else self.msg_format
+            self.msg_after_break_format if after_break else
+            self.consecutive_msg_format if consecutive else
+            self.msg_format
         )
         if not consecutive:
             cursor.insertHtml(msg.html_avatar)
