@@ -44,6 +44,7 @@ def say_f(chat: Chat, text: str, is_html: bool = False, echo: bool = False
         utils.print_info(chat, text, is_html=is_html)
         return
 
+
     msg = Message(
         sender_id = chat.client.user_id,
         room_id   = chat.room.room_id,

@@ -27,7 +27,7 @@ class MessageDisplay(QTextBrowser):
         super().__init__()
         self.chat = chat
 
-        self.scroller = scroller.Scroller(self)
+        self.scroller: scroller.Scroller = scroller.Scroller(self)
 
         doc = self.document()
         doc.setDefaultStyleSheet(main_window().theme.style("messages"))
@@ -73,7 +73,11 @@ class MessageDisplay(QTextBrowser):
 
         # [(msg.sender_id, msg.markdown)]
         self.received_by_local_echo: Deque[Tuple[str, str]] = Deque()
-        Message.local_echo_hooks["messageDisplay"] = self.on_receive_local_echo
+
+        uid, rid = self.chat.client.user_id, self.chat.room.room_id
+
+        Message.local_echo_hooks[(type(self).__name__, uid, rid)] = \
+            self.on_receive_local_echo
 
         self.reached_history_end: bool = False
         self.history_token:       str  = ""
@@ -95,6 +99,7 @@ class MessageDisplay(QTextBrowser):
 
 
     def on_receive_local_echo(self, msg: Message) -> None:
+        print(msg.room_id, self.chat.room.room_id)
         if msg.room_id != self.chat.room.room_id:
             return
 
@@ -135,6 +140,7 @@ class MessageDisplay(QTextBrowser):
         previous_msg = next_msg = None
 
         if to_top:
+            print("TO TOP")
             cursor.movePosition(QTextCursor.Start)
 
             i = 0

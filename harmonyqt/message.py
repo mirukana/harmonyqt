@@ -3,7 +3,7 @@
 
 import re
 from copy import copy
-from typing import Callable, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
 
 from dataclasses import dataclass
 from PyQt5.QtCore import QDateTime
@@ -24,9 +24,10 @@ class Message:
 
     Class variables:
         local_echo_hooks:
-            Dict of `name: functions` that will receive Message objects
+            Dict of `identifier: functions` that will receive Message objects
             to [locally echo](https://tinyurl.com/matrix-local-echo)
             when Message.send() is called.
+            Identifier can be a string or any other object.
 
     Attributes:
         room_id:
@@ -55,7 +56,7 @@ class Message:
             HTTP(s) URL of the sender's avatar, if he has one."""
 
     # Can't define a pyqtSignal(this_class) here
-    local_echo_hooks: ClassVar[Dict[str, Callable[["Message"], None]]] = {}
+    local_echo_hooks: ClassVar[Dict[Any, Callable[["Message"], None]]] = {}
 
     room_id:     str           = ""
     sender_id:   str           = ""
