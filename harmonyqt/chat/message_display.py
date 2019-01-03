@@ -7,8 +7,8 @@ from typing import Deque, Tuple
 
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import (
-    QFontMetrics, QKeyEvent, QResizeEvent, QTextCursor, QTextFrameFormat,
-    QTextLength, QTextTableFormat
+    QFontMetrics, QKeyEvent, QResizeEvent, QTextCursor, QTextLength,
+    QTextTableFormat
 )
 from PyQt5.QtWidgets import QTextBrowser
 
@@ -37,27 +37,35 @@ class MessageDisplay(QTextBrowser):
         # self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.setOpenExternalLinks(True)
 
-        top_margin = QFontMetrics(doc.defaultFont()).height()
-        self.msg_table_format = QTextTableFormat()
-        self.msg_table_format.setBorder(0)
-        self.msg_table_format.setTopMargin(top_margin)
-        self.msg_table_format.setColumnWidthConstraints([
-            # QTextLength(QTextLength.FixedLength,    48),  # avatar
-            QTextLength(QTextLength.FixedLength,    0),
+        font_height = QFontMetrics(doc.defaultFont()).height()
+        constraints = [
+            QTextLength(QTextLength.FixedLength,    48),  # avatar
             QTextLength(QTextLength.VariableLength, 0),   # info/content
-        ])
+        ]
 
-        self.inner_info_content_table_format = QTextTableFormat()
-        self.inner_info_content_table_format.setBorder(0)
+        self.msg_format = QTextTableFormat()
+        self.msg_format.setBorder(0)
+        self.msg_format.setTopMargin(font_height)
+        self.msg_format.setColumnWidthConstraints(constraints)
 
-        self.system_print_frame_format = QTextFrameFormat()
-        self.system_print_frame_format.setBorder(0)
-        self.system_print_frame_format.setTopMargin(top_margin)
+        self.consecutive_msg_format = QTextTableFormat()
+        self.consecutive_msg_format.setBorder(0)
+        self.consecutive_msg_format.setTopMargin(0)
+        self.consecutive_msg_format.setColumnWidthConstraints(constraints)
+
+        self.inner_info_content_format = QTextTableFormat()
+        self.inner_info_content_format.setBorder(0)
+
+        self.system_print_format = QTextTableFormat()
+        self.system_print_format.setBorder(0)
+        self.system_print_format.setTopMargin(font_height)
+
+        self.last_table_is_message: bool = False
 
         self.start_ms_since_epoch: int = \
             QDateTime.currentDateTime().toMSecsSinceEpoch()
 
-        self.added_msgs_dates: Deque[int] = Deque()
+        self.added_msgs: Deque[Message] = Deque()
 
         # [(msg.sender_id, msg.markdown)]
         self.received_by_local_echo: Deque[Tuple[str, str]] = Deque()
@@ -99,6 +107,15 @@ class MessageDisplay(QTextBrowser):
             self._add_message_request.emit(msg)
 
 
+    def are_consecutive(self, msg1: Message, msg2: Message) -> bool:
+        return (
+            self.last_table_is_message and
+            msg1.sender_id == msg2.sender_id and
+            # Not consecutive if over 5mn have passed since the msg1
+            msg1.ms_since_epoch >= msg2.ms_since_epoch - 5 * 60 * 1000
+        )
+
+
     def _add_message(self, msg: Message) -> None:
         distance_from_left   = self.scroller.h
         distance_from_bottom = self.scroller.vmax - self.scroller.v
@@ -106,32 +123,71 @@ class MessageDisplay(QTextBrowser):
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
 
-        to_top = msg.was_created_before(self.start_ms_since_epoch)
+        to_top       = msg.was_created_before(self.start_ms_since_epoch)
+        inserted     = False
+        previous_msg = next_msg = None
+
         if to_top:
             cursor.movePosition(QTextCursor.Start)
 
             i = 0
-            for i, date in enumerate(self.added_msgs_dates, i):
-                if msg.ms_since_epoch < date:
-                    self.added_msgs_dates.insert(i, msg.ms_since_epoch)
+            for i, added_msg in enumerate(self.added_msgs, i):
+                next_msg = self.added_msgs[i]
+
+                if msg.was_created_before(added_msg.ms_since_epoch):
+                    self.added_msgs.insert(i, msg)
                     cursor.movePosition(QTextCursor.Down, n=i)
+                    inserted = True
                     break
-            else:
-                self.added_msgs_dates.append(msg.ms_since_epoch)
-                cursor.movePosition(QTextCursor.End)
-        else:
+
+                previous_msg = self.added_msgs[i - 1]
+
+        if not inserted:
+            if self.added_msgs:
+                previous_msg = self.added_msgs[-1]
+            self.added_msgs.append(msg)
             cursor.movePosition(QTextCursor.End)
 
-        cursor.insertTable(1, 2, self.msg_table_format)
-        # cursor.insertHtml(msg.html_avatar)
+        if next_msg and self.are_consecutive(msg, next_msg):
+            fixer = QTextCursor(cursor)
+            fixer.beginEditBlock()
+            fixer.movePosition(QTextCursor.Down)
+
+            msg_table = fixer.currentTable()
+            if msg_table and msg_table.columns() > 1:
+                fixer.select(QTextCursor.LineUnderCursor)
+                fixer.removeSelectedText()  # remove avatar
+
+            fixer.movePosition(QTextCursor.NextCell)
+            fixer.movePosition(QTextCursor.NextBlock)
+
+            info_msg_table = fixer.currentTable()
+            if info_msg_table and info_msg_table.rows() > 1:
+                info_msg_table.removeRows(0, 1)  # Remove info name/date
+
+            fixer.endEditBlock()
+
+        consecutive = previous_msg and self.are_consecutive(previous_msg, msg)
+
+        cursor.insertTable(
+            1, 2,  # rows, columns
+            self.consecutive_msg_format if consecutive else self.msg_format
+        )
+        if not consecutive:
+            cursor.insertHtml(msg.html_avatar)
         cursor.movePosition(QTextCursor.NextBlock)
 
-        cursor.insertTable(2, 1, self.inner_info_content_table_format)
-        cursor.insertHtml(msg.html_info)
-        cursor.movePosition(QTextCursor.NextBlock)
+        if consecutive:
+            cursor.insertTable(1, 1, self.inner_info_content_format)
+        else:
+            cursor.insertTable(2, 1, self.inner_info_content_format)
+            cursor.insertHtml(msg.html_info)
+            cursor.movePosition(QTextCursor.NextBlock)
+
         cursor.insertHtml(msg.html_content)
 
         cursor.endEditBlock()
+        self.last_table_is_message = True
 
         if to_top:
             self.scroller.hset(distance_from_left)\
@@ -153,9 +209,10 @@ class MessageDisplay(QTextBrowser):
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
         cursor.movePosition(QTextCursor.End)
-        cursor.insertFrame(self.system_print_frame_format)
+        cursor.insertTable(1, 1, self.system_print_format)
         cursor.insertHtml(html)
         cursor.endEditBlock()
+        self.last_table_is_message = False
 
         if distance_from_bottom <= 10:
             self.scroller.go_min_left().go_bottom()
