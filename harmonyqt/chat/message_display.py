@@ -99,7 +99,6 @@ class MessageDisplay(QTextBrowser):
 
 
     def on_receive_local_echo(self, msg: Message) -> None:
-        print(msg.room_id, self.chat.room.room_id)
         if msg.room_id != self.chat.room.room_id:
             return
 
@@ -140,7 +139,6 @@ class MessageDisplay(QTextBrowser):
         previous_msg = next_msg = None
 
         if to_top:
-            print("TO TOP")
             cursor.movePosition(QTextCursor.Start)
 
             i = 0

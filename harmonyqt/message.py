@@ -135,7 +135,6 @@ class Message:
         for regex, repl in LOCAL_MESSAGE_FILTERS.items():
             html = re.sub(regex, repl, html, re.IGNORECASE, re.MULTILINE)
 
-        print(html)
         return f"<div class='content {self._html_class}'>{html}</div>"
 
 

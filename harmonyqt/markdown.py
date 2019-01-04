@@ -82,6 +82,4 @@ def to_html(markdown: str) -> str:
     markdown = re.sub(r"(^.*[^\s>].*)(>+)", rep, markdown, flags=re.MULTILINE)\
                .replace("<", "&lt;")
 
-    print(markdown)
-    print( _TO_MARKDOWN.convert(markdown)   )
     return _TO_MARKDOWN.convert(markdown)
