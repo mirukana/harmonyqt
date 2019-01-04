@@ -172,11 +172,12 @@ class Message:
 
             re_localhost = r"(?:127\.0\.0\.1|localhost)(?::\d+)?"
 
-            href = f"%s{url}" % (
+            href = "%s%s" % (
                 ""        if "://" in url else
                 "mailto:" if re.match(r"[^@]+@[^@]+", url) else
                 "http://" if re.match(re_localhost, url) else
-                "https://"
+                "https://",
+                url
             )
 
             for already_linkified in a_tags:
