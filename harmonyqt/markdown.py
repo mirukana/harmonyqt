@@ -1,6 +1,8 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+import re
+
 import markdown2
 from markdownify import markdownify
 
@@ -50,6 +52,22 @@ CONVERT_TO_MD_DISABLED_EXTRAS = [
     "toc",
 ]
 
+HTML_TAGS = [
+    "!––", "!DOCTYPE", "a", "abbr", "address", "area", "article", "aside",
+    "audio", "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button",
+    "canvas", "caption", "cite", "code", "col", "colgroup", "data", "datalist",
+    "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed",
+    "fieldset", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6",
+    "head", "header", "hgroup", "hr", "html", "i", "iframe", "img", "input",
+    "ins", "kbd", "keygen", "label", "legend", "li", "link", "main", "map",
+    "mark", "menu", "menuitem", "meta", "meter", "nav", "noscript", "object",
+    "ol", "optgroup", "option", "output", "p", "param", "pre", "progress",
+    "q", "rb", "rp", "rt", "rtc", "ruby", "s", "samp", "script", "section",
+    "select", "small", "source", "span", "strong", "style", "sub", "summary",
+    "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th",
+    "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr",
+]
+
 _TO_MARKDOWN = markdown2.Markdown(extras=CONVERT_TO_MD_EXTRAS)
 
 
@@ -58,6 +76,12 @@ def from_html(html: str) -> str:
 
 
 def to_html(markdown: str) -> str:
-    # Prevent parsing anything as HTML tags
-    markdown = markdown.replace("<", "&lt;").replace(">", "&gt;")
+    rep = lambda m: "%s%s" % (m.group(1),
+                              "".join(("&gt;" for _ in m.group(2))))
+    # Prevent parsing anything as HTML tags, but make >quotes work
+    markdown = re.sub(r"(^.*[^\s>].*)(>+)", rep, markdown, flags=re.MULTILINE)\
+               .replace("<", "&lt;")
+
+    print(markdown)
+    print( _TO_MARKDOWN.convert(markdown)   )
     return _TO_MARKDOWN.convert(markdown)

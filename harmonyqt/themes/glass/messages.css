@@ -95,3 +95,7 @@ th { /* table cells */
 hr {  /* --- lines */
     width: 100%;
 }
+
+blockquote {
+    color: rgb(140, 180, 60)
+}
