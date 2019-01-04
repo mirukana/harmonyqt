@@ -21,9 +21,6 @@ CONVERT_TO_MD_EXTRAS = [
     "markdown-in-html",
     # Parse lines starting with `>>>` as Python interpreter code:
     "pyshell",
-    # Parse lines starting with `>!` as spoilers, similar to Stack Overflow:
-    # FIXME: not working very well, also need an inline version.
-    "spoiler",
     # Parse ~~text~~ as strikethrough
     "strike",
     # Allow GitHub tables syntax, e.g. `a | b | c\n--- | --- | ---\nx | y | z`:
@@ -37,6 +34,9 @@ CONVERT_TO_MD_EXTRAS = [
 ]
 
 CONVERT_TO_MD_DISABLED_EXTRAS = [
+    # Parse lines starting with `>!` as spoilers, similar to Stack Overflow:
+    # Impossible to make it cross-client since Riot doesn't parse span style
+    "spoiler",
     # Support foot notes, e.g. `Some text, see [^other-thing]`;
     # (bottom) `[^other-thing]: Description`:
     "footnotes",
