@@ -4,14 +4,14 @@
 import json
 from typing import Any, Callable, Dict
 
+from matrix_client.client import MatrixClient
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 
 from . import register, utils
 from ..chat import Chat
-from ..matrix import HMatrixClient
 
-SETTINGS_FUNC: Dict[str, Callable[[HMatrixClient, Room, Any], bool]] = {
+SETTINGS_FUNC: Dict[str, Callable[[MatrixClient, Room, Any], bool]] = {
     "name":          lambda c, r, v: r.set_room_name(v),
     "topic":         lambda c, r, v: r.set_room_topic(v),
     "alias_add":     lambda c, r, v: c.api.set_room_alias(r.room_id, v),

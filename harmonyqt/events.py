@@ -8,8 +8,9 @@ from typing import Dict, Set
 
 from PyQt5.QtCore import QDateTime, QObject, pyqtSignal
 
+from matrix_client.client import MatrixClient
+
 from . import main_window, message
-from .matrix import HMatrixClient
 
 
 class _SignalObject(QObject):
@@ -51,7 +52,7 @@ class EventManager:
         main_window().accounts.signal.logout.connect(self.on_account_logout)
 
 
-    def add_account(self, client: HMatrixClient) -> None:
+    def add_account(self, client: MatrixClient) -> None:
         "Setup event listeners for client. Called from AccountManager.login()."
         user_id = client.user_id
 
@@ -119,7 +120,7 @@ class EventManager:
 
                 if prev and new and prev != new:
                     # This won't update automatically in these cases otherwise
-                    user = main_window().accounts[ev["state_key"]].h_user
+                    user = main_window().accounts[ev["state_key"]].user
 
                     dispname         = new["displayname"] or ev["state_key"]
                     user.displayname = dispname

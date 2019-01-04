@@ -23,7 +23,7 @@ class ChatDock(dock.Dock):
     def title(self) -> str:
         client = main_window().accounts[self.user_id]
         return ": ".join((
-            client.h_user.get_display_name(),
+            client.user.get_display_name(),
             client.rooms[self.room_id].display_name
         ))
 

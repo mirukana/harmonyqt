@@ -5,9 +5,10 @@ import json
 from multiprocessing.pool import ThreadPool
 from typing import Set
 
+from PyQt5.QtCore import pyqtSignal
+
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
-from PyQt5.QtCore import pyqtSignal
 
 from . import base
 from .. import main_window
@@ -23,8 +24,7 @@ class InviteToRoom(base.GridDialog):
         self._pool = ThreadPool(8)
         self.update_wintitle()
 
-        room_uids  = {m.user_id for m in room.get_joined_members()}
-        us_in_room = {i for i in main_window().accounts if i in room_uids}
+        us_in_room = {i for i in main_window().accounts if i in room.members}
 
         self.info_line = base.InfoLine(self)
         self.sender    = base.ComboBox(

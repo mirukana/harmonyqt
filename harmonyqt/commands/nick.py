@@ -32,4 +32,4 @@ def nick_f(chat: Chat, name: Optional[str] = None, for_room: bool = False
     if for_room:
         chat.room.set_user_profile(displayname=name or chat.client.user_id)
     else:
-        chat.client.h_user.set_display_name(name or chat.client.user_id)
+        chat.client.user.set_display_name(name or chat.client.user_id)

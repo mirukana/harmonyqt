@@ -3,16 +3,17 @@
 
 from typing import Dict, List
 
-from matrix_client.room import Room
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
     QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
 )
 
+from matrix_client.client import MatrixClient
+from matrix_client.room import Room
+
 from . import __about__, actions, app, main_window
 from .dialogs import AcceptRoomInvite
-from .matrix import HMatrixClient
 from .menu import Menu
 
 
@@ -194,8 +195,8 @@ class BlankRow(QTreeWidgetItem):
 class AccountRow(QTreeWidgetItem):
     def __init__(self, parent: UserTree, user_id: str) -> None:
         super().__init__(parent)
-        self.user_tree: UserTree         = parent
-        self.client:    HMatrixClient    = main_window().accounts[user_id]
+        self.user_tree: UserTree           = parent
+        self.client:    MatrixClient       = main_window().accounts[user_id]
         self.rooms:     Dict[str, RoomRow] = {}
 
         self.auto_expanded_once: bool = False
@@ -218,7 +219,7 @@ class AccountRow(QTreeWidgetItem):
 
     def update_ui(self, new_display_name: str = "", _: str = "") -> None:
         self.setText(0,
-                     new_display_name or self.client.h_user.get_display_name())
+                     new_display_name or self.client.user.get_display_name())
         self.setToolTip(0, self.client.user_id)
 
 

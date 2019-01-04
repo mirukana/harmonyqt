@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 from atomicfile import AtomicFile
 from PyQt5.QtCore import QObject, QStandardPaths, pyqtSignal
 
-from .matrix import HMatrixClient
+from matrix_client.client import MatrixClient
 
 LOAD_NUM_EVENTS_ON_START = 10
 
@@ -23,7 +23,7 @@ LOAD_NUM_EVENTS_ON_START = 10
 class _SignalObject(QObject):
     # Signals can only be emited from QObjects, but AccountManager
     # can't inherit from it because of metaclass conflict.
-    login  = pyqtSignal(HMatrixClient)
+    login  = pyqtSignal(MatrixClient)
     logout = pyqtSignal(str)
 
 
@@ -67,7 +67,7 @@ class AccountManager(UserDict):
 
         db_path, db_filename = os.path.split(self.get_crypt_db_path(user_id))
 
-        client = HMatrixClient(
+        client = MatrixClient(
             server_url,
             sync_filter_limit = LOAD_NUM_EVENTS_ON_START,
             encryption        = True,
