@@ -21,6 +21,16 @@ class HMatrixClient(MatrixClient):
         super().__init__(*args, **kwargs)
         self._our_users: Dict[str, User] = {}
 
+        self.device_keys = None
+        self.db          = None
+
+
+    def login(self, username, password, limit=10, sync=True, device_id=None):
+        super().login(username, password, limit, sync, device_id)
+        # Fix User.devices
+        self.device_keys = self.olm_device.device_keys
+        self.db          = self.olm_device.db
+
 
     @property
     def h_user(self) -> User:

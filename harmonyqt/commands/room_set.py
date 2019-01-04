@@ -58,7 +58,7 @@ def room_set(chat: Chat, args: dict) -> None:
 
       --enable-e2e
         Enable end-to-end encryption for this room. Be warned:
-        - Once enabled in a roomn, it can never be disabled again
+        - Once enabled in a room, it can never be disabled again
         - Encryption is still in development
         - New users/devices will not be able to read the room's history from
           before they joined

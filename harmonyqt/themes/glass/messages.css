@@ -97,5 +97,9 @@ hr {  /* --- lines */
 }
 
 blockquote {
-    color: rgb(140, 180, 60)
+    color: gray;
+}
+
+.escaped-quote {
+    color:  rgb(140, 180, 60);
 }

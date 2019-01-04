@@ -3,7 +3,7 @@
 
 import re
 from copy import copy
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
 
 from dataclasses import dataclass
 from PyQt5.QtCore import QDateTime
@@ -11,21 +11,6 @@ from PyQt5.QtCore import QDateTime
 from . import main_window, markdown
 
 DATE_FORMAT = "HH:mm:ss"
-
-LOCAL_MESSAGE_FILTERS: Dict[str, Union[str, Callable]] = {
-    # Qt only knows <s> for striketrough
-    r"(</?)\s*(del|strike)>": r"\1s>",
-
-    # Show `>`s at the beginning of blockquotes (chan-style)
-    r"((?:<blockquote>(?:\s+|\n+)?)+(?:(?:.|\n)*<p>)?)((?:.|\n)+?)"
-    r"(</blockquote>)":
-        lambda m: "".join((
-            m.group(1),
-            "".join(("&gt;" for _ in range(m.group(1).count("<blockquote>")))),
-            m.group(2),
-            m.group(3)
-        )),
-}
 
 
 @dataclass
@@ -131,11 +116,7 @@ class Message:
     def html_content(self) -> str:
         "HTML to be displayed by a widget for the message's content."
 
-        html = self.html
-        for regex, repl in LOCAL_MESSAGE_FILTERS.items():
-            html = re.sub(regex, repl, html, re.IGNORECASE, re.MULTILINE)
-
-        return f"<div class='content {self._html_class}'>{html}</div>"
+        return f"<div class='content {self._html_class}'>{self.html}</div>"
 
 
     def was_created_before(self, ms_since_epoch: int) -> bool:
