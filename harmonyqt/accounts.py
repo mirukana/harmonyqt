@@ -30,9 +30,9 @@ class _SignalObject(QObject):
 class AccountManager(UserDict):
     def __init__(self) -> None:
         super().__init__()
-        self.signal = _SignalObject()
-        self._pool  = ThreadPool(8)
-        self._lock  = threading.Lock()
+        self.signals = _SignalObject()
+        self._pool   = ThreadPool(8)
+        self._lock   = threading.Lock()
 
     # Login/logout
 
@@ -80,7 +80,7 @@ class AccountManager(UserDict):
         client.login(user_id, password, sync=False)
 
         self.data[user_id] = client
-        self.signal.login.emit(client)
+        self.signals.login.emit(client)
 
         system = f" on {platform.system()}".rstrip()
         system = f"{system} {platform.release()}".rstrip() \
@@ -97,7 +97,7 @@ class AccountManager(UserDict):
         if user_id not in self.data:
             return
 
-        self.signal.logout.emit(user_id)
+        self.signals.logout.emit(user_id)
         self._pool.apply_async(self.data[user_id].logout)
         del self.data[user_id]
         self.config_del(user_id)

@@ -41,16 +41,16 @@ class EventManager:
         self.start_ms_since_epoch: int = \
             QDateTime.currentDateTime().toMSecsSinceEpoch()
 
-        self.signal = _SignalObject()
+        self.signals = _SignalObject()
 
         self._added_rooms:   Dict[str, Set[str]] = {}  # {user_id: {room_id}}
         self._got_event_ids: Dict[str, Set[str]] = {}  # {user_id: {event_id}}
 
         self._lock = Lock()
 
-        main_window().accounts.signal.login.connect(self.add_account)
-        main_window().accounts.signal.logout.connect(self.on_account_logout)
-        self.signal.new_room.connect(self.add_room_listeners)
+        main_window().accounts.signals.login.connect(self.add_account)
+        main_window().accounts.signals.logout.connect(self.on_account_logout)
+        self.signals.new_room.connect(self.add_room_listeners)
 
 
     def add_account(self, client: MatrixClient) -> None:
@@ -73,7 +73,7 @@ class EventManager:
 
         client.start_listener_thread()
 
-        self.signal.new_account.emit(client.user_id)
+        self.signals.new_account.emit(client.user_id)
 
 
     def add_room_listeners(self, user_id: str, room_id: str) -> None:
@@ -90,7 +90,7 @@ class EventManager:
 
 
     def on_account_logout(self, receiver_id: str) -> None:
-        self.signal.account_gone.emit(receiver_id)
+        self.signals.account_gone.emit(receiver_id)
 
 
     def is_old_event(self, event: dict) -> bool:
@@ -98,7 +98,7 @@ class EventManager:
 
 
     def process_event(self, receiver_id: str, event: dict) -> None:
-        self.signal.new_event.emit(receiver_id, event)
+        self.signals.new_event.emit(receiver_id, event)
 
         ev        = event
         etype     = event["type"]
@@ -114,9 +114,9 @@ class EventManager:
             added_for_recv = self._added_rooms.setdefault(receiver_id, set())
             if room_id not in added_for_recv:
                 added_for_recv.add(room_id)
-                self.signal.new_room.emit(receiver_id, room_id)
+                self.signals.new_room.emit(receiver_id, room_id)
 
-        self.signal.new_unique_event.emit(receiver_id, event)
+        self.signals.new_unique_event.emit(receiver_id, event)
 
         if etype == "m.room.message":
             self._pool.apply_async(
@@ -139,13 +139,13 @@ class EventManager:
                     dispname         = new["displayname"] or ev["state_key"]
                     user.displayname = dispname
 
-                    self.signal.account_change.emit(
+                    self.signals.account_change.emit(
                         ev["state_key"], room_id,
                         dispname, new["avatar_url"] or ""
                     )
 
         if etype in ("m.room.name", "m.room.canonical_alias", "m.room.member"):
-            self.signal.room_rename.emit(receiver_id, room_id)
+            self.signals.room_rename.emit(receiver_id, room_id)
 
 
     def on_new_message(self, receiver_id: str, event: dict) -> None:
@@ -166,7 +166,7 @@ class EventManager:
             html           = ev["content"].get("formatted_body", ""),
             ms_since_epoch = ev["origin_server_ts"],
         )
-        self.signal.new_message.emit(msg)
+        self.signals.new_message.emit(msg)
 
 
     @staticmethod
@@ -219,7 +219,7 @@ class EventManager:
                 members.sort()
                 dispname = f"{members[0]} and {len(members) - 1} others"
 
-        self.signal.new_invite.emit(
+        self.signals.new_invite.emit(
             receiver_id, room_id, invite_by, dispname, name, alias
         )
 
@@ -227,7 +227,7 @@ class EventManager:
     def on_leave_event(self, receiver_id: str, room_id: str) -> None:
         with self._lock:
             self._added_rooms[receiver_id].discard(room_id)
-            self.signal.left_room.emit(receiver_id, room_id)
+            self.signals.left_room.emit(receiver_id, room_id)
 
 
     def _log(self, color: str, *args, force: bool = False) -> None:

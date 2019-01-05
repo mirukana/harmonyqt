@@ -65,9 +65,9 @@ class InviteToRoom(base.GridDialog):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
         self.invites_sent_signal.connect(self.on_invites_sent)
-        main_window().events.signal.new_account.connect(self.on_new_login)
-        main_window().events.signal.account_gone.connect(self.on_account_gone)
-        main_window().events.signal.room_rename.connect(self.update_wintitle)
+        main_window().events.signals.new_account.connect(self.on_new_login)
+        main_window().events.signals.account_gone.connect(self.on_account_gone)
+        main_window().events.signals.room_rename.connect(self.update_wintitle)
 
 
     def update_wintitle(self) -> None:

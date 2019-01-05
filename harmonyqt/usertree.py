@@ -42,7 +42,7 @@ class UserTree(QTreeWidget):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.on_context_menu_request)
 
-        ev_sig = main_window().events.signal
+        ev_sig = main_window().events.signals
         ev_sig.new_account.connect(self.add_account)
         ev_sig.account_gone.connect(self.del_account)
         ev_sig.new_room.connect(self.on_add_room)

@@ -69,8 +69,8 @@ class MainWindow(QMainWindow):
 
         self.event_logger.start()
 
-        self.events.signal.left_room.connect(self.remove_chat_dock)
-        self.events.signal.room_rename.connect(self.update_chat_dock_name)
+        self.events.signals.left_room.connect(self.remove_chat_dock)
+        self.events.signals.room_rename.connect(self.update_chat_dock_name)
         # Triggered by room renames that happen when account changes
         # self.events.signal.account_change.connect(self.update_chat_dock_name)
 

@@ -90,8 +90,8 @@ class CreateRoom(base.GridDialog):
         for half_col in (1, 2):
             self.grid.setColumnMinimumWidth(half_col, 160)
 
-        main_window().events.signal.new_account.connect(self.on_new_account)
-        main_window().events.signal.account_gone.connect(self.on_account_gone)
+        main_window().events.signals.new_account.connect(self.on_new_account)
+        main_window().events.signals.account_gone.connect(self.on_account_gone)
 
 
     def on_new_account(self, user_id: str) -> None:

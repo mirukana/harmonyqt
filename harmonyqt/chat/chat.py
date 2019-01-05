@@ -65,5 +65,5 @@ def redirect_message(msg: message.Message) -> None:
 
 
 register_startup_function(
-    lambda _, win: win.events.signal.new_message.connect(redirect_message)
+    lambda _, win: win.events.signals.new_message.connect(redirect_message)
 )
