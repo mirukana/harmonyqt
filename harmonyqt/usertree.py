@@ -1,9 +1,10 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
+from multiprocessing.pool import ThreadPool
 from typing import Dict, List
 
-from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtCore import QObject, QPoint, Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import (
     QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
@@ -71,8 +72,12 @@ class UserTree(QTreeWidget):
         if user_id in self.accounts:
             return
 
-        self.accounts[user_id] = AccountRow(self, user_id)
+        row = AccountRow(self, user_id)
+        row.signals.ui_updated.connect(self.sort_account_rows)
+        self.accounts[user_id] = row
 
+
+    def sort_account_rows(self) -> None:
         root = self.invisibleRootItem()
         root.sortChildren(0, Qt.AscendingOrder)
 
@@ -187,9 +192,13 @@ class UserTree(QTreeWidget):
 
 class BlankRow(QTreeWidgetItem):
     def __init__(self) -> None:
-        # Don't take a parent or sorting won't work correctly`
+        # Don't take a parent or sorting won't work correctly
         super().__init__()
         self.setFlags(Qt.NoItemFlags | Qt.ItemNeverHasChildren)
+
+
+class _AccountRowSignals(QObject):
+    ui_updated = pyqtSignal()
 
 
 class AccountRow(QTreeWidgetItem):
@@ -198,6 +207,9 @@ class AccountRow(QTreeWidgetItem):
         self.user_tree: UserTree           = parent
         self.client:    MatrixClient       = main_window().accounts[user_id]
         self.rooms:     Dict[str, RoomRow] = {}
+
+        self.signals = _AccountRowSignals()
+        self._pool   = ThreadPool(1)
 
         self.auto_expanded_once: bool = False
         self.update_ui()
@@ -218,9 +230,17 @@ class AccountRow(QTreeWidgetItem):
 
 
     def update_ui(self, new_display_name: str = "", _: str = "") -> None:
-        self.setText(0,
-                     new_display_name or self.client.user.get_display_name())
         self.setToolTip(0, self.client.user_id)
+
+        def update(name: str) -> None:
+            self.setText(0, name)
+            self.signals.ui_updated.emit()
+
+        if new_display_name:
+            update(new_display_name)
+        else:
+            self._pool.apply_async(self.client.user.get_display_name,
+                                   callback = update)
 
 
     def on_activation(self, *_) -> None:
@@ -237,7 +257,7 @@ class AccountRow(QTreeWidgetItem):
 
         self.rooms[room_id] = RoomRow(self, room_id,
                                       invite_by, display_name, name, alias)
-        self.sortChildren(0, Qt.AscendingOrder)
+        self.rooms[room_id].signals.ui_updated.connect(self.sort_room_rows)
 
         if not self.auto_expanded_once:
             self.setExpanded(True)  # TODO: unless user collapsed manually
@@ -250,6 +270,14 @@ class AccountRow(QTreeWidgetItem):
             del self.rooms[room_id]
 
 
+    def sort_room_rows(self) -> None:
+        self.sortChildren(0, Qt.AscendingOrder)
+
+
+class _RoomRowSignals(QObject):
+    ui_updated = pyqtSignal()
+
+
 class RoomRow(QTreeWidgetItem):
     def __init__(self, parent: AccountRow, room_id: str,
                  invite_by: str = "", display_name: str = "",
@@ -259,6 +287,9 @@ class RoomRow(QTreeWidgetItem):
 
         self.account_row: AccountRow = parent
         self.invite_by:   str        = invite_by
+
+        self.signals = _RoomRowSignals()
+        self._pool   = ThreadPool(1)
 
         if invite_by:
             self.room: Room           = Room(parent.client, room_id)
@@ -294,10 +325,6 @@ class RoomRow(QTreeWidgetItem):
 
 
     def update_ui(self, invite_display_name: str = "") -> None:
-        # The later crashes for rooms we're invited to but not joined
-        dispname = invite_display_name or self.room.display_name
-        self.setText(0, dispname)
-
         tooltips = self.room.aliases + [self.room.room_id]
 
         if self.invite_by:
@@ -315,6 +342,20 @@ class RoomRow(QTreeWidgetItem):
         tooltips = "\n".join(tooltips)
         for col in range(self.columnCount()):
             self.setToolTip(col, tooltips)
+
+        def update(name: str) -> None:
+            self.setText(0, name)
+            self.signals.ui_updated.emit()
+
+        if invite_display_name:
+            update(invite_display_name)
+        else:
+            if not self.text().strip():
+                self.setText(0, self.room.room_id)
+
+            # Raises exception for rooms we're invited to but not joined
+            self._pool.apply_async(lambda: self.room.display_name,
+                                   callback = update)
 
 
     def on_activation(self,

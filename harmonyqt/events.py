@@ -230,7 +230,7 @@ class EventManager:
             self.signal.left_room.emit(receiver_id, room_id)
 
 
-    def _log(self, color: str, *args, force: bool = True) -> None:
+    def _log(self, color: str, *args, force: bool = False) -> None:
         if not force:
             return
 
