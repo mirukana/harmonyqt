@@ -78,7 +78,6 @@ class AccountManager(UserDict):
         )
 
         client.login(user_id, password, sync=False)
-        client.olm_device.upload_identity_keys()
 
         self.data[user_id] = client
         self.signal.login.emit(client)
