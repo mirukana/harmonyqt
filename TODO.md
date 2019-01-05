@@ -5,6 +5,7 @@
   - Widget tilling system
 
 - General
+  - Prevent opening the same encrypted room in two clients (replay attack err)
   - E2E device verification and icons
   - Use os.PathLike
   - Fix click on tree arrow
