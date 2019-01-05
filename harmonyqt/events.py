@@ -50,6 +50,7 @@ class EventManager:
 
         main_window().accounts.signal.login.connect(self.add_account)
         main_window().accounts.signal.logout.connect(self.on_account_logout)
+        self.signal.new_room.connect(self.add_room_listeners)
 
 
     def add_account(self, client: MatrixClient) -> None:
@@ -59,20 +60,33 @@ class EventManager:
         client.add_listener(lambda ev, u=user_id: self.process_event(u, ev))
 
         client.add_presence_listener(
-            lambda ev, u=user_id: self.on_presence_event(u, ev))
+            lambda ev: self.on_presence_event(user_id, ev))
 
         client.add_ephemeral_listener(
-            lambda ev, u=user_id: self.on_ephemeral_event(u, ev))
+            lambda ev: self.on_ephemeral_event(user_id, ev))
 
         client.add_invite_listener(
-            lambda rid, state, u=user_id: self.on_invite_event(u, rid, state))
+            lambda rid, state: self.on_invite_event(user_id, rid, state))
 
         client.add_leave_listener(
-            lambda rid, _, u=user_id: self.on_leave_event(u, rid))
+            lambda rid, _: self.on_leave_event(user_id, rid))
 
         client.start_listener_thread()
 
         self.signal.new_account.emit(client.user_id)
+
+
+    def add_room_listeners(self, user_id: str, room_id: str) -> None:
+        room = main_window().accounts[user_id].rooms[room_id]
+
+        room.add_listener(
+            lambda _, ev: self.process_event(user_id, ev))
+
+        room.add_ephemeral_listener(
+            lambda _, ev: self.on_ephemeral_event(user_id, ev))
+
+        room.add_state_listener(
+            lambda ev: self.on_state_event(user_id, ev))
 
 
     def on_account_logout(self, receiver_id: str) -> None:
@@ -161,11 +175,15 @@ class EventManager:
 
 
     def on_presence_event(self, receiver_id: str, event: dict) -> None:
-        self._log("yellow", receiver_id, event)
+        self._log("yellow", "unhandled presence event", receiver_id, event)
 
 
     def on_ephemeral_event(self, receiver_id: str, event: dict) -> None:
-        self._log("purple", receiver_id, event)
+        self._log("purple", "unhandled ephemeral event", receiver_id, event)
+
+
+    def on_state_event(self, receiver_id: str, event: dict) -> None:
+        self._log("cyan", "unhandled state event", receiver_id, event)
 
 
     def on_invite_event(self, receiver_id: str, room_id: int, state: dict
@@ -212,7 +230,7 @@ class EventManager:
             self.signal.left_room.emit(receiver_id, room_id)
 
 
-    def _log(self, color: str, *args, force: bool = False) -> None:
+    def _log(self, color: str, *args, force: bool = True) -> None:
         if not force:
             return
 

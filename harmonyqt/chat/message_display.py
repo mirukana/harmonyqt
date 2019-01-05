@@ -79,9 +79,6 @@ class MessageDisplay(QTextBrowser):
         Message.local_echo_hooks[(type(self).__name__, uid, rid)] = \
             self.on_receive_local_echo
 
-        self.reached_history_end: bool = False
-        self.history_token:       str  = ""
-
         Thread(target=self.autoload_history, daemon=True).start()
 
         self._add_message_request.connect(self._add_message)
@@ -246,39 +243,19 @@ class MessageDisplay(QTextBrowser):
 
     def autoload_history(self) -> None:
         time.sleep(0.25)  # Give time for initial events/msgs to be shown
-        scr = self.scroller
+        scr          = self.scroller
+        load_history = self.chat.room.backfill_previous_messages
 
-        while not self.reached_history_end:
+        while not self.chat.room.loaded_all_history:
             if self.isVisible():
-                current = scr.v
 
                 if scr.vmax <= scr.vstep_page:
-                    self.load_one_history_chunk(msgs=25)
+                    load_history(reverse=True, limit=25)
 
-                elif current <= scr.vmin:
-                    self.load_one_history_chunk()
+                elif scr.v <= scr.vmin:
+                    load_history(reverse=True, limit=100)
 
             time.sleep(0.1)
-
-
-    def load_one_history_chunk(self, msgs: int = 100) -> None:
-        assert 1 <= msgs <= 100  # matrix limit
-
-        result = self.chat.client.api.get_room_messages(
-            room_id   = self.chat.room.room_id,
-            token     = self.history_token or self.chat.room.prev_batch,
-            direction = "b",  # backward
-            limit     = msgs,
-        )
-
-        if result["end"] == self.history_token:
-            self.reached_history_end = True
-            return
-
-        self.history_token = result["end"]
-
-        for event in result["chunk"]:
-            main_window().events.process_event(self.chat.client.user_id, event)
 
 
     def resizeEvent(self, event: QResizeEvent) -> None:

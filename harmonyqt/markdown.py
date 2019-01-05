@@ -71,6 +71,4 @@ def to_html(markdown: str) -> str:
 
     # Qt only knows <s> for striketrough, replace <del> and <strike>
     html = re.sub(r"(</?)\s*(del|strike)>", r"\1s>", html)
-
-    print(html)
     return html
