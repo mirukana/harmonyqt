@@ -350,7 +350,7 @@ class RoomRow(QTreeWidgetItem):
         if invite_display_name:
             update(invite_display_name)
         else:
-            if not self.text().strip():
+            if not self.text(0).strip():
                 self.setText(0, self.room.room_id)
 
             # Raises exception for rooms we're invited to but not joined

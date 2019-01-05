@@ -193,4 +193,4 @@ class MainWindow(QMainWindow):
     def update_chat_dock_name(self, user_id: str, room_id: str) -> None:
         dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
-            dock.update_title()
+            dock.autoset_title()

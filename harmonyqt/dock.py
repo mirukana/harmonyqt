@@ -22,6 +22,8 @@ class Dock(QDockWidget):
         self.title_bar_shown:    bool     = show_title_bar
         self.show_title_bar(show_title_bar)
 
+        self.title = title
+
         # When e.g. user select the tab for this dock
         self.visibilityChanged.connect(self.on_visibility_change)
         self.dockLocationChanged.connect(self.on_location_change)
@@ -36,6 +38,16 @@ class Dock(QDockWidget):
 
         self.setTitleBarWidget(self.title_bar if show else QWidget())
         self.title_bar_shown = show
+
+
+    @property
+    def title(self) -> str:
+        return self.title_bar.text()
+
+    @title.setter
+    def title(self, value: str) -> None:
+        self.title_bar.setText(value)
+        self.setWindowTitle(value)
 
 
     def focus(self) -> None:
