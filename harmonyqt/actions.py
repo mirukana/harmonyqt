@@ -5,11 +5,12 @@ import json
 import webbrowser
 from typing import Callable, Dict, Optional, Sequence
 
-from matrix_client.errors import MatrixRequestError
-from matrix_client.room import Room
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QWidget
+
+from matrix_client.errors import MatrixRequestError
+from matrix_client.room import Room
 
 from . import __about__, dialogs, main_window, menu
 
@@ -353,8 +354,7 @@ class ToggleTitleBars(Action):
         super().__init__(
             parent   = parent,
             text     = "&Toggle title bars",
-            tooltip  = "Toggle showing dock title bars\n" \
-                       "In hidden mode, hold Alt to temporarily show them",
+            tooltip  = "Toggle showing dock title bars",
             icon     = "ui_view",
             shortcut = "Ctrl+Shift+T",
         )

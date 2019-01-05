@@ -3,10 +3,11 @@
 
 from multiprocessing.pool import ThreadPool
 
+from PyQt5.QtCore import Qt, pyqtSignal
+
 from matrix_client.errors import (
     MatrixError, MatrixHttpLibError, MatrixRequestError
 )
-from PyQt5.QtCore import Qt, pyqtSignal
 
 from . import base
 from .. import main_window

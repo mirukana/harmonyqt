@@ -4,9 +4,10 @@
 import json
 from multiprocessing.pool import ThreadPool
 
-from matrix_client.errors import MatrixRequestError
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QLabel
+
+from matrix_client.errors import MatrixRequestError
 
 from . import base
 from .. import main_window
