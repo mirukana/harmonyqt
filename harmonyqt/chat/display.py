@@ -11,7 +11,6 @@ from PyQt5.QtGui import QKeyEvent, QTextCursor, QTextLength, QTextTableFormat
 from . import Chat
 from .. import message_display
 from ..message import Message
-from ..scroller import Scroller
 
 
 class ChatMessageDisplay(message_display.MessageDisplay):
@@ -21,9 +20,7 @@ class ChatMessageDisplay(message_display.MessageDisplay):
     def __init__(self, chat: Chat) -> None:
         super().__init__()
         self.apply_style()
-
-        self.chat:     Chat     = chat
-        self.scroller: Scroller = Scroller(self)  # Can't be None in this class
+        self.chat: Chat = chat
 
         constraints = [
             QTextLength(QTextLength.FixedLength,    0),  # avatar

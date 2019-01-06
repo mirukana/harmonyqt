@@ -15,8 +15,9 @@ class Console(QWidget):
         self.vbox.setContentsMargins(0, 0, 0, 0)
         self.vbox.setSpacing(0)
 
-        from .console_display import ConsoleDisplay
+        from .display import ConsoleDisplay
         self.display = ConsoleDisplay()
+        self.display.make_shortcuts_accessible_from(self)
 
         self.about = QLabel(
             f"Unexpected errors occured.<br>"

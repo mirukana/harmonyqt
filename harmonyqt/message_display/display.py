@@ -2,12 +2,16 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import traceback
+from typing import List
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import (
     QFontMetrics, QResizeEvent, QTextCursor, QTextTableFormat
 )
-from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtWidgets import QShortcut, QTextBrowser, QWidget
+
+from . import shortcuts
+from ..scroller import Scroller
 
 
 class MessageDisplay(QTextBrowser):
@@ -18,17 +22,13 @@ class MessageDisplay(QTextBrowser):
     def __init__(self) -> None:
         super().__init__()
 
-        self.scroller = None
+        self.scroller = Scroller(self)
+        self._set_previous_resize_vbar()
+        self.scroller.vbar.valueChanged.connect(
+            lambda _: self._set_previous_resize_vbar()
+        )
 
-        try:
-            from .scroller import Scroller
-            self.scroller = Scroller(self)
-            self._set_previous_resize_vbar()
-            self.scroller.vbar.valueChanged.connect(
-                lambda _: self._set_previous_resize_vbar()
-            )
-        except Exception:
-            traceback.print_exc()
+        self.shortcuts: List[QShortcut] = list(shortcuts.get_shortcuts(self))
 
         doc = self.document()
         doc.setUndoRedoEnabled(False)
@@ -47,7 +47,7 @@ class MessageDisplay(QTextBrowser):
 
     def apply_style(self) -> None:
         try:
-            from . import main_window
+            from harmonyqt import main_window
             window = main_window()
             doc    = self.document()
             doc.setDefaultStyleSheet(window.theme.style("messages"))
@@ -56,9 +56,8 @@ class MessageDisplay(QTextBrowser):
 
 
     def _set_previous_resize_vbar(self) -> None:
-        if self.scroller:
-            sc                         = self.scroller
-            self._previous_resize_vbar = (sc.vmin, sc.v, sc.vmax)
+        sc                         = self.scroller
+        self._previous_resize_vbar = (sc.vmin, sc.v, sc.vmax)
 
 
     def resizeEvent(self, event: QResizeEvent) -> None:
@@ -68,8 +67,7 @@ class MessageDisplay(QTextBrowser):
 
         _, old_vbar_val, old_vbar_max = self._previous_resize_vbar
         scr = self.scroller
-        if scr:
-            scr.vset(scr.vmax - (old_vbar_max - old_vbar_val))
+        scr.vset(scr.vmax - (old_vbar_max - old_vbar_val))
 
 
     def system_print(self,
@@ -77,15 +75,13 @@ class MessageDisplay(QTextBrowser):
                      level:   str  = "info",
                      is_html: bool = False) -> None:
         assert level in ("info", "warning", "error")
-
-        if self.scroller:
-            distance_from_bottom = self.scroller.vmax - self.scroller.v
+        distance_from_bottom = self.scroller.vmax - self.scroller.v
 
         html = text
 
         if not is_html:
             try:
-                from . import markdown
+                from harmonyqt import markdown
                 html = markdown.to_html(text)
             except Exception:
                 traceback.print_exc()
@@ -99,5 +95,10 @@ class MessageDisplay(QTextBrowser):
         cursor.insertHtml(html)
         cursor.endEditBlock()
 
-        if self.scroller and distance_from_bottom <= 10:
+        if distance_from_bottom <= 10:
             self.scroller.go_min_left().go_bottom()
+
+
+    def make_shortcuts_accessible_from(self, widget: QWidget) -> None:
+        widget.shortcuts = self.shortcuts.copy()
+        self.shortcuts   = []

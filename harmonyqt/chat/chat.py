@@ -41,16 +41,15 @@ class Chat(QWidget):
         self.vbox.setSpacing(0)
 
         # Because of circular import
-        from .message_display import ChatMessageDisplay
+        from .display import ChatMessageDisplay
         from .send_area import SendArea
         self.messages  = ChatMessageDisplay(self)
+        self.messages.make_shortcuts_accessible_from(self)
+
         self.send_area = SendArea(self)
 
         self.vbox.addWidget(self.messages)
         self.vbox.addWidget(self.send_area)
-
-        from .shortcuts import get_shortcuts
-        self.shortcuts = list(get_shortcuts(self))
 
         for hook in CHAT_INIT_HOOKS.values():
             hook(self)
