@@ -12,7 +12,6 @@
   - Move stuff to App instead of MainWindow when it makes sense
   - Rename project to Harmony, forget about old harmony
   - Handle bad events
-  - Handle errors, avoid crashes
   - Properly log off accounts when closing the client
   - QMainWindow Storing State
   - Tabs middle click to close
