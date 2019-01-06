@@ -30,15 +30,15 @@ class Alias:
 
     def expand(self, _: Chat, typed_text: str, force_say: bool = False) -> str:
         re_alias = re.escape(self.alias)
-        re_exp   = self.expands_to.replace("\\", "\\\\")
+        re_ex    = self.expands_to.replace("\\", "\\\\")
 
         if self.is_global_words:
-            text = re.sub(rf"([^\\])({re_alias})", rf"\1{re_exp}", typed_text)
-            return re.sub(rf"\\({re_alias})",      r"\1",          text)
+            text = re.sub(rf"(^|[^\\])({re_alias})", rf"\1{re_ex}", typed_text)
+            return re.sub(rf"\\({re_alias})",        r"\1",         text)
 
         if self.is_global:
             text = re.sub(rf"(?:^|(?<=\s))({re_alias})(?=$|\s)",
-                          re_exp, typed_text)
+                          re_ex, typed_text)
             return re.sub(rf"(?:^|(?<=\s))\\({re_alias})(?=$|\s)",
                           rf"\1", text)
 
