@@ -6,6 +6,7 @@ from typing import Optional
 
 from atomicfile import AtomicFile
 from PyQt5.QtCore import QStandardPaths as QSP
+from PyQt5.QtCore import QDateTime
 
 
 def get_standard_path(kind:            QSP.StandardLocation,
@@ -30,3 +31,9 @@ def get_standard_path(kind:            QSP.StandardLocation,
 
 def get_config_path(file: str, initial_content: Optional[str] = None) -> str:
     return get_standard_path(QSP.AppConfigLocation, file, initial_content)
+
+
+def get_error_file(content: str, name: str = "") -> str:
+    date = QDateTime.currentDateTime().toString("yyyyMMdd-HHmmss")
+    file = "errors/%s.txt" % "_".join((date, name))
+    return get_standard_path(QSP.AppDataLocation, file, content)

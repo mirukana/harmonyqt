@@ -6,38 +6,23 @@ from threading import Thread
 from typing import Deque, Tuple
 
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
-from PyQt5.QtGui import (
-    QFontMetrics, QKeyEvent, QResizeEvent, QTextCursor, QTextLength,
-    QTextTableFormat
-)
-from PyQt5.QtWidgets import QTextBrowser
+from PyQt5.QtGui import QKeyEvent, QTextCursor, QTextLength, QTextTableFormat
 
 from . import Chat
-from .. import main_window, markdown, scroller
+from .. import message_display
 from ..message import Message
+from ..scroller import Scroller
 
 
-class MessageDisplay(QTextBrowser):
+class ChatMessageDisplay(message_display.MessageDisplay):
     _add_message_request = pyqtSignal(Message)
-    # Useful for anything in a thread that wants to show text
-    system_print_request = pyqtSignal(str, str, bool)  # text, level, is_html
 
 
     def __init__(self, chat: Chat) -> None:
         super().__init__()
-        self.chat = chat
+        self.chat:     Chat     = chat
+        self.scroller: Scroller = Scroller(self)  # Can't be None in this class
 
-        self.scroller: scroller.Scroller = scroller.Scroller(self)
-
-        doc = self.document()
-        doc.setDefaultStyleSheet(main_window().theme.style("messages"))
-        doc.setUndoRedoEnabled(False)
-
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.setOpenExternalLinks(True)
-
-        font_height = QFontMetrics(doc.defaultFont()).height()
         constraints = [
             QTextLength(QTextLength.FixedLength,    0),  # avatar
             QTextLength(QTextLength.VariableLength, 0),  # info/content
@@ -45,7 +30,7 @@ class MessageDisplay(QTextBrowser):
 
         self.msg_format = QTextTableFormat()
         self.msg_format.setBorder(0)
-        self.msg_format.setTopMargin(font_height)
+        self.msg_format.setTopMargin(self.font_height)
         self.msg_format.setColumnWidthConstraints(constraints)
 
         self.consecutive_msg_format = QTextTableFormat()
@@ -54,15 +39,11 @@ class MessageDisplay(QTextBrowser):
 
         self.msg_after_break_format = QTextTableFormat()
         self.msg_after_break_format.setBorder(0)
-        self.msg_after_break_format.setTopMargin(font_height * 3)
+        self.msg_after_break_format.setTopMargin(self.font_height * 3)
         self.msg_after_break_format.setColumnWidthConstraints(constraints)
 
         self.inner_info_content_format = QTextTableFormat()
         self.inner_info_content_format.setBorder(0)
-
-        self.system_print_format = QTextTableFormat()
-        self.system_print_format.setBorder(0)
-        self.system_print_format.setTopMargin(font_height)
 
         self.last_table_is_message: bool = False
 
@@ -82,17 +63,6 @@ class MessageDisplay(QTextBrowser):
         Thread(target=self.autoload_history, daemon=True).start()
 
         self._add_message_request.connect(self._add_message)
-        self.system_print_request.connect(self.system_print)
-
-        self._set_previous_resize_vbar()
-        self.scroller.vbar.valueChanged.connect(
-            lambda _: self._set_previous_resize_vbar()
-        )
-
-
-    def _set_previous_resize_vbar(self) -> None:
-        sc                         = self.scroller
-        self._previous_resize_vbar = (sc.vmin, sc.v, sc.vmax)
 
 
     def on_receive_local_echo(self, msg: Message) -> None:
@@ -219,28 +189,6 @@ class MessageDisplay(QTextBrowser):
             self.scroller.go_min_left().go_bottom()
 
 
-    def system_print(self,
-                     text:    str,
-                     level:   str  = "info",
-                     is_html: bool = False) -> None:
-        assert level in ("info", "warning", "error")
-        distance_from_bottom = self.scroller.vmax - self.scroller.v
-
-        html = text if is_html else markdown.to_html(text)
-        html = f"<div class='system {level}'>{html}</div>"
-
-        cursor = QTextCursor(self.document())
-        cursor.beginEditBlock()
-        cursor.movePosition(QTextCursor.End)
-        cursor.insertTable(1, 1, self.system_print_format)
-        cursor.insertHtml(html)
-        cursor.endEditBlock()
-        self.last_table_is_message = False
-
-        if distance_from_bottom <= 10:
-            self.scroller.go_min_left().go_bottom()
-
-
     def autoload_history(self) -> None:
         time.sleep(0.25)  # Give time for initial events/msgs to be shown
         scr          = self.scroller
@@ -256,16 +204,6 @@ class MessageDisplay(QTextBrowser):
                     load_history(reverse=True, limit=100)
 
             time.sleep(0.1)
-
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        super().resizeEvent(event)
-        if event.oldSize().height() < 0:
-            return
-
-        _, old_vbar_val, old_vbar_max = self._previous_resize_vbar
-        scr = self.scroller
-        scr.vset(scr.vmax - (old_vbar_max - old_vbar_val))
 
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
