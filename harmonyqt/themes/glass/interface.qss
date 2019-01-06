@@ -43,14 +43,10 @@ QPushButton {
     padding: 4px;
 }
 
-Chat SendBox {
+Chat SendBox, Console QLabel {
     background: rgb(5, 5, 5);
     padding:    11px;
     margin:     0px;
-}
-
-HomePage, HomePage QLabel, Chat MessageDisplay {
-    background: rgb(10, 10, 10);
 }
 
 HomePage QLabel {
@@ -60,6 +56,11 @@ HomePage QLabel {
 QLineEdit, QPlainTextEdit, QTextEdit, QComboBox {
     background: rgb(20, 20, 20);
 }
+
+HomePage, HomePage QLabel, MessageDisplay {
+    background: rgb(10, 10, 10);
+}
+
 
 QCheckBox::indicator:unchecked {  /* TODO: improve */
     border: 1px solid rgb(80, 80, 80);

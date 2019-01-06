@@ -33,13 +33,6 @@ class MessageDisplay(QTextBrowser):
         doc = self.document()
         doc.setUndoRedoEnabled(False)
 
-        try:
-            from . import main_window
-            window = main_window()
-            doc.setDefaultStyleSheet(window.theme.style("messages"))
-        except Exception:
-            traceback.print_exc()
-
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.setOpenExternalLinks(True)
@@ -50,6 +43,16 @@ class MessageDisplay(QTextBrowser):
         self.system_print_format.setTopMargin(self.font_height)
 
         self.system_print_request.connect(self.system_print)
+
+
+    def apply_style(self) -> None:
+        try:
+            from . import main_window
+            window = main_window()
+            doc    = self.document()
+            doc.setDefaultStyleSheet(window.theme.style("messages"))
+        except Exception:
+            traceback.print_exc()
 
 
     def _set_previous_resize_vbar(self) -> None:

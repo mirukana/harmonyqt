@@ -4,13 +4,14 @@
 from typing import Dict, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import (
     QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
 )
 
 from . import (
-    __about__, accounts, app, event_logger, events, homepage, shortcuts,
-    theming, toolbar, usertree
+    __about__, accounts, app, error_handler, event_logger, events, homepage,
+    shortcuts, theming, toolbar, usertree
 )
 from .chat import ChatDock
 from .dock import Dock
@@ -22,6 +23,9 @@ class App(QApplication):
         # if not self.styleSheet:  # user can load one with --stylesheet
             # self.
             # pass
+
+        self.setApplicationName(__about__.__pkg_name__)
+        self.setApplicationVersion(__about__.__version__)
 
         self.focused_chat_dock: Optional[ChatDock] = None
         self.focusChanged.connect(self.on_focus_change)
@@ -39,13 +43,21 @@ class App(QApplication):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.title_bars_shown = False
+        self.title_bars_shown: bool = False
+        self.normal_close:     bool = False
 
 
     def construct(self) -> None:
         # pylint: disable=attribute-defined-outside-init
         # Can't define all that __init__ instead.
         # The UI elements need _MAIN_WINDOW to be set, see run() in __init__.
+
+        # Setup error console:
+
+        self.error_dock = Dock("Error console", self)
+        self.error_dock.hide()
+        self.error_dock.setWidget(error_handler.console.Console())
+
 
         # Setup appearance:
 
@@ -103,7 +115,6 @@ class MainWindow(QMainWindow):
         # Run:
 
         self.show()
-
         try:
             self.accounts.login_using_config()
         except FileNotFoundError:
@@ -115,12 +126,28 @@ class MainWindow(QMainWindow):
             show = not self.title_bars_shown
 
         docks = (self.tree_dock, self.actions_dock, self.home_dock,
-                 *self.visible_chat_docks.values())
+                 self.error_dock, *self.visible_chat_docks.values())
 
         for dock in docks:
             dock.show_title_bar(show)
 
         self.title_bars_shown = show
+
+
+    def show_error_dock(self) -> None:
+        if self.error_dock.isVisible():
+            return
+
+        self.error_dock.widget().display.apply_style()
+
+        try:
+            tab_with = app().focused_chat_dock
+            if not tab_with or not tab_with.isVisible():
+                tab_with = self.home_dock
+        except AttributeError:
+            self.addDockWidget(Qt.RightDockWidgetArea, self.error_dock)
+        else:
+            self.tabifyDockWidget(tab_with, self.error_dock)
 
 
     def new_chat_dock(self,
@@ -194,3 +221,8 @@ class MainWindow(QMainWindow):
         dock = self.visible_chat_docks.get((user_id, room_id))
         if dock:
             dock.autoset_title()
+
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.normal_close = True
+        super().closeEvent(event)

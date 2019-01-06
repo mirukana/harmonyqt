@@ -20,6 +20,8 @@ class ChatMessageDisplay(message_display.MessageDisplay):
 
     def __init__(self, chat: Chat) -> None:
         super().__init__()
+        self.apply_style()
+
         self.chat:     Chat     = chat
         self.scroller: Scroller = Scroller(self)  # Can't be None in this class
 

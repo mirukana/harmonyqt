@@ -8,7 +8,7 @@ from pkg_resources import resource_filename
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow
 
-from . import __about__
+from . import __about__, error_handler
 # pylint: disable=redefined-builtin
 from .__about__ import __doc__
 
@@ -35,6 +35,13 @@ def register_startup_function(func: StartupFuncType) -> None:
     _STARTUP_FUNCTIONS.add(func)
 
 
+def on_ctrl_c() -> None:
+    try:
+        main_window().normal_close = True
+    except RuntimeError:
+        pass
+
+
 def run(argv: Optional[List[str]] = None) -> None:
     from . import main
     # pylint: disable=global-statement
@@ -50,7 +57,7 @@ def run(argv: Optional[List[str]] = None) -> None:
 
     # Make CTRL-C work
     timer = QTimer()
-    timer.timeout.connect(lambda: None)
+    timer.timeout.connect(on_ctrl_c)
     timer.start(100)
 
     sys.exit(_APP.exec_())
