@@ -31,7 +31,7 @@ SHORTCUTS: Dict[Callable[[MD], Any], List[str]] = {
 
 def execute_if_focused(display: MD, func: Callable[[MD], Any]) -> None:
     focused = app().focused_chat_dock
-    if focused is not None and focused.chat is display:
+    if focused is not None and focused.chat.messages is display:
         func(display)
 
 
