@@ -7,7 +7,7 @@ from cachetools import LFUCache
 from kids.cache import cache
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
-from .. import main_window, message, register_startup_function
+from harmonyqt import main, main_window, message
 
 CHAT_INIT_HOOKS: Dict[str, Callable[["Chat"], None]] = {}
 
@@ -44,9 +44,11 @@ class Chat(QWidget):
         from .display import ChatMessageDisplay
         from .send_area import SendArea
         self.messages  = ChatMessageDisplay(self)
-        self.messages.make_shortcuts_accessible_from(self)
-
         self.send_area = SendArea(self)
+
+        # Make messages scroller controllable by shortcuts even when user
+        # focuses sendbox, see app().get_focused parent scroller detection.
+        self.scroller = self.messages.scroller
 
         self.vbox.addWidget(self.messages)
         self.vbox.addWidget(self.send_area)
@@ -63,6 +65,5 @@ def redirect_message(msg: message.Message) -> None:
     chat.messages.on_receive_from_server(msg)
 
 
-register_startup_function(
-    lambda _, win: win.events.signals.new_message.connect(redirect_message)
-)
+main.HOOKS_INIT_2_BEFORE_LOGIN["Connect chat Message redirector"] = \
+    lambda win: win.events.signals.new_message.connect(redirect_message)

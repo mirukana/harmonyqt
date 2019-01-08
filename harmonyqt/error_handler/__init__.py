@@ -65,7 +65,6 @@ def add_to_log_file(trace_str: str, date: str) -> None:
     with WRITE_LOCK:
         mode = "a" if os.path.exists(LOG_PATH) else "w"
         with open(LOG_PATH, mode) as out_file:
-            print("write", mode, LOG_PATH)
             out_file.write(f"{date}\n\n{trace_str}\n\n\n")
 
 

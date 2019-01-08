@@ -17,15 +17,17 @@ class Console(QWidget):
 
         from .display import ConsoleDisplay
         self.display = ConsoleDisplay()
-        self.display.make_shortcuts_accessible_from(self)
 
         self.about = QLabel(
             f"Unexpected errors occured.<br>"
             f"A log file is written to <em>{LOG_PATH}</em>.<br>"
             f"{PLEASE_REPORT}"
         )
+        self.about.setWordWrap(True)
         self.about.setOpenExternalLinks(True)
         self.about.setTextInteractionFlags(Qt.TextBrowserInteraction)
 
         self.vbox.addWidget(self.display)
         self.vbox.addWidget(self.about)
+
+        self.scroller = self.display.scroller

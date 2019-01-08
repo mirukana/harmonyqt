@@ -1,7 +1,7 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent
@@ -9,12 +9,23 @@ from PyQt5.QtWidgets import (
     QApplication, QDesktopWidget, QMainWindow, QTabWidget, QWidget
 )
 
+HooksType = Dict[str, Callable[["MainWindow"], None]]
+
+HOOKS_INIT_1_START:        HooksType = {}
+HOOKS_INIT_2_BEFORE_LOGIN: HooksType = {}
+HOOKS_INIT_3_END:          HooksType = {}
+
+# pylint: disable=wrong-import-position
 from . import (
-    __about__, accounts, app, error_handler, event_logger, events, homepage,
-    shortcuts, theming, toolbar, usertree
+    __about__, app, error_handler, homepage, theming, toolbar, usertree
 )
+from .accounts import AccountManager
 from .chat import ChatDock
 from .dock import Dock
+from .event_logger import EventLogger
+from .events import EventManager
+from .shortcuts import ShortcutManager
+
 
 
 class App(QApplication):
@@ -27,17 +38,36 @@ class App(QApplication):
         self.setApplicationName(__about__.__pkg_name__)
         self.setApplicationVersion(__about__.__version__)
 
-        self.focused_chat_dock: Optional[ChatDock] = None
+        self.last_focused_dock:      Optional[Dock]     = None
+        self.last_focused_chat_dock: Optional[ChatDock] = None
         self.focusChanged.connect(self.on_focus_change)
 
 
     def on_focus_change(self, _: QWidget, new: QWidget) -> None:
-        while not isinstance(new, ChatDock):
+        while not isinstance(new, Dock):
             if new is None:
                 return
             new = new.parent()
 
-        self.focused_chat_dock = new
+        self.last_focused_dock = new
+
+        if isinstance(new, ChatDock):
+            self.last_focused_chat_dock = new
+
+
+    def get_focused(self, condition: Optional[Callable[[QWidget], bool]] = None
+                   ) -> Optional[Dock]:
+        widget = self.focusWidget()
+
+        if not condition:
+            return widget
+
+        while widget is not None:
+            if condition(widget):
+                return widget
+            widget = widget.parent()
+
+        return None
 
 
 class MainWindow(QMainWindow):
@@ -51,6 +81,9 @@ class MainWindow(QMainWindow):
         # pylint: disable=attribute-defined-outside-init
         # Can't define all that __init__ instead.
         # The UI elements need _MAIN_WINDOW to be set, see run() in __init__.
+
+        for func in HOOKS_INIT_1_START.values():
+            func(self)
 
         # Setup error console:
 
@@ -75,9 +108,10 @@ class MainWindow(QMainWindow):
 
         # Setup main classes and event listeners:
 
-        self.event_logger = event_logger.EventLogger()
-        self.accounts     = accounts.AccountManager()
-        self.events       = events.EventManager()
+        self.event_logger: EventLogger     = EventLogger()
+        self.accounts:     AccountManager  = AccountManager()
+        self.events:       EventManager    = EventManager()
+        self.shortcuts:    ShortcutManager = ShortcutManager()
 
         self.event_logger.start()
 
@@ -109,16 +143,20 @@ class MainWindow(QMainWindow):
 
         self.show_dock_title_bars(False)
 
-        self.shortcuts = list(shortcuts.get_shortcuts())
-
-
         # Run:
 
         self.show()
+
+        for func in HOOKS_INIT_2_BEFORE_LOGIN.values():
+            func(self)
+
         try:
             self.accounts.login_using_config()
         except FileNotFoundError:
             pass
+
+        for func in HOOKS_INIT_3_END.values():
+            func(self)
 
 
     def show_dock_title_bars(self, show: Optional[bool] = None) -> None:
@@ -141,7 +179,7 @@ class MainWindow(QMainWindow):
         self.error_dock.widget().display.apply_style()
 
         try:
-            tab_with = app().focused_chat_dock
+            tab_with = app().last_focused_chat_dock
             if not tab_with or not tab_with.isVisible():
                 tab_with = self.home_dock
         except AttributeError:
@@ -194,7 +232,7 @@ class MainWindow(QMainWindow):
             dock.focus()
             return
 
-        dock = app().focused_chat_dock
+        dock = app().last_focused_chat_dock
         if not dock or not dock.isVisible():
             dock = self.home_dock
 

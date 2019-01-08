@@ -42,5 +42,5 @@ class FatalErrorBox(ErrorBox):
     def __init__(self, trace_str: str) -> None:
         super().__init__(trace_str)
         self.setWindowTitle("Harmony - Fatal error")
-        self.setText("Fatal error, execution halted!")
+        self.setText("Fatal error, execution halted")
         self.setIcon(QMessageBox.Critical)

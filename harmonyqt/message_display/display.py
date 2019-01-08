@@ -2,16 +2,14 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import traceback
-from typing import List
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import (
     QFontMetrics, QResizeEvent, QTextCursor, QTextTableFormat
 )
-from PyQt5.QtWidgets import QShortcut, QTextBrowser, QWidget
+from PyQt5.QtWidgets import QTextBrowser
 
-from . import shortcuts
-from ..scroller import Scroller
+from harmonyqt.scroller import Scroller
 
 
 class MessageDisplay(QTextBrowser):
@@ -27,8 +25,6 @@ class MessageDisplay(QTextBrowser):
         self.scroller.vbar.valueChanged.connect(
             lambda _: self._set_previous_resize_vbar()
         )
-
-        self.shortcuts: List[QShortcut] = list(shortcuts.get_shortcuts(self))
 
         doc = self.document()
         doc.setUndoRedoEnabled(False)
@@ -97,8 +93,3 @@ class MessageDisplay(QTextBrowser):
 
         if distance_from_bottom <= 10:
             self.scroller.go_min_left().go_bottom()
-
-
-    def make_shortcuts_accessible_from(self, widget: QWidget) -> None:
-        widget.shortcuts = self.shortcuts.copy()
-        self.shortcuts   = []

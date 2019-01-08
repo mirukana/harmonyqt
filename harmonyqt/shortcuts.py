@@ -1,30 +1,61 @@
 # Copyright 2018 miruka
 # This file is part of harmonyqt, licensed under GPLv3.
 
-"Global keybinds"
+from collections import Mapping
+from typing import Callable, List, Optional, Set, Dict
 
-from typing import Any, Callable, Dict, Generator, List
+from dataclasses import dataclass, field
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QShortcut, QWidget
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut
+from . import main_window
 
-from . import app, main_window
-
-SHORTCUTS: Dict[Callable[[QApplication, QMainWindow], Any], List[str]] = {
-    # Focus changers
-    lambda _, w: w.tree_dock.widget().setFocus(): ["A-a", "A-r"],
-    lambda a, _: a.focused_chat_dock and a.focused_chat_dock.focus(): ["A-c"],
-}
+_KEEP_ALIVE: Set[QShortcut]  = set()
 
 
-def get_shortcuts() -> Generator[None, None, QShortcut]:
-    for func, binds in SHORTCUTS.items():
-        for bind in binds:
+@dataclass(frozen=True)
+class Shortcut:
+    name:          str                         = ""
+    on_activation: Callable[[QShortcut], None] = lambda _:  None
+    bindings:      List[str]                   = field(default_factory=list)
+    autorepeat:    bool                        = True
+    parent:        Optional[QWidget]           = None
+    context:       Qt.ShortcutContext          = Qt.WindowShortcut
+
+
+    def __post_init__(self) -> None:
+        for bind in self.bindings:  # pylint: disable=not-an-iterable
             bind = bind.replace("C-", "Ctrl+")\
-                       .replace("A-", "Alt+")\
-                       .replace("S-", "Shift+")
+                        .replace("A-", "Alt+")\
+                        .replace("S-", "Shift+")
 
-            qs = QShortcut(bind, main_window())
-            qs.activated.connect(
-                lambda f=func, a=app(), w=main_window(): f(a, w)
-            )
-            yield qs
+            qs = QShortcut(bind, self.parent or main_window())
+            qs.activated.connect(self.on_activation)
+            qs.setAutoRepeat(self.autorepeat)
+            qs.setContext(self.context)
+            _KEEP_ALIVE.add(qs)
+
+
+class ShortcutManager(Mapping):
+    def __init__(self) -> None:
+        self._registered: Dict[str, Shortcut] = {}
+
+    def __repr__(self) -> str:
+        return "%s(%s)" % (type(self).__name__, repr(self._registered))
+
+    def __getitem__(self, key: str) -> Shortcut:
+        return self._registered[key]
+
+    def __iter__(self):
+        return iter(self._registered)
+
+    def __len__(self) -> int:
+        return len(self._registered)
+
+
+    def add(self, shortcut: Shortcut) -> None:
+        self._registered[shortcut.name] = shortcut
+
+
+    def remove(self, shortcut_name: str) -> None:
+        del self._registered[shortcut_name]

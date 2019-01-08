@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
 )
 
+from harmonyqt.scroller import Scroller
 from matrix_client.client import MatrixClient
 from matrix_client.room import Room
 
@@ -23,6 +24,8 @@ class UserTree(QTreeWidget):
         super().__init__()
         self.accounts:   Dict[str, "AccountRow"] = {}
         self.blank_rows: List["BlankRow"]        = []
+
+        self.scroller: Scroller = Scroller(self)
 
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setColumnCount(2)  # avatar/name; unread msg num/invite indicator
