@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
 
         # Setup error console:
 
-        self.error_dock = Dock("Error console", self)
+        self.error_dock = Dock("Error console", self, can_hide_title_bar=False)
         self.error_dock.hide()
         self.error_dock.setWidget(error_handler.console.Console())
 

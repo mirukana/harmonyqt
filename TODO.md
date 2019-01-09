@@ -1,20 +1,21 @@
 - Major goals:
-  - E2E
+  - E2E with device verification
+  - Custom "tilling widget manager" to replace docking system
+  - Make non-core modules work as addon subpackages that can be disabled
   - Room members pane, avatars
   - Status, presence, receipts
-  - Widget tilling system
 
 - General
-  - Prevent opening the same encrypted room in two clients (replay attack err)
-  - E2E device verification and icons
+  - Turn `<pre>` tags into normal paragraphs with a custom class,
+    to prevent Qt's styling which doesn't respect word wrapping
+  - Turn `<blockquote>` into table cells so we can apply border
+  - Fix "replay attack" when opening the same encrypted room in two clients
+  - Move stuff to App instead of MainWindow when it makes sense
   - Use os.PathLike
   - Fix click on tree arrow
-  - Move stuff to App instead of MainWindow when it makes sense
-  - Rename project to Harmony, forget about old harmony
   - Handle bad events
   - Properly log off accounts when closing the client
   - QMainWindow Storing State
-  - Tabs middle click to close
   - `--help` for [opts](http://doc.qt.io/qt-5/qapplication.html#QApplication),
    [opts](http://doc.qt.io/qt-5/qguiapplication.html#QGuiApplication)
 
@@ -66,9 +67,10 @@
     - More keybinds
     - Spell check?
     - Send, upload and other buttons
+    - Up/down for last messages
 
 - Accounts
-  - Retry on connect failure
+  - Heartbeat, detect when matrix sync is hanging after net drop
   - Confirmation dialogs for leave/decline/remove account entries
   - Del key
   - Show error box when accepting invite for a gone room 
