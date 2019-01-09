@@ -266,7 +266,6 @@ class AccountRow(QTreeWidgetItem):
 
         self.rooms[room_id] = RoomRow(self, room_id,
                                       invite_by, display_name, name, alias)
-        self.rooms[room_id].signals.ui_updated.connect(self.sort_room_rows)
 
         if not self.auto_expanded_once:
             self.setExpanded(True)  # TODO: unless user collapsed manually
@@ -298,7 +297,9 @@ class RoomRow(QTreeWidgetItem):
         self.invite_by:   str        = invite_by
 
         self.signals = _RoomRowSignals()
-        self._pool   = ThreadPool(1)
+        self.signals.ui_updated.connect(self.account_row.sort_room_rows)
+
+        self._pool = ThreadPool(1)
 
         if invite_by:
             self.room: Room           = Room(parent.client, room_id)
