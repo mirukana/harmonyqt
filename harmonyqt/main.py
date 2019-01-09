@@ -24,7 +24,7 @@ from .chat import ChatDock
 from .dock import Dock
 from .event_logger import EventLogger
 from .events import EventManager
-from .shortcuts import ShortcutManager
+from .shortcuts import Shortcut, ShortcutManager
 
 
 
@@ -140,6 +140,19 @@ class MainWindow(QMainWindow):
 
         # {(user_id, room_id): dock}
         self.visible_chat_docks: Dict[Tuple[str, str], ChatDock] = {}
+
+        def on_activation() -> None:
+            try:
+                app().last_focused_chat_dock.focus()
+            except AttributeError:
+                pass
+
+        self.shortcuts.add(Shortcut(
+            name          = "Focus last chat",
+            on_activation = on_activation,
+            bindings      = ["A-c"],
+            autorepeat    = False
+        ))
 
         self.show_dock_title_bars(False)
 

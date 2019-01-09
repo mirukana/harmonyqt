@@ -10,13 +10,12 @@ from PyQt5.QtWidgets import (
     QAction, QHeaderView, QSizePolicy, QTreeWidget, QTreeWidgetItem
 )
 
+from harmonyqt import __about__, actions, app, main_window, shortcuts
+from harmonyqt.dialogs import AcceptRoomInvite
+from harmonyqt.menu import Menu
 from harmonyqt.scroller import Scroller
 from matrix_client.client import MatrixClient
 from matrix_client.room import Room
-
-from . import __about__, actions, app, main_window
-from .dialogs import AcceptRoomInvite
-from .menu import Menu
 
 
 class UserTree(QTreeWidget):
@@ -26,6 +25,13 @@ class UserTree(QTreeWidget):
         self.blank_rows: List["BlankRow"]        = []
 
         self.scroller: Scroller = Scroller(self)
+
+        main_window().shortcuts.add(shortcuts.Shortcut(
+            name          = "Focus Accounts / Rooms",
+            on_activation = self.setFocus,
+            bindings      = ["A-a"],
+            autorepeat    = False
+        ))
 
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.setColumnCount(2)  # avatar/name; unread msg num/invite indicator

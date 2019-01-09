@@ -15,12 +15,12 @@ _KEEP_ALIVE: Set[QShortcut]  = set()
 
 @dataclass(frozen=True)
 class Shortcut:
-    name:          str                         = ""
-    on_activation: Callable[[QShortcut], None] = lambda _:  None
-    bindings:      List[str]                   = field(default_factory=list)
-    autorepeat:    bool                        = True
-    parent:        Optional[QWidget]           = None
-    context:       Qt.ShortcutContext          = Qt.WindowShortcut
+    name:          str                = ""
+    on_activation: Callable[[], None] = lambda: None
+    bindings:      List[str]          = field(default_factory = list)
+    autorepeat:    bool               = True
+    parent:        Optional[QWidget]  = None
+    context:       Qt.ShortcutContext = Qt.WindowShortcut
 
 
     def __post_init__(self) -> None:
@@ -30,7 +30,7 @@ class Shortcut:
                         .replace("S-", "Shift+")
 
             qs = QShortcut(bind, self.parent or main_window())
-            qs.activated.connect(self.on_activation)
+            qs.activated.connect(self.on_activation)  # type: ignore
             qs.setAutoRepeat(self.autorepeat)
             qs.setContext(self.context)
             _KEEP_ALIVE.add(qs)
