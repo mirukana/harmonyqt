@@ -22,6 +22,7 @@ class SendBox(QPlainTextEdit):
         self.setCenterOnScroll(False)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.document().setDocumentMargin(0)
 
@@ -29,7 +30,6 @@ class SendBox(QPlainTextEdit):
 
 
     def get_box_height(self, lines: Optional[int] = None) -> int:
-        lines           = lines or self.document().lineCount()
         widget_margin   = self.contentsMargins()
         document_margin = self.document().documentMargin()
         font_height     = QFontMetrics(self.document().defaultFont()).height()
@@ -39,9 +39,19 @@ class SendBox(QPlainTextEdit):
                   document_margin * 2    +
                   # Extra pixel prevents wordwrap-scroll-box-grows from hiding
                   # the first line
-                  font_height * lines + 1)
+                  font_height * (lines or self.document().lineCount()) + 1)
 
-        return min(height, self.area.chat.height() // 2)
+        max_height = self.area.chat.height() // 2
+
+        if lines:
+            return min(height, max_height)
+
+        if height >= max_height:
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            return max_height
+
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        return height
 
 
     def sizeHint(self) -> QSize:
