@@ -39,7 +39,10 @@ def except_hook(type_:     Type[BaseException],
     if type_ is KeyboardInterrupt:
         sys.exit(130)
 
-    print_exception(type_, value, traceback)
+    try:
+        print_exception(type_, value, traceback)
+    except OSError:  # No terminal connected
+        pass
 
     trace_str = "\n".join(format_exception(type_, value, traceback))
     date      = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss.z t")
