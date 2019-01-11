@@ -6,9 +6,9 @@ import hashlib
 import json
 import os
 import platform
-import threading
 from collections import UserDict
 from multiprocessing.pool import ThreadPool
+import threading
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 

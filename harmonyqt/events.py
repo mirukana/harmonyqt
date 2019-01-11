@@ -2,6 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import json
+import time
 from multiprocessing.pool import ThreadPool
 from threading import Lock
 from typing import Dict, Set
@@ -71,9 +72,19 @@ class EventManager:
         client.add_leave_listener(
             lambda rid, _: self.on_leave_event(user_id, rid))
 
-        client.start_listener_thread()
+        client.start_listener_thread(timeout_ms        = 10_000,
+                                     exception_handler = self.on_listen_error)
 
         self.signals.new_account.emit(client.user_id)
+
+
+    @staticmethod
+    def on_listen_error(err: BaseException) -> None:
+        try:
+            print(err)
+        except OSError:
+            pass
+        time.sleep(5)
 
 
     def add_room_listeners(self, user_id: str, room_id: str) -> None:
