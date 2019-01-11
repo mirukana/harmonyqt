@@ -6,6 +6,7 @@
   - Status, presence, receipts
 
 - General
+  - Indicator when connection drops
   - Turn `<pre>` tags into normal paragraphs with a custom class,
     to prevent Qt's styling which doesn't respect word wrapping
   - Turn `<blockquote>` into table cells so we can apply border
@@ -64,6 +65,8 @@
   - Linkify Matrix user IDs
 
   - Send Area
+    - Catch and store messages that can't be sent yet due to connection issue
+
     - More keybinds
     - Spell check?
     - Send, upload and other buttons
