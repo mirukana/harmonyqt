@@ -5,7 +5,7 @@ import re
 import subprocess as sp
 from typing import Union
 
-from . import register, say, utils
+from . import register, say
 from ..chat import Chat
 
 
@@ -70,10 +70,10 @@ def shell_f(chat:          Chat,
     stderr  = _treat_output(stderr)
 
     if retcode and retcode != 0:
-        utils.print_warn(chat, f"`{command}` returned `{retcode}`.")
+        chat.logger.warning(f"`{command}` returned `{retcode}`.")
 
     if stderr:
-        utils.print_warn(chat, f"```\n{stderr}\n```")
+        chat.logger.warning(f"```\n{stderr}\n```")
 
     if stdout:
         bticks = ("", "") if no_code_block else ("```\n", "\n```")
@@ -83,7 +83,7 @@ def shell_f(chat:          Chat,
         ))
 
         if echo:
-            utils.print_info(chat, text)
+            chat.chat.logger.info(text)
         else:
             say.say_f(chat, text)
 

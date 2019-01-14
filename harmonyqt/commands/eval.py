@@ -8,7 +8,7 @@ from typing import Callable, Dict, Optional
 import docopt
 from PyQt5.QtCore import pyqtRemoveInputHook
 
-from . import REGISTERED_COMMANDS, register, say, utils
+from . import REGISTERED_COMMANDS, register, say
 from .. import main_window
 from ..chat import Chat, RoomNotJoinedError, UserNotLoggedInError
 
@@ -103,7 +103,7 @@ def eval_f(chat:      Chat,
         try:
             chat = Chat(user_id, chat.room.room_id)
         except (UserNotLoggedInError, RoomNotJoinedError) as err:
-            utils.print_err(chat, str(err))
+            chat.chat.logger.error(str(err))
             return
 
     force_say = False
@@ -123,14 +123,13 @@ def eval_f(chat:      Chat,
     try:
         func, *args = shlex.split(text)
     except ValueError as err:
-        utils.print_exception(chat, err)
+        chat.logger.exception(err)
         return
 
     try:
         parse_func = REGISTERED_COMMANDS[func.lstrip("/")]
     except KeyError:
-        utils.print_err(
-            chat,
+        chat.logger.error(
             f"Command not found: `{func}`. \n"
             f"Type `/help` to see available commands.\n"
             f"Prepend `/` or `\\` to ignore command parsing and say this "
@@ -141,12 +140,11 @@ def eval_f(chat:      Chat,
     try:
         args = docopt.docopt(parse_func.__doc__, help=False, argv=args)
     except docopt.DocoptExit:
-        utils.print_err(
-            chat,
+        chat.logger.error(
             f"Invalid command syntax or bad option, "
             f"see `/help {func.lstrip('/')}`."
         )
     except docopt.DocoptLanguageError as err:
-        utils.print_exception(chat, err, parse_func)
+        chat.logger.exception( err, parse_func)
     else:
         parse_func(chat, args, _pdb_level=pdb_level)

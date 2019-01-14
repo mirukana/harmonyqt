@@ -5,7 +5,7 @@ import re
 from inspect import cleandoc
 from typing import List
 
-from . import REGISTERED_COMMANDS, register, utils
+from . import REGISTERED_COMMANDS, register
 from ..chat import Chat
 
 
@@ -42,17 +42,17 @@ def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
         try:
             func = REGISTERED_COMMANDS[name]
         except KeyError:
-            utils.print_err(chat, f"Command not found: `{name}`.")
+            chat.chat.logger.error(f"Command not found: `{name}`.")
             continue
 
         if not func.__doc__:
-            utils.print_err(chat, f"Missing help for `{name}`.")
+            chat.chat.logger.error(f"Missing help for `{name}`.")
             continue
 
         try:
             cmd_helps.append(format_doc(cleandoc(str(func.__doc__)), full))
         except Exception as err:
-            utils.print_exception(chat, err, func)
+            chat.logger.exception(err, func)
             continue
 
     text = "<pre class=help>%s%s</pre>" % (
@@ -61,7 +61,7 @@ def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
 
         ("<br><br>" if full else "<br>").join(cmd_helps),
     )
-    utils.print_info(chat, text, is_html=True)
+    chat.chat.logger.info(text, is_html=True)
 
 
 class HelpParseError(Exception):

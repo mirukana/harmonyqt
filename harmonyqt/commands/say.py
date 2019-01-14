@@ -3,7 +3,7 @@
 
 import threading
 
-from . import register, utils
+from . import register
 from ..chat import Chat
 from ..message import Message
 
@@ -41,7 +41,7 @@ def say_f(chat: Chat, text: str, is_html: bool = False, echo: bool = False
         return
 
     if echo:
-        utils.print_info(chat, text, is_html=is_html)
+        chat.chat.logger.info(text, is_html=is_html)
         return
 
 

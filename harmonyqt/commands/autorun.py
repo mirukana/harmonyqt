@@ -7,7 +7,7 @@ from typing import List
 
 from atomicfile import AtomicFile
 
-from . import register, utils
+from . import register
 from ..chat import CHAT_INIT_HOOKS, Chat
 from ..utils import get_config_path
 from .eval import eval_f
@@ -49,7 +49,7 @@ def autorun(chat: Chat, args: dict) -> None:
         load_autorun_json(chat)
 
     if not args["COMMANDS"]:
-        utils.print_info(chat, get_autorun_json_path())
+        chat.chat.logger.info(get_autorun_json_path())
         return
 
     for cmd in args["COMMANDS"]:

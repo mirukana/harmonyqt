@@ -43,14 +43,15 @@ class Chat(QWidget):
         # Because of circular import
         from .display import ChatMessageDisplay
         from .send_area import SendArea
-        self.messages  = ChatMessageDisplay(self)
+        self.display   = ChatMessageDisplay(self)
+        self.logger    = self.display.logger
         self.send_area = SendArea(self)
 
         # Make messages scroller controllable by shortcuts even when user
         # focuses sendbox, see app().get_focused parent scroller detection.
-        self.scroller = self.messages.scroller
+        self.scroller = self.display.scroller
 
-        self.vbox.addWidget(self.messages)
+        self.vbox.addWidget(self.display)
         self.vbox.addWidget(self.send_area)
 
         for hook in CHAT_INIT_HOOKS.values():
@@ -62,7 +63,7 @@ def redirect_message(msg: message.Message) -> None:
         return
 
     chat = Chat(msg.receiver_id, msg.room_id)  # cache
-    chat.messages.on_receive_from_server(msg)
+    chat.display.on_receive_from_server(msg)
 
 
 main.HOOKS_INIT_2_BEFORE_LOGIN["Connect chat Message redirector"] = \

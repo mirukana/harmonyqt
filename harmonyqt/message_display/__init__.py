@@ -2,3 +2,4 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 from .display import MessageDisplay
+from . import logger

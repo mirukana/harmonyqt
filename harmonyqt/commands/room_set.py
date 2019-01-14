@@ -8,7 +8,7 @@ from matrix_client.client import MatrixClient
 from matrix_client.errors import MatrixRequestError
 from matrix_client.room import Room
 
-from . import register, utils
+from . import register
 from ..chat import Chat
 
 SETTINGS_FUNC: Dict[str, Callable[[MatrixClient, Room, Any], bool]] = {
@@ -73,7 +73,7 @@ def room_set(chat: Chat, args: dict) -> None:
 
     for arg, val in args.items():
         if arg[2:].replace("-", "_") not in SETTINGS_FUNC:
-            utils.print_err(chat, f"Unknown setting: {arg!r}.")
+            chat.chat.logger.error(f"Unknown setting: {arg!r}.")
             return
 
     one_passed = False
@@ -90,13 +90,12 @@ def room_set(chat: Chat, args: dict) -> None:
             result = SETTINGS_FUNC[func_name](chat.client, chat.room, val)
         except MatrixRequestError as err:
             data = json.loads(err.content)
-            utils.print_err(chat, data["error"].replace("don't", "do not"))
+            chat.chat.logger.error(data["error"].replace("don't", "do not"))
         else:
             if result is False:
-                utils.print_err(
-                    chat,
+                chat.logger.error(
                     f"You do not have permission to set `{arg}` in this room"
                 )
 
     if not one_passed:
-        utils.print_warn(chat, "No option passed, see `/help room_set`.")
+        chat.logger.warning("No option passed, see `/help room_set`.")

@@ -27,24 +27,16 @@
 
 /* System prints, e.g. command outputs like `/help` */
 
-.system.info {
-    color: rgb(130, 80, 200);
-}
-.system.info code {
-    color: rgb(135, 110, 170);
-}
-.system.warning {
-    color: rgb(200, 175, 80);
-}
-.system.warning code {
-    color: rgb(175, 160, 105);
-}
-.system.error {
-    color: rgb(200, 80, 80);
-}
-.system.error code {
-    color: rgb(170, 110, 110);
-}
+.system.debug         {color: rgb(140, 140, 140);}
+.system.debug code    {color: rgb(210, 210, 210);}
+.system.info          {color: rgb(130, 80, 200);}
+.system.info code     {color: rgb(135, 110, 170);}
+.system.warning       {color: rgb(200, 175, 80);}
+.system.warning code  {color: rgb(175, 160, 105);}
+.system.error         {color: rgb(200, 80, 80);}
+.system.error code    {color: rgb(170, 110, 110);}
+.system.critical      {color: rgb(240, 40, 40);}
+.system.critical code {color: rgb(225, 55, 55);}
 
 
 /* /help output */
@@ -103,3 +95,10 @@ blockquote {
 .escaped-quote {
     color:  rgb(140, 180, 60);
 }
+
+/* /devices list command */
+
+.trust-label-blacklisted {color: rgb(170, 110, 110);}
+.trust-label-verified    {color: rgb(130, 175, 105);}
+.trust-label-ignored     {color: rgb(140, 140, 140);}
+.trust-label-undecided   {color: rgb(175, 160, 105);}

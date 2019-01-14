@@ -8,7 +8,7 @@ from typing import Dict
 from dataclasses import dataclass
 
 from . import eval as m_eval
-from . import register, utils
+from . import register
 from ..chat import Chat
 
 REGISTERED_ALIASES: Dict[str, "Alias"] = {}
@@ -157,11 +157,11 @@ def alias(chat: Chat, args: dict) -> None:
         got = REGISTERED_ALIASES.get(arglias)
 
         if not got:
-            utils.print_err(chat, f"No `{arglias}` alias defined.")
+            chat.chat.logger.error(f"No `{arglias}` alias defined.")
         elif args["--remove"]:
             got.unregister()
         else:
-            utils.print_info(chat, f"`{arglias}`: `{got.expands_to}`")
+            chat.chat.logger.info(f"`{arglias}`: `{got.expands_to}`")
 
         return
 

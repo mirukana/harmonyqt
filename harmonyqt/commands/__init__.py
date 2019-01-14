@@ -62,7 +62,6 @@ from typing import Callable, Dict, List, Optional, Union
 
 from PyQt5.QtCore import pyqtRemoveInputHook
 
-from . import utils
 from ..chat import Chat
 
 FuncType = Callable[..., None]
@@ -82,7 +81,8 @@ def register(func: Optional[FuncType] = None, run_in_thread: bool = True):
 
                 func(*args, **kwargs)
             except Exception as err:
-                utils.print_exception(chat=args[0], err=err, bad_func=func)
+                chat = args[0]
+                chat.logger.exception(err=err, bad_func=func)
 
         @functools.wraps(func)
         def wrapper(chat: Chat, *args, _pdb_level: int = 0,  **kwargs) -> None:
@@ -107,4 +107,4 @@ def register(func: Optional[FuncType] = None, run_in_thread: bool = True):
 # Standard core commands, cannot be disabled
 from . import eval, say, help
 # Other commands
-from . import alias, autorun, nick, pdb, shell, room_set
+from . import alias, autorun, devices, nick, pdb, shell, room_set

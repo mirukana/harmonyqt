@@ -20,6 +20,9 @@ class MessageDisplay(QTextBrowser):
     def __init__(self) -> None:
         super().__init__()
 
+        from .logger import DisplayLogger
+        self.logger = DisplayLogger(self)
+
         self.scroller = Scroller(self)
         self._set_previous_resize_vbar()
         self.scroller.vbar.valueChanged.connect(
@@ -70,7 +73,7 @@ class MessageDisplay(QTextBrowser):
                      text:    str,
                      level:   str  = "info",
                      is_html: bool = False) -> None:
-        assert level in ("info", "warning", "error")
+        assert level in ("debug", "info", "warning", "error", "critical")
         distance_from_bottom = self.scroller.vmax - self.scroller.v
 
         html = text
