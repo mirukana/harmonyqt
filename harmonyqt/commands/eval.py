@@ -103,7 +103,7 @@ def eval_f(chat:      Chat,
         try:
             chat = Chat(user_id, chat.room.room_id)
         except (UserNotLoggedInError, RoomNotJoinedError) as err:
-            chat.chat.logger.error(str(err))
+            chat.logger.error(str(err))
             return
 
     force_say = False

@@ -38,6 +38,12 @@
 .system.critical      {color: rgb(240, 40, 40);}
 .system.critical code {color: rgb(225, 55, 55);}
 
+.decrypt-error {
+    font-style: italic;
+    color:      rgb(200, 80, 80);
+}
+.decrypt-error code {color: rgb(170, 110, 110);}
+
 
 /* /help output */
 

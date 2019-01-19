@@ -17,6 +17,7 @@ class Console(QWidget):
 
         from .display import ConsoleDisplay
         self.display = ConsoleDisplay()
+        self.logger  = self.display.logger
 
         self.about = QLabel(
             f"Unexpected errors occured.<br>"

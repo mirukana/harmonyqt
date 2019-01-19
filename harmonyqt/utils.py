@@ -2,12 +2,15 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 from atomicfile import AtomicFile
 from PyQt5.QtCore import QStandardPaths as QSP
 from PyQt5.QtCore import QDateTime
 
+import requests
+
+from . import data
 from .__about__ import __pkg_name__
 
 
@@ -43,3 +46,18 @@ def get_error_file(name: str = "") -> str:
     date = QDateTime.currentDateTime().toString("yyyyMMdd-HHmmss")
     file = "errors/session_%s.txt" % "_".join((s for s in (date, name) if s))
     return get_standard_path(QSP.AppDataLocation, file)
+
+
+def get_ip_info(ip: Optional[str] = None) -> Dict[str, str]:
+    try:
+        response = requests.get(f"https://ipinfo.io/{ip or ''}", timeout=6.5)
+        response.raise_for_status()
+    except requests.RequestException:
+        return {}
+
+    di = response.json()
+    if "country" not in di:
+        return di
+
+    di["country"] = data.SHORT_COUNTRY_CODES.get(di["country"], di["country"])
+    return di

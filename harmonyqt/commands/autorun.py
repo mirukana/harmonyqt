@@ -49,7 +49,7 @@ def autorun(chat: Chat, args: dict) -> None:
         load_autorun_json(chat)
 
     if not args["COMMANDS"]:
-        chat.chat.logger.info(get_autorun_json_path())
+        chat.logger.info(get_autorun_json_path())
         return
 
     for cmd in args["COMMANDS"]:

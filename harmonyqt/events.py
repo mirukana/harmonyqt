@@ -19,7 +19,7 @@ class _SignalObject(QObject):
     new_event        = pyqtSignal(str, dict)
     new_unique_event = pyqtSignal(str, dict)
 
-    new_message = pyqtSignal(message.Message)
+    new_message   = pyqtSignal(message.Message)
 
     # User ID
     new_account  = pyqtSignal(str)
@@ -72,14 +72,15 @@ class EventManager:
         client.add_leave_listener(
             lambda rid, _: self.on_leave_event(user_id, rid))
 
-        client.start_listener_thread(timeout_ms        = 10_000,
-                                     exception_handler = self.on_listen_error)
+        client.start_listener_thread(
+            timeout_ms=10_000, exception_handler=self._on_sync_error
+        )
 
         self.signals.new_account.emit(client.user_id)
 
 
     @staticmethod
-    def on_listen_error(err: BaseException) -> None:
+    def _on_sync_error(err: BaseException) -> None:
         try:
             print(err)
         except OSError:

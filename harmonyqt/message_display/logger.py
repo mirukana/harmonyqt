@@ -10,8 +10,9 @@ from .display import MessageDisplay
 
 class DisplayLogger:
     def __init__(self, display: MessageDisplay) -> None:
-        self.display: MessageDisplay = display
-        self.level:   int            = 0
+        self.display:      MessageDisplay = display
+        self.level:        int            = 0
+        self.level_locked: bool           = False
 
 
     def debug(self, msg: str, *args, is_html: bool = False, **_) -> None:
@@ -58,6 +59,9 @@ class DisplayLogger:
 
 
     def setLevel(self, level: Union[int, str]) -> None:
+        if self.level_locked:
+            return
+
         if isinstance(level, str):
             level = getattr(logging, level.upper())
 

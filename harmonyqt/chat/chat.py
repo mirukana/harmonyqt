@@ -8,6 +8,7 @@ from kids.cache import cache
 from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 from harmonyqt import main, main_window, message
+from matrix_client.errors import RoomEventDecryptError
 
 CHAT_INIT_HOOKS: Dict[str, Callable[["Chat"], None]] = {}
 
@@ -66,5 +67,13 @@ def redirect_message(msg: message.Message) -> None:
     chat.display.on_receive_from_server(msg)
 
 
-main.HOOKS_INIT_2_BEFORE_LOGIN["Connect chat Message redirector"] = \
-    lambda win: win.events.signals.new_message.connect(redirect_message)
+def redirect_decrypt_error(user_id: str, err: RoomEventDecryptError) -> None:
+    chat = Chat(user_id, err.room.room_id)
+    chat.display.on_decrypt_error(err)
+
+
+main.HOOKS_INIT_2_BEFORE_LOGIN["Connect chat Message redirector"] = (
+    lambda win:
+        win.events.signals.new_message.connect(redirect_message) and
+        win.accounts.signals.decrypt_error.connect(redirect_decrypt_error)
+)

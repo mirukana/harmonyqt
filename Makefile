@@ -13,7 +13,7 @@ ARCHIVE_FORMATS = gztar
 INSTALL_FLAGS   = --user --editable
 PYLINT_FLAGS    = --output-format colorized
 MYPY_FLAGS      = --ignore-missing-imports
-CLOC_FLAGS      = --ignore-whitespace
+CLOC_FLAGS      = --ignore-whitespace --not-match-f data.py
 
 .PHONY: all clean dist install upload test
 

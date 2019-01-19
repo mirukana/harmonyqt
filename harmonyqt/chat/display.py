@@ -8,6 +8,10 @@ from typing import Deque, Tuple
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtGui import QKeyEvent, QTextCursor, QTextLength, QTextTableFormat
 
+from matrix_client.errors import (
+    MegolmDecryptMissingKeysError, RoomEventDecryptError
+)
+
 from . import Chat
 from .. import message_display
 from ..message import Message
@@ -79,6 +83,29 @@ class ChatMessageDisplay(message_display.MessageDisplay):
             self.received_by_local_echo.remove((msg.sender_id, msg.markdown))
         except ValueError:  # not found in list/deque
             self._add_message_request.emit(msg)
+
+
+    # Same as above
+    def on_decrypt_error(self, err: RoomEventDecryptError) -> None:
+        html = "<span class=decrypt-error>%s</span>"
+        if isinstance(err.original_exception, MegolmDecryptMissingKeysError):
+            html %= (
+                f"Sender's device "
+                f"<code>{err.event['content']['device_id']}</code> has not "
+                f"sent the decryption keys to your device "
+                f"<code>{self.chat.client.olm_device.device_id}</code> "
+                f"for this message.<br>"
+                f"Type <code>/help devices</code> for more info."
+            )
+        else:
+            html %= str(err)
+
+        self._add_message_request.emit(Message(
+            room_id        = err.room.room_id,
+            sender_id      = err.event["sender"],
+            ms_since_epoch = err.event["origin_server_ts"],
+            html           = html,
+        ))
 
 
     @staticmethod
@@ -191,16 +218,18 @@ class ChatMessageDisplay(message_display.MessageDisplay):
     def autoload_history(self) -> None:
         time.sleep(0.25)  # Give time for initial events/msgs to be shown
         scr          = self.scroller
-        load_history = self.chat.room.backfill_previous_messages
+        load_history = lambda l: self.chat.room.backfill_previous_messages(
+            reverse=True, limit=l
+        )
 
         while not self.chat.room.loaded_all_history:
             if self.isVisible():
 
                 if scr.vmax <= scr.vstep_page:
-                    load_history(reverse=True, limit=25)
+                    load_history(25)
 
                 elif scr.v <= scr.vmin:
-                    load_history(reverse=True, limit=100)
+                    load_history(100)
 
             time.sleep(0.1)
 

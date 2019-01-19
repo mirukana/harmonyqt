@@ -41,7 +41,7 @@ def say_f(chat: Chat, text: str, is_html: bool = False, echo: bool = False
         return
 
     if echo:
-        chat.chat.logger.info(text, is_html=is_html)
+        chat.logger.info(text, is_html=is_html)
         return
 
 

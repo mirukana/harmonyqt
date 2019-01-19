@@ -83,7 +83,7 @@ def shell_f(chat:          Chat,
         ))
 
         if echo:
-            chat.chat.logger.info(text)
+            chat.logger.info(text)
         else:
             say.say_f(chat, text)
 

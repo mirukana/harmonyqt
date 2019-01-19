@@ -157,11 +157,11 @@ def alias(chat: Chat, args: dict) -> None:
         got = REGISTERED_ALIASES.get(arglias)
 
         if not got:
-            chat.chat.logger.error(f"No `{arglias}` alias defined.")
+            chat.logger.error(f"No `{arglias}` alias defined.")
         elif args["--remove"]:
             got.unregister()
         else:
-            chat.chat.logger.info(f"`{arglias}`: `{got.expands_to}`")
+            chat.logger.info(f"`{arglias}`: `{got.expands_to}`")
 
         return
 

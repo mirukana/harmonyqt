@@ -73,7 +73,7 @@ def room_set(chat: Chat, args: dict) -> None:
 
     for arg, val in args.items():
         if arg[2:].replace("-", "_") not in SETTINGS_FUNC:
-            chat.chat.logger.error(f"Unknown setting: {arg!r}.")
+            chat.logger.error(f"Unknown setting: {arg!r}.")
             return
 
     one_passed = False
@@ -90,7 +90,7 @@ def room_set(chat: Chat, args: dict) -> None:
             result = SETTINGS_FUNC[func_name](chat.client, chat.room, val)
         except MatrixRequestError as err:
             data = json.loads(err.content)
-            chat.chat.logger.error(data["error"].replace("don't", "do not"))
+            chat.logger.error(data["error"].replace("don't", "do not"))
         else:
             if result is False:
                 chat.logger.error(

@@ -31,7 +31,8 @@ setup(
         "atomicfile",
         "dataclasses;python_version<'3.7'",
         "docopt",
-        "matrix_client_harmonyqt[e2e]>=0.4.2-dev-4",
+        "matrix_client_harmonyqt[e2e]>=0.4.2-dev-7",
+        "requests",
         "setuptools",
 
         "markdownify",

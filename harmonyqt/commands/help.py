@@ -42,11 +42,11 @@ def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
         try:
             func = REGISTERED_COMMANDS[name]
         except KeyError:
-            chat.chat.logger.error(f"Command not found: `{name}`.")
+            chat.logger.error(f"Command not found: `{name}`.")
             continue
 
         if not func.__doc__:
-            chat.chat.logger.error(f"Missing help for `{name}`.")
+            chat.logger.error(f"Missing help for `{name}`.")
             continue
 
         try:
@@ -61,7 +61,7 @@ def help_f(chat: Chat, commands: List[str], full: bool = False) -> None:
 
         ("<br><br>" if full else "<br>").join(cmd_helps),
     )
-    chat.chat.logger.info(text, is_html=True)
+    chat.logger.info(text, is_html=True)
 
 
 class HelpParseError(Exception):

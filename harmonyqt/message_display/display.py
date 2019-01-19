@@ -2,6 +2,7 @@
 # This file is part of harmonyqt, licensed under GPLv3.
 
 import traceback
+from typing import Optional
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import (
@@ -70,9 +71,10 @@ class MessageDisplay(QTextBrowser):
 
 
     def system_print(self,
-                     text:    str,
-                     level:   str  = "info",
-                     is_html: bool = False) -> None:
+                     text:         str,
+                     level:        str  = "info",
+                     is_html:      bool = False,
+                     table_format: Optional[QTextTableFormat] = None) -> None:
         assert level in ("debug", "info", "warning", "error", "critical")
         distance_from_bottom = self.scroller.vmax - self.scroller.v
 
@@ -90,7 +92,7 @@ class MessageDisplay(QTextBrowser):
         cursor = QTextCursor(self.document())
         cursor.beginEditBlock()
         cursor.movePosition(QTextCursor.End)
-        cursor.insertTable(1, 1, self.system_print_format)
+        cursor.insertTable(1, 1, table_format or self.system_print_format)
         cursor.insertHtml(html)
         cursor.endEditBlock()
 
