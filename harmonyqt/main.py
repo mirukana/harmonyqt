@@ -19,13 +19,8 @@ HOOKS_INIT_3_END:          HooksType = {}
 from . import (
     __about__, app, error_handler, homepage, theming, toolbar, usertree
 )
-from .accounts import AccountManager
 from .chat import ChatDock
 from .dock import Dock
-from .event_logger import EventLogger
-from .events import EventManager
-from .shortcuts import Shortcut, ShortcutManager
-
 
 
 class App(QApplication):
@@ -81,6 +76,13 @@ class MainWindow(QMainWindow):
         # pylint: disable=attribute-defined-outside-init
         # Can't define all that __init__ instead.
         # The UI elements need _MAIN_WINDOW to be set, see run() in __init__.
+
+        # Avoid import matrix_client stuff before we can init a QApplication
+        from .accounts import AccountManager
+        from .event_logger import EventLogger
+        from .events import EventManager
+        from .shortcuts import Shortcut, ShortcutManager
+
 
         for func in HOOKS_INIT_1_START.values():
             func(self)
